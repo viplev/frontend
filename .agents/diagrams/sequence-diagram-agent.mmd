@@ -1,0 +1,33 @@
+sequenceDiagram
+
+    participant V as VIPLEV
+    participant A as Agent
+    
+    par
+        loop When there is a change<br>in the containers
+
+            A->>+V: POST: /containers<br>(current list of containers)
+            V->>-A: Status: 201 Created
+
+        end
+    and
+        loop every 5th sec
+            A->>+V: GET: /benchmarks/pending
+            V->>-A: Response: MessageDTO
+
+            alt If MessageDTO.messageType is pending_start
+                A->>+V: GET: /benchmarks/{benchmarkId}
+                V->>-A: Response: BenchmarkDTO
+                A->>A: Spin up benchmark
+            else If MessageDTO.messageType is pending_stop
+                A->>A: Stop benchmark
+            end
+        end
+    and
+        loop While a benchmark is running
+            A->>+V: POST: benchmarks/{benchmarkId}/runs/{runId}/metrics/resource
+            V->>-A: Status: 201 Created
+            A->>+V: POST: benchmarks/{benchmarkId}/runs/{runId}/metrics/performance
+            V->>-A: Status: 201 Created
+        end
+    end

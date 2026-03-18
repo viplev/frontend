@@ -1,0 +1,167 @@
+@startuml
+skinparam linetype ortho
+
+entity Environment {
+    * id : number <<GENERATED>>
+ --
+    * owner_id : number <<FK>>
+ --
+    * name : string
+    * description : text
+    * type : ENUM(DOCKER, KUBERNETES)
+    * token : string
+    * agent_command : string
+    * agent_last_seen_at : datetime <<NULLABLE>>
+    * created_at : datetime
+    * updated_at : datetime
+}
+
+entity Host {
+    * id : number <<GENERATED>>
+--
+    * environment_id : number <<FK>>
+--
+    * name : string
+    * ip_address : string
+    * os : string
+    * os_version : string
+    * cpu_model : string
+    * cpu_cores : int
+    * cpu_threads : int
+    * ram_total_bytes : bigint
+    * ram_speed_mhz : int
+    * ram_type : string
+}
+
+entity User {
+    * id : number <<GENERATED>>
+ --
+    * username : string <<unique>>
+    * email : string <<unique>>
+    * name : string
+    * password : string
+    * created_at : datetime
+    * updated_at : datetime
+}
+
+entity Service {
+    * id : number <<GENERATED>>
+--
+    * host_id : number <<FK>>
+--
+    * service_name : string <<UNIQUE>>
+    * image_sha : string
+    * image_name : string
+    * cpu_limit : double <<NULLABLE>>
+    * cpu_reservation : double <<NULLABLE>>
+    * memory_limit_bytes : bigint <<NULLABLE>>
+    * memory_reservation_bytes : bigint <<NULLABLE>>
+}
+
+entity Benchmark {
+    * id : number <<generated>>
+--
+    * environment_id : number <<FK>>
+--
+    * name : string
+    * description : text
+    * k6_instructions : text
+    * created_at : datetime
+    * updated_at : datetime
+}
+
+entity Benchmark_run {
+    * id : number <<GENERATED>>
+--
+    * benchmark_id : number <<FK>>
+--
+    * started_by : number <<FK>>
+--
+    * status : ENUM(PENDING_START, STARTED, PENDING_STOP, STOPPED, FINISHED, FAILED)
+    * status_reason : string <<NULLABLE>>
+    * started_at : datetime
+    * finished_at : datetime
+    * created_at : datetime
+}
+
+entity Metric_resource_service <<IMMUTABLE>> {
+    * id : number <<GENERATED>>
+--
+    * run_id : number <<FK>>
+    * service_id : number <<FK>>
+--
+    * collected_at : datetime
+    * cpu_percentage : double
+    * memory_usage_bytes : double
+    * memory_limit_bytes : double
+    * network_in_bytes : double
+    * network_out_bytes : double
+    * block_in_bytes : double
+    * block_out_bytes : double
+    * created_at : datetime
+}
+
+entity Metric_resource_host <<IMMUTABLE>> {
+    * id : number <<GENERATED>>
+--
+    * run_id : number <<FK>>
+    * host_id : number <<FK>>
+--
+    * collected_at : datetime
+    * cpu_percentage : double
+    * memory_usage_bytes : double
+    * memory_limit_bytes : double
+    * network_in_bytes : double
+    * network_out_bytes : double
+    * block_in_bytes : double
+    * block_out_bytes : double
+    * created_at : datetime
+}
+
+entity Metric_k6_http <<IMMUTABLE>> {
+    * id : number <<GENERATED>>
+--
+    * run_id : number <<FK>>
+--
+    * collected_at : datetime
+    * url : string
+    * http_method : ENUM(GET, POST, PUT, PATCH, DELETE)
+    * request_group : string
+    * http_status : int
+    * expected_status : int
+    * data_received_byte : int
+    * data_sent_byte : int
+    * http_req_duration_ms : int
+    * http_req_waiting_ms : int
+    * created_at : datetime
+}
+
+entity Metric_k6_vus <<IMMUTABLE>> {
+    * id : number <<GENERATED>>
+--
+    * run_id : number <<FK>>
+--
+    * collected_at : datetime
+    * vus : int
+    * created_at : datetime
+}
+
+User ||--o{ Environment
+User ||--o{ Benchmark_run
+
+Environment ||--o{ Host
+
+Host ||--o{ Service
+Host ||--o{ Metric_resource_host
+
+Service ||--o{ Metric_resource_service
+
+Environment ||--o{ Benchmark
+
+Benchmark ||--o{ Benchmark_run
+
+Benchmark_run ||--o{ Metric_resource_service
+Benchmark_run ||--o{ Metric_resource_host
+Benchmark_run ||--o{ Metric_k6_http
+Benchmark_run ||--o{ Metric_k6_vus
+@enduml
