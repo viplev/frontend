@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "openapi": "openapi-generator-cli generate -i ./openapi.yaml -g typescript-fetch -o ./api"
+    "openapi": "openapi-generator-cli generate -i ./openapi.yaml -g typescript-fetch -o ./src/generated/openapi"
   },
   "dependencies": {
     "react": "^19.1.1",
