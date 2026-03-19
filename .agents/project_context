@@ -1,0 +1,26 @@
+# Project Description
+
+VIPLEV is a distributed benchmarking- and testplatform, which makes it possible to run coordinated stresstest as well as failure simulation across containerbased environments
+
+The system consist of two main components
+
+## VIPLEV (Central Server)
+
+The central part of the system is running on a public available server. VIPLEV functions as a controlplanel for the entire platform, and exposes a RESTful API for which both human users and computer agents can communicate through. 
+
+(This codebase is centered arround this part of the sytem)
+
+## Frontend 
+
+A frontend project will be developed so the system has a UI/UX. through this UI, the user con create environments, and define test benchmarks.
+
+## VIPLEV Agent
+
+A lightweight component installed in the environment to be benchmarked. The agent communicates with VIPLEV via the REST API and receives instructions on which tasks to execute. To carry out these tasks, the agent requires administrative access to the underlying containerization layer — primarily Docker and Kubernetes.
+
+The agent's responsibilities include:
+- Monitoring resource usage for individual containers/pods and the overall system (CPU, memory, network, etc.)
+- Starting and stopping load testing tools (e.g. K6) based on user-defined scenarios
+- Simulating container failures by controlled shutdown of selected containers/pods
+
+The communication flow is as follows: the user defines a test scenario via the UI or REST API, VIPLEV stores and coordinates the scenario, and the agent executes it in the associated environment. Test data is continuously collected by the agent and made available to the user through VIPLEV.
