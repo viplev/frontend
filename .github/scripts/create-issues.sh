@@ -3,8 +3,12 @@
 # create-issues.sh - Creates all project planning GitHub Issues for VIPLEV
 #
 # Usage:
-#   GH_TOKEN=<your_token> bash .github/scripts/create-issues.sh
-#   OR: gh auth login && bash .github/scripts/create-issues.sh
+#   REPO=<owner/repo> GH_TOKEN=<your_token> bash .github/scripts/create-issues.sh
+#   OR: gh auth login && REPO=viplev/frontend bash .github/scripts/create-issues.sh
+#
+# Environment variables:
+#   REPO      - GitHub repository in owner/repo format (default: viplev/frontend)
+#   GH_TOKEN  - GitHub token with issues:write scope (optional if already logged in via gh)
 #
 # Prerequisites:
 #   - GitHub CLI (gh) installed and authenticated
@@ -13,7 +17,8 @@
 
 set -euo pipefail
 
-REPO="viplev/frontend"
+# Allow the repo to be overridden via environment (e.g. from the workflow context)
+REPO="${REPO:-viplev/frontend}"
 
 echo "Creating labels..."
 

@@ -1,11 +1,11 @@
 name: Create Project Issues
 
-# Triggered manually from the Actions tab, OR automatically on the first push
-# of this workflow to any branch (runs once; skips if issues already exist).
+# Runs automatically the first time this workflow lands on the default branch
+# (i.e. when this PR is merged) OR can be triggered manually from the Actions tab.
 on:
   push:
     branches:
-      - "copilot/plan-project-structure"
+      - main
     paths:
       - ".github/workflows/create-issues.yml"
   workflow_dispatch:
@@ -33,10 +33,10 @@ jobs:
       - name: Create labels and issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
-          REPO="${{ github.repository }}"
 
           if [[ "$DRY_RUN" == "true" ]]; then
             echo "🔍 DRY RUN — no issues will actually be created."
@@ -52,4 +52,5 @@ jobs:
             exit 0
           fi
 
+          chmod +x .github/scripts/create-issues.sh
           bash .github/scripts/create-issues.sh

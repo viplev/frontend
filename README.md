@@ -1,4 +1,49 @@
-# React + TypeScript + Vite
+# VIPLEV Frontend
+
+A React + TypeScript + Vite frontend for the VIPLEV performance benchmarking platform.
+
+## Project Setup
+
+```bash
+npm install
+cp .env.example .env       # Configure API base URL
+npm run dev                # Start dev server
+npm run build              # Production build
+npm run generate           # Regenerate OpenAPI client from openapi.yaml
+```
+
+## Project Issues / Backlog
+
+All development tasks are tracked as GitHub Issues. When this PR is merged to `main`,
+the **Create Project Issues** workflow fires automatically and creates all 12 planned
+issues (with labels, priorities, sizes, area tags, and blocking relationships).
+
+To create the issues manually before the merge, go to:
+
+> **Actions → Create Project Issues → Run workflow**
+
+> ⚠️ The workflow is idempotent and will skip creation if any issues already exist, preventing duplicates. It is safe to run multiple times.
+
+### Issue overview
+
+| # | Title | Priority | Size | Area | Blocks |
+|---|-------|----------|------|------|--------|
+| 1 | Project Foundation (routing, state, API client) | P1 Critical | L | Infrastructure | All |
+| 2 | Login Page and Auth Flow | P1 Critical | M | Auth | 3-12 |
+| 3 | Application Shell and Navigation Layout | P2 High | M | UI / Layout | 5-12 |
+| 4 | Form Partial Save (localStorage persistence) | P2 High | S | Forms | 6, 7, 8 |
+| 5 | Environments List Page | P2 High | M | Environment | 6, 7, 8 |
+| 6 | Create / Edit Environment Form | P2 High | M | Environment + Forms | — |
+| 7 | Services List and Registration Form | P3 Medium | M | Services + Forms | — |
+| 8 | Benchmarks List and Create/Edit Form | P2 High | L | Benchmark + Forms | 9, 10 |
+| 9 | Benchmark Start / Stop Actions | P2 High | S | Benchmark + Runs | 10 |
+| 10 | Benchmark Runs List and Dashboard | P2 High | M | Runs | 11 |
+| 11 | Run Detail View and Metrics Visualisation | P2 High | XL | Runs + Analytics | — |
+| 12 | Messages and Notifications Centre | P4 Low | S | Notifications | — |
+
+---
+
+## React + TypeScript + Vite (template info)
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
@@ -67,3 +112,4 @@ export default defineConfig([
   },
 ])
 ```
+
