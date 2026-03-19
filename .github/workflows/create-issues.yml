@@ -1,0 +1,48 @@
+name: Create Project Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run – print issues without creating them"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create labels and issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 DRY RUN — no issues will actually be created."
+            echo "Would run: .github/scripts/create-issues.sh"
+            exit 0
+          fi
+
+          # Check if issues already exist to avoid duplicates
+          EXISTING=$(gh issue list --repo "$REPO" --state all --limit 100 --json number,title | jq length)
+          if [[ "$EXISTING" -gt 0 ]]; then
+            echo "⚠️  Found $EXISTING existing issue(s). Aborting to prevent duplicates."
+            echo "Delete existing issues first if you want to re-create them."
+            exit 1
+          fi
+
+          bash .github/scripts/create-issues.sh
