@@ -1,6 +1,13 @@
 name: Create Project Issues
 
+# Triggered manually from the Actions tab, OR automatically on the first push
+# of this workflow to any branch (runs once; skips if issues already exist).
 on:
+  push:
+    branches:
+      - "copilot/plan-project-structure"
+    paths:
+      - ".github/workflows/create-issues.yml"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -26,7 +33,7 @@ jobs:
       - name: Create labels and issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
           REPO="${{ github.repository }}"
@@ -40,9 +47,9 @@ jobs:
           # Check if issues already exist to avoid duplicates
           EXISTING=$(gh issue list --repo "$REPO" --state all --limit 100 --json number,title | jq length)
           if [[ "$EXISTING" -gt 0 ]]; then
-            echo "⚠️  Found $EXISTING existing issue(s). Aborting to prevent duplicates."
+            echo "⚠️  Found $EXISTING existing issue(s). Skipping to prevent duplicates."
             echo "Delete existing issues first if you want to re-create them."
-            exit 1
+            exit 0
           fi
 
           bash .github/scripts/create-issues.sh
