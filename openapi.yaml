@@ -5,12 +5,6 @@ info:
   version: 1.0.0
 
 
-servers:
-  - url: https://viplev.com/api
-    description: Production server
-  - url: https://staging.viplev.com/api
-    description: Staging server
-
 security:
   - bearerAuth: []
 
@@ -51,6 +45,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginDTO'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
 
 
   /v1/environments:
@@ -58,6 +56,7 @@ paths:
       tags:
         - Environment
       summary: Get all environments
+      operationId: listEnvironments
       responses:
         '200':
           description: List of all environments
@@ -67,14 +66,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EnvironmentDTO'
-        '400':
-          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '500':
           $ref: '#/components/responses/500InternalServerError'
     post:
       tags:
         - Environment
       summary: Create environment
+      operationId: createEnvironment
       requestBody:
         required: true
         content:
@@ -90,6 +90,8 @@ paths:
                 $ref: '#/components/schemas/EnvironmentDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '500':
           $ref: '#/components/responses/500InternalServerError'
 
@@ -98,12 +100,14 @@ paths:
       tags:
         - Environment
       summary: Get an environment
+      operationId: getEnvironment
       parameters:
         - name: environmentId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Environment found
@@ -113,6 +117,8 @@ paths:
                 $ref: '#/components/schemas/EnvironmentDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -121,12 +127,14 @@ paths:
       tags:
         - Environment
       summary: Update an environment
+      operationId: updateEnvironment
       parameters:
         - name: environmentId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -142,6 +150,8 @@ paths:
                 $ref: '#/components/schemas/EnvironmentDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -150,17 +160,21 @@ paths:
       tags:
         - Environment
       summary: Delete an environment
+      operationId: deleteEnvironment
       parameters:
         - name: environmentId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '204':
           description: Environment deleted
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -174,10 +188,12 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Environment
       summary: Get all services on an Environment
+      operationId: listServices
       responses:
         '200':
           description: List of all services
@@ -189,14 +205,18 @@ paths:
                   $ref: '#/components/schemas/ServiceDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500InternalServerError'
     post:
       tags:
+        - Environment
         - Agent
       summary: Agent can post a list of services
+      operationId: registerServices
       requestBody:
         required: true
         content:
@@ -210,6 +230,10 @@ paths:
           description: Services created
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500InternalServerError'
 
@@ -220,15 +244,18 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: serviceId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Environment
       summary: Get a single service
+      operationId: getService
       responses:
         '200':
           description: Service found
@@ -238,6 +265,8 @@ paths:
                 $ref: '#/components/schemas/ServiceDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -250,10 +279,12 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark
       summary: Get all benchmarks
+      operationId: listBenchmarks
       responses:
         '200':
           description: List of all benchmarks
@@ -265,12 +296,17 @@ paths:
                   $ref: '#/components/schemas/BenchmarkDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500InternalServerError'
     post:
       tags:
         - Benchmark
       summary: Create benchmark
+      operationId: createBenchmark
       requestBody:
         required: true
         content:
@@ -286,6 +322,10 @@ paths:
                 $ref: '#/components/schemas/BenchmarkDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500InternalServerError'
 
@@ -296,17 +336,20 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark
       summary: Get a benchmark
-      description: Shows meta data about the benchmark, as well a list of all runs for the currenct benchmark.
+      operationId: getBenchmark
+      description: Shows meta data about the benchmark, as well a list of all runs for the current benchmark.
       parameters:
         - name: benchmarkId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Benchmark found
@@ -316,6 +359,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -324,12 +369,14 @@ paths:
       tags:
         - Benchmark
       summary: Update a benchmark
+      operationId: updateBenchmark
       parameters:
         - name: benchmarkId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -345,6 +392,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -353,17 +402,21 @@ paths:
       tags:
         - Benchmark
       summary: Delete a benchmark
+      operationId: deleteBenchmark
       parameters:
         - name: benchmarkId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '204':
           description: Benchmark deleted
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -377,10 +430,12 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark Runs
       summary: Get all runs across benchmarks for an environment
+      operationId: listEnvironmentRuns
       parameters:
         - name: page
           in: query
@@ -409,9 +464,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedEnvironmentRunsDTO'
+                $ref: '#/components/schemas/EnvironmentRunsDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -424,10 +481,13 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
+        - Benchmark Actions
         - Agent
       summary: Get list of pending messages for current environment
+      operationId: listMessages
       description: This endpoint is used by the agent, to see if there are any benchmarks to start or stop.
       responses:
         '200':
@@ -440,6 +500,8 @@ paths:
                   $ref: '#/components/schemas/MessageDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -452,18 +514,21 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     post:
       tags:
         - Benchmark Actions
       summary: Start a benchmark
+      operationId: startBenchmark
       description: |
           When this is called, a new run is created with a status of PENDING_START.
-          <br>
+
           This will be blocked if there is an ongoing run for the benchmark.
 
       responses:
@@ -475,6 +540,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkStatusDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -487,20 +554,24 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     post:
       tags:
         - Benchmark Actions
       summary: Stop a benchmark run
+      operationId: stopBenchmarkRun
       description: Stops an ongoing benchmark run. Returns 400 if the run is not in a stoppable state.
       responses:
         '200':
@@ -511,6 +582,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkStatusDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -525,15 +598,18 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark Runs
       summary: Get all runs for a benchmark
+      operationId: listBenchmarkRuns
       responses:
         '200':
           description: List of all runs
@@ -545,6 +621,8 @@ paths:
                   $ref: '#/components/schemas/BenchmarkRunDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -557,20 +635,24 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark Runs
       summary: Get a run
+      operationId: getBenchmarkRun
       description: Returns run metadata and derived metrics
       parameters:
         - name: percentiles
@@ -589,6 +671,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkRunDerivedDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -597,11 +681,14 @@ paths:
       tags:
         - Benchmark Runs
       summary: Delete a run
+      operationId: deleteBenchmarkRun
       responses:
         '204':
           description: Run deleted
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -614,20 +701,24 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     get:
       tags:
         - Benchmark Runs
       summary: Get raw data for a run
+      operationId: getBenchmarkRunRaw
       description: Returns all raw resource and performance metrics for a run as time-series data
       responses:
         '200':
@@ -638,6 +729,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkRunRawDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -650,20 +743,25 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     post:
       tags:
+        - Benchmark Runs
         - Agent
       summary: Store resource metrics
+      operationId: storeResourceMetrics
       description: Used by the agent to send resource metrics (CPU, memory, disk, network etc.) during a benchmark run (every 5 seconds)
       requestBody:
         required: true
@@ -676,6 +774,8 @@ paths:
           description: Resource metrics stored
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -688,20 +788,25 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     post:
       tags:
+        - Benchmark Runs
         - Agent
       summary: Store performance metrics
+      operationId: storePerformanceMetrics
       description: Used by the agent to send k6 performance metrics (response times, throughput, error rates etc.) when the test completes
       requestBody:
         required: true
@@ -714,6 +819,8 @@ paths:
           description: Performance metrics stored
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -727,20 +834,25 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: benchmarkId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
       - name: runId
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     post:
       tags:
+        - Benchmark Runs
         - Agent
       summary: Update run with a status
+      operationId: updateBenchmarkRunStatus
       description: This endpoint is used to update the run status, if failed, error messages must be included
       requestBody:
         required: true
@@ -757,6 +869,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkRunDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '500':
@@ -794,8 +908,23 @@ components:
                 status: 400
                 detail: The field 'port' must be a number
                 instance: /v1/environments
+    401Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDTO'
+          examples:
+            unauthorized:
+              summary: Missing or invalid token
+              value:
+                type: /errors/unauthorized
+                title: Unauthorized
+                status: 401
+                detail: Authentication token is missing or invalid
+                instance: /v1/environments
     404NotFound:
-      description: Environment not found
+      description: Resource not found
       content:
         application/json:
           schema:
@@ -807,8 +936,8 @@ components:
                 type: /errors/not-found
                 title: Not Found
                 status: 404
-                detail: Environment with id '123' not found
-                instance: /v1/environment/123
+                detail: Resource with id '123' not found
+                instance: /v1/environments/123
     500InternalServerError:
       description: Internal server error
       content:
@@ -825,6 +954,7 @@ components:
                 detail: An unexpected error occurred while processing the request
                 instance: /v1/environments
   schemas:
+
     EnvironmentDTO:
       type: object
       required:
@@ -871,6 +1001,7 @@ components:
           format: date-time
           readOnly: true
           description: Timestamp when environment was last updated
+
     BenchmarkDTO:
       type: object
       required:
@@ -902,14 +1033,11 @@ components:
           format: date-time
           readOnly: true
           description: Timestamp when benchmark was last updated
-    PaginatedEnvironmentRunsDTO:
+
+    PaginationDTO:
       type: object
-      description: Paginated list of runs across all benchmarks in an environment
+      description: Pagination metadata for paginated responses
       properties:
-        runs:
-          type: array
-          items:
-            $ref: '#/components/schemas/EnvironmentRunSummaryDTO'
         page:
           type: integer
           description: Current page number (zero-based)
@@ -920,10 +1048,22 @@ components:
             - 20
         totalElements:
           type: integer
-          description: Total number of runs
+          description: Total number of elements
         totalPages:
           type: integer
           description: Total number of pages
+
+    EnvironmentRunsDTO:
+      type: object
+      description: Paginated list of runs across all benchmarks in an environment
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnvironmentRunSummaryDTO'
+        pagination:
+          $ref: '#/components/schemas/PaginationDTO'
+
     EnvironmentRunSummaryDTO:
       type: object
       description: Summary of a single run within an environment
@@ -947,6 +1087,7 @@ components:
         finishedAt:
           type: string
           format: date-time
+
     BenchmarkRunDTO:
       type: object
       properties:
@@ -991,12 +1132,14 @@ components:
           format: date-time
           readOnly: true
           description: Timestamp when run was last updated
+
     BenchmarkRunRawDTO:
       type: object
       description: Top-level wrapper for time-series data for a benchmark run, used for XY-chart visualisation
       properties:
         timeSeries:
           $ref: '#/components/schemas/RawTimeSeriesDTO'
+
     RawTimeSeriesDTO:
       type: object
       description: Contains hosts (with nested services) and k6 time-series data
@@ -1007,6 +1150,7 @@ components:
             $ref: '#/components/schemas/RawHostTimeSeriesDTO'
         k6:
           $ref: '#/components/schemas/RawK6TimeSeriesDTO'
+
     RawHostTimeSeriesDTO:
       type: object
       description: Time-series resource data for a single host, with nested services
@@ -1026,6 +1170,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RawServiceTimeSeriesDTO'
+
     RawServiceTimeSeriesDTO:
       type: object
       description: Time-series resource data for a single service running on a host
@@ -1041,6 +1186,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RawResourceDataPointDTO'
+
     RawResourceDataPointDTO:
       type: object
       description: A single resource metric data point at a given timestamp, used by both host and service time-series
@@ -1069,6 +1215,7 @@ components:
         blockOutBytes:
           type: number
           format: double
+
     RawK6TimeSeriesDTO:
       type: object
       description: Time-series data for K6 performance metrics
@@ -1077,6 +1224,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RawK6DataPointDTO'
+
     RawK6DataPointDTO:
       type: object
       description: A single K6 data point at a given timestamp
@@ -1093,6 +1241,7 @@ components:
         vus:
           type: integer
           description: Number of virtual users active at this point
+
     BenchmarkRunDerivedDTO:
       type: object
       description: Top-level wrapper for aggregated summary stats for a benchmark run. Percentiles are dynamic via ?percentiles query param (default p90, p95)
@@ -1110,6 +1259,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DerivedHostSummaryDTO'
+
     DerivedHttpSummaryDTO:
       type: object
       description: Aggregated HTTP metrics for a single request group
@@ -1137,6 +1287,7 @@ components:
           $ref: '#/components/schemas/DerivedHttpTimingDTO'
         waiting:
           $ref: '#/components/schemas/DerivedHttpTimingDTO'
+
     DerivedHttpTimingDTO:
       type: object
       description: Timing statistics for HTTP metrics (duration or waiting/TTFB). Percentiles are a dynamic map based on query parameter
@@ -1159,6 +1310,7 @@ components:
             type: number
             format: double
           description: "Dynamic percentile map, e.g. { \"p90\": 45.2, \"p95\": 78.1 }"
+
     DerivedVusSummaryDTO:
       type: object
       description: Aggregated virtual user statistics for the run
@@ -1170,6 +1322,7 @@ components:
         avg:
           type: number
           format: double
+
     DerivedHostSummaryDTO:
       type: object
       description: Aggregated resource stats for a single host, with nested service summaries
@@ -1187,6 +1340,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DerivedServiceSummaryDTO'
+
     DerivedServiceSummaryDTO:
       type: object
       description: Aggregated resource stats for a single service running on a host
@@ -1200,6 +1354,7 @@ components:
           type: string
         resource:
           $ref: '#/components/schemas/DerivedResourceSummaryDTO'
+
     DerivedResourceSummaryDTO:
       type: object
       description: Aggregated resource metrics (CPU, memory, network, block I/O). Used by both host and service summaries
@@ -1220,6 +1375,7 @@ components:
         blockOutTotalBytes:
           type: integer
           format: int64
+
     DerivedResourceStatsDTO:
       type: object
       description: Statistics for a single resource metric (e.g. CPU or memory). Percentiles are a dynamic map based on query parameter
@@ -1236,6 +1392,7 @@ components:
             type: number
             format: double
           description: "Dynamic percentile map, e.g. { \"p90\": 75.2, \"p95\": 88.1 }"
+
     BenchmarkStatusDTO:
       type: object
       properties:
@@ -1255,6 +1412,7 @@ components:
           type: string
           enum: [PENDING_START, STARTED, PENDING_STOP, STOPPED, FINISHED, FAILED]
           description: Current status of the run
+
     HostDTO:
       type: object
       properties:
@@ -1296,6 +1454,7 @@ components:
         ramType:
           type: string
           description: RAM type (e.g. DDR4, DDR5)
+
     ServiceDTO:
       type: object
       properties:
@@ -1331,46 +1490,7 @@ components:
           type: integer
           format: int64
           description: Memory reservation in bytes
-    UserDTO:
-      type: object
-      required:
-        - username
-        - email
-        - name
-        - password
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          description: Unique ID for user
-          examples:
-            - "5a56d1ef-3ff9-475d-84c8-33796245fa9f"
-        username:
-          type: string
-          description: Username
-        email:
-          type: string
-          format: email
-          description: Email address
-        name:
-          type: string
-          description: Full name
-        password:
-          type: string
-          format: password
-          writeOnly: true
-          description: User password
-        createdAt:
-          type: string
-          format: date-time
-          readOnly: true
-          description: Timestamp when user was created
-        updatedAt:
-          type: string
-          format: date-time
-          readOnly: true
-          description: Timestamp when user was last updated
+
     MetricResourceServiceDTO:
       type: object
       properties:
@@ -1418,6 +1538,7 @@ components:
           type: number
           format: double
           description: Block I/O bytes written
+
     MetricResourceHostDTO:
       type: object
       properties:
@@ -1465,6 +1586,7 @@ components:
           type: number
           format: double
           description: Block I/O bytes written
+
     MetricK6HttpDTO:
       type: object
       properties:
@@ -1506,6 +1628,7 @@ components:
         httpReqWaitingMs:
           type: integer
           description: Time to first byte (TTFB) in milliseconds
+
     MetricK6VusDTO:
       type: object
       properties:
@@ -1522,6 +1645,7 @@ components:
         vus:
           type: integer
           description: Number of virtual users active at this point
+
     BenchmarkRunStatusUpdateDTO:
       type: object
       required:
@@ -1534,6 +1658,7 @@ components:
         statusReason:
           type: string
           description: Error message (required when status is FAILED)
+
     MetricResourceDTO:
       type: object
       description: Wrapper for resource metrics sent by the agent
@@ -1546,6 +1671,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MetricResourceHostDTO'
+
     MetricPerformanceDTO:
       type: object
       description: Wrapper for K6 performance metrics sent by the agent
@@ -1558,6 +1684,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MetricK6VusDTO'
+
     MessageDTO:
       type: object
       properties:
@@ -1577,6 +1704,7 @@ components:
           type: string
           enum: [PENDING_START, PENDING_STOP]
           description: Type of message for the agent
+
     ErrorDTO:
       type: object
       properties:
@@ -1611,7 +1739,8 @@ components:
     LoginDTO:
       type: object
       required:
-        - username
+        - email
+        - password
       properties:
         userId:
           type: string
