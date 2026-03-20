@@ -6,7 +6,7 @@ All URIs are relative to *http://localhost*
 |------------- | ------------- | -------------|
 | [**deleteBenchmarkRun**](BenchmarkRunsApi.md#deletebenchmarkrun) | **DELETE** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId} | Delete a run |
 | [**getBenchmarkRun**](BenchmarkRunsApi.md#getbenchmarkrun) | **GET** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId} | Get a run |
-| [**getBenchmarkRunRaw**](BenchmarkRunsApi.md#getbenchmarkrunraw) | **GET** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/raw | Get raw data for a run |
+| [**getBenchmarkRunRawData**](BenchmarkRunsApi.md#getbenchmarkrunrawdata) | **GET** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/raw | Get raw data for a run |
 | [**listBenchmarkRuns**](BenchmarkRunsApi.md#listbenchmarkruns) | **GET** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs | Get all runs for a benchmark |
 | [**listEnvironmentRuns**](BenchmarkRunsApi.md#listenvironmentruns) | **GET** /v1/environments/{environmentId}/runs | Get all runs across benchmarks for an environment |
 | [**storePerformanceMetrics**](BenchmarkRunsApi.md#storeperformancemetrics) | **POST** /v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/metrics/performance | Store performance metrics |
@@ -178,9 +178,9 @@ example().catch(console.error);
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
-## getBenchmarkRunRaw
+## getBenchmarkRunRawData
 
-> BenchmarkRunRawDTO getBenchmarkRunRaw(environmentId, benchmarkId, runId)
+> BenchmarkRunRawDTO getBenchmarkRunRawData(environmentId, benchmarkId, runId)
 
 Get raw data for a run
 
@@ -193,7 +193,7 @@ import {
   Configuration,
   BenchmarkRunsApi,
 } from '';
-import type { GetBenchmarkRunRawRequest } from '';
+import type { GetBenchmarkRunRawDataRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
@@ -210,10 +210,10 @@ async function example() {
     benchmarkId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
     // string
     runId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
-  } satisfies GetBenchmarkRunRawRequest;
+  } satisfies GetBenchmarkRunRawDataRequest;
 
   try {
-    const data = await api.getBenchmarkRunRaw(body);
+    const data = await api.getBenchmarkRunRawData(body);
     console.log(data);
   } catch (error) {
     console.error(error);
