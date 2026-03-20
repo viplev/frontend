@@ -718,7 +718,7 @@ paths:
       tags:
         - Benchmark Runs
       summary: Get raw data for a run
-      operationId: getBenchmarkRunRaw
+      operationId: getBenchmarkRunRawData
       description: Returns all raw resource and performance metrics for a run as time-series data
       responses:
         '200':

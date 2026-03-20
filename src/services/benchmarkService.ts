@@ -139,9 +139,7 @@ export async function getBenchmarkRunRawData(
   runId: string,
 ) {
   try {
-    // Use the *Raw variant to avoid the naming collision in the generated client
-    const response = await getBenchmarkRunsApi().getBenchmarkRunRawRaw({ environmentId, benchmarkId, runId });
-    return response.value();
+    return await getBenchmarkRunsApi().getBenchmarkRunRawData({ environmentId, benchmarkId, runId });
   } catch (err) {
     wrapError(err);
   }
