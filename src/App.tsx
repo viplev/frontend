@@ -6,6 +6,7 @@ import { AppShell } from './features/shell/AppShell'
 import { ShellPlaceholderPage } from './features/shell/ShellPlaceholderPage'
 import { ProtectedHomePage } from './features/auth/ProtectedHomePage'
 import { EnvironmentsPage } from './features/environments/EnvironmentsPage'
+import { CreateEnvironmentPage } from './features/environments/CreateEnvironmentPage'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<ProtectedHomePage />} />
           <Route path="/environments" element={<EnvironmentsPage />} />
+          <Route path="/environments/new" element={<CreateEnvironmentPage />} />
           <Route
             path="/benchmarks"
             element={
