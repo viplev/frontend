@@ -265,11 +265,11 @@
   margin-top: 0.75rem;
 }
 
-.async-demo-actions {
-  margin-top: 0.9rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+@media (prefers-reduced-motion: reduce) {
+  .async-spinner {
+    animation: none;
+    border-top-color: #d4e1f3;
+  }
 }
 
 @keyframes async-spin {

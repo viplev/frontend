@@ -14,16 +14,16 @@ interface ErrorStateProps {
   title?: string
   message: string
   retryLabel?: string
-  onRetry: () => void
+  onRetry?: () => void
 }
 
 interface AsyncStateViewProps {
   isLoading: boolean
   error: string | null
   isEmpty: boolean
-  onRetry: () => void
-  emptyTitle: string
-  emptyDescription: string
+  onRetry?: () => void
+  emptyTitle?: string
+  emptyDescription?: string
   loadingTitle?: string
   loadingDescription?: string
   children: ReactNode
@@ -61,9 +61,11 @@ export function ErrorState({
     <section className="async-state async-state-error" role="alert">
       <h2>{title}</h2>
       <p>{message}</p>
-      <button type="button" className="auth-button async-retry" onClick={onRetry}>
-        {retryLabel}
-      </button>
+      {onRetry ? (
+        <button type="button" className="auth-button async-retry" onClick={onRetry}>
+          {retryLabel}
+        </button>
+      ) : null}
     </section>
   )
 }
@@ -90,7 +92,12 @@ export function AsyncStateView({
   }
 
   if (isEmpty) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} />
+    return (
+      <EmptyState
+        title={emptyTitle ?? 'No data available'}
+        description={emptyDescription ?? 'There is nothing to show yet.'}
+      />
+    )
   }
 
   return <>{children}</>
