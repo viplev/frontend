@@ -3,58 +3,7 @@ import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentD
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import { EnvironmentsLoadError, listEnvironments } from './service'
 
-function DockerLogo() {
-  return (
-    <svg
-      className="environment-platform-icon"
-      viewBox="0 0 64 48"
-      aria-hidden="true"
-    >
-      <rect x="6" y="18" width="8" height="8" rx="1.2" />
-      <rect x="16" y="18" width="8" height="8" rx="1.2" />
-      <rect x="26" y="18" width="8" height="8" rx="1.2" />
-      <rect x="16" y="8" width="8" height="8" rx="1.2" />
-      <rect x="26" y="8" width="8" height="8" rx="1.2" />
-      <path d="M35 20h7.4c3 0 5.2-1.2 6.9-3.4 1.3 1.1 1.6 3.1.8 5-1.4 3.4-4.8 6.4-10.2 6.4H21.5c-5.8 0-9.9-3-11.5-8h25z" />
-      <path d="M51 13.5c1.8-.9 3.2-2.7 3.6-5 1.7 1.9 2 4.7.7 7.4" />
-      <circle cx="44.5" cy="20.7" r="0.9" />
-    </svg>
-  )
-}
-
-function KubernetesLogo() {
-  return (
-    <svg
-      className="environment-platform-icon"
-      viewBox="0 0 32 32"
-      aria-hidden="true"
-    >
-      <path d="M16 3 26.8 9.2v13.6L16 29 5.2 22.8V9.2z" />
-      <circle cx="16" cy="16" r="5.3" />
-      <path d="m16 6.8 1.5 4.5M25.2 12.1l-4.6 1.2M22.7 22.8l-3.4-3.3M9.3 22.8l3.4-3.3M6.8 12.1l4.6 1.2M16 25.2l1.5-4.5M16 6.8l-1.5 4.5M25.2 12.1l-3.4 3.3M9.3 22.8l4.6-1.2M6.8 12.1l3.4 3.3M16 25.2l-1.5-4.5M22.7 22.8l-4.6-1.2" />
-    </svg>
-  )
-}
-
 function EnvironmentPlatform({ type }: { type: EnvironmentDTO['type'] }) {
-  if (type === 'docker') {
-    return (
-      <span className="environment-platform" title="Docker">
-        <DockerLogo />
-        <span className="sr-only">Docker</span>
-      </span>
-    )
-  }
-
-  if (type === 'kubernetes') {
-    return (
-      <span className="environment-platform" title="Kubernetes">
-        <KubernetesLogo />
-        <span className="sr-only">Kubernetes</span>
-      </span>
-    )
-  }
-
   return <span className="environment-type">{type}</span>
 }
 
