@@ -1,4 +1,5 @@
 import type { AuthSession } from './types'
+import { isTokenExpired } from './jwt'
 
 const AUTH_SESSION_STORAGE_KEY = 'viplev.auth.session'
 
@@ -11,6 +12,11 @@ export function loadAuthSession(): AuthSession | null {
   try {
     const parsed = JSON.parse(serialized) as Partial<AuthSession>
     if (!parsed.token || !parsed.email) {
+      return null
+    }
+
+    if (isTokenExpired(parsed.token)) {
+      clearAuthSession()
       return null
     }
 
