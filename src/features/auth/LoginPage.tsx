@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { AuthFailureDetail } from '../../auth/failure'
-import { resetAuthFailureState, subscribeToAuthFailure } from '../../auth/failure'
+import {
+  getActiveAuthFailureDetail,
+  resetAuthFailureState,
+  subscribeToAuthFailure,
+} from '../../auth/failure'
 import { loginWithCredentials } from '../../auth/service'
 import { saveAuthSession } from '../../auth/storage'
 
@@ -25,6 +29,11 @@ export function LoginPage() {
   const feedbackMessage = loginError ?? authRecoveryMessage
 
   useEffect(() => {
+    const pendingFailure = getActiveAuthFailureDetail()
+    if (pendingFailure) {
+      setAuthRecoveryMessage(pendingFailure.message)
+    }
+
     const unsubscribe = subscribeToAuthFailure((detail: AuthFailureDetail) => {
       setAuthRecoveryMessage(detail.message)
     })

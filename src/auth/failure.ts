@@ -8,6 +8,7 @@ export interface AuthFailureDetail {
 }
 
 let hasActiveAuthFailure = false
+let latestAuthFailureDetail: AuthFailureDetail | null = null
 
 function getMessage(reason: AuthFailureReason): string {
   if (reason === 'forbidden') {
@@ -22,15 +23,20 @@ export function publishAuthFailure(reason: AuthFailureReason): void {
     return
   }
 
+  latestAuthFailureDetail = {
+    reason,
+    message: getMessage(reason),
+  }
   hasActiveAuthFailure = true
   window.dispatchEvent(
     new CustomEvent<AuthFailureDetail>(AUTH_FAILURE_EVENT, {
-      detail: {
-        reason,
-        message: getMessage(reason),
-      },
+      detail: latestAuthFailureDetail,
     }),
   )
+}
+
+export function getActiveAuthFailureDetail(): AuthFailureDetail | null {
+  return latestAuthFailureDetail
 }
 
 export function subscribeToAuthFailure(
@@ -50,5 +56,6 @@ export function subscribeToAuthFailure(
 
 export function resetAuthFailureState(): void {
   hasActiveAuthFailure = false
+  latestAuthFailureDetail = null
 }
 

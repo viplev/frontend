@@ -29,10 +29,12 @@ function createAuthMiddleware(): Middleware {
         },
       }
     },
-    post: async ({ response }) => {
+    post: async ({ response, init }) => {
       if (response.status === 401 || response.status === 403) {
-        const hadSession = Boolean(loadAuthSession())
-        if (hadSession) {
+        const hadAuthenticatedRequest = new Headers(init.headers).has(
+          'Authorization',
+        )
+        if (hadAuthenticatedRequest) {
           clearAuthSession()
           publishAuthFailure(response.status === 403 ? 'forbidden' : 'unauthorized')
         }
