@@ -5,6 +5,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { AppShell } from './features/shell/AppShell'
 import { ShellPlaceholderPage } from './features/shell/ShellPlaceholderPage'
 import { ProtectedHomePage } from './features/auth/ProtectedHomePage'
+import { EnvironmentsPage } from './features/environments/EnvironmentsPage'
 import './App.css'
 
 function App() {
@@ -16,15 +17,7 @@ function App() {
       <Route element={<AuthGuard />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<ProtectedHomePage />} />
-          <Route
-            path="/environments"
-            element={
-              <ShellPlaceholderPage
-                title="Environments"
-                description="Environment overview and management will live here."
-              />
-            }
-          />
+          <Route path="/environments" element={<EnvironmentsPage />} />
           <Route
             path="/benchmarks"
             element={

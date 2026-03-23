@@ -82,9 +82,7 @@ export function AsyncStateView({
   children,
 }: AsyncStateViewProps) {
   if (isLoading) {
-    return (
-      <LoadingState title={loadingTitle} description={loadingDescription} />
-    )
+    return <LoadingState title={loadingTitle} description={loadingDescription} />
   }
 
   if (error) {

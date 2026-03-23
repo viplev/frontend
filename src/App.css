@@ -206,6 +206,47 @@
   color: #1f3347;
 }
 
+.environment-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.environment-card {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: #f8fbff;
+}
+
+.environment-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.environment-card-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #17324a;
+}
+
+.environment-card p {
+  margin: 0.45rem 0 0;
+  color: #3d4b5c;
+}
+
+.environment-type {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #b9d2f6;
+  background: #e8f1ff;
+  color: #1f4f8d;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+  padding: 0.15rem 0.5rem;
+}
+
 .async-state {
   border: 1px dashed #c7d4e3;
   border-radius: 10px;
