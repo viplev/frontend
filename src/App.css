@@ -246,3 +246,75 @@
   text-transform: capitalize;
   padding: 0.15rem 0.5rem;
 }
+
+.async-state {
+  border: 1px dashed #c7d4e3;
+  border-radius: 10px;
+  padding: 1rem;
+  background: #f9fbfe;
+}
+
+.async-state h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: #1f3347;
+}
+
+.async-state p {
+  margin: 0;
+  color: #3d4b5c;
+}
+
+.async-state-loading {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+  align-items: center;
+}
+
+.async-state-loading h2,
+.async-state-loading p {
+  grid-column: 2;
+}
+
+.async-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #d4e1f3;
+  border-top-color: #2a6fdb;
+  border-radius: 50%;
+  animation: async-spin 0.8s linear infinite;
+  grid-row: 1 / span 2;
+}
+
+.async-state-empty {
+  border-style: solid;
+}
+
+.async-state-error {
+  border: 1px solid #ef9a9a;
+  background: #fdecea;
+}
+
+.async-state-error h2,
+.async-state-error p {
+  color: #8a1f1b;
+}
+
+.async-retry {
+  margin-top: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .async-spinner {
+    animation: none;
+    border-top-color: #d4e1f3;
+  }
+}
+
+@keyframes async-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
