@@ -6,9 +6,10 @@ import { BenchmarkRunsApi } from '../generated/openapi/apis/BenchmarkRunsApi'
 import { EnvironmentApi } from '../generated/openapi/apis/EnvironmentApi'
 import { Configuration } from '../generated/openapi/runtime'
 import type { Middleware } from '../generated/openapi/runtime'
-import { clearAuthSession, loadAuthSession } from './storage'
+import { loadAuthSession } from './storage'
 import { getApiBaseUrl } from '../config/api'
 import { publishAuthFailure } from './failure'
+import { performLogoutTeardown } from './logout'
 
 type ApiConstructor<TApi> = new (configuration?: Configuration) => TApi
 
@@ -19,6 +20,13 @@ function createAuthMiddleware(): Middleware {
       const headers = new Headers(init.headers)
       if (session?.token) {
         headers.set('Authorization', `Bearer ${session.token}`)
+      } else {
+        const hasStaleAuthorization = headers.has('Authorization')
+        if (hasStaleAuthorization) {
+          performLogoutTeardown()
+          publishAuthFailure('unauthorized')
+          headers.delete('Authorization')
+        }
       }
 
       return {
@@ -35,7 +43,7 @@ function createAuthMiddleware(): Middleware {
           'Authorization',
         )
         if (hadAuthenticatedRequest) {
-          clearAuthSession()
+          performLogoutTeardown()
           publishAuthFailure(response.status === 403 ? 'forbidden' : 'unauthorized')
         }
       }
