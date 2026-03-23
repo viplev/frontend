@@ -1,7 +1,6 @@
-import { AuthApi } from '../generated/openapi/apis/AuthApi'
 import { ResponseError } from '../generated/openapi/runtime'
 import type { LoginCredentials, AuthSession } from './types'
-import { createApiConfiguration } from './client'
+import { createAuthApi } from './client'
 
 export class LoginError extends Error {
   constructor(message: string) {
@@ -13,7 +12,7 @@ export class LoginError extends Error {
 export async function loginWithCredentials(
   credentials: LoginCredentials,
 ): Promise<AuthSession> {
-  const authApi = new AuthApi(createApiConfiguration(null))
+  const authApi = createAuthApi()
 
   try {
     const response = await authApi.login({ loginDTO: credentials })
