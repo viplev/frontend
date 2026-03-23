@@ -6,9 +6,8 @@ import { BenchmarkRunsApi } from '../generated/openapi/apis/BenchmarkRunsApi'
 import { EnvironmentApi } from '../generated/openapi/apis/EnvironmentApi'
 import { Configuration } from '../generated/openapi/runtime'
 import type { Middleware } from '../generated/openapi/runtime'
-import { clearAuthSession } from './storage'
+import { clearAuthSession, loadAuthSession } from './storage'
 import { getApiBaseUrl } from '../config/api'
-import { loadAuthSession } from './storage'
 
 type ApiConstructor<TApi> = new (configuration?: Configuration) => TApi
 
