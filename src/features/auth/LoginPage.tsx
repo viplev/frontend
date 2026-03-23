@@ -32,7 +32,11 @@ export function LoginPage() {
       saveAuthSession(session)
       setPassword('')
 
-      const redirectTo = state?.from && state.from !== '/login' ? state.from : '/'
+      const from = state?.from
+      const redirectTo =
+        typeof from === 'string' && from.startsWith('/') && from !== '/login'
+          ? from
+          : '/'
       navigate(redirectTo, { replace: true })
     } catch (error: unknown) {
       if (error instanceof Error) {
