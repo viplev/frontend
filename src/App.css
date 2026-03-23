@@ -67,6 +67,10 @@
   cursor: not-allowed;
 }
 
+.auth-button + .auth-button {
+  margin-top: 0.5rem;
+}
+
 .auth-error {
   margin: 0.25rem 0 0;
   color: #b42318;
