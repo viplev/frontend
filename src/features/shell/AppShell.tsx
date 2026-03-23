@@ -1,12 +1,26 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuthSession } from '../../auth/AuthSessionContext'
+import type { AuthFailureDetail } from '../../auth/failure'
 import {
   getActiveAuthFailureDetail,
   resetAuthFailureState,
+  subscribeToAuthFailure,
 } from '../../auth/failure'
 
 function ShellGlobalAlert() {
-  const detail = getActiveAuthFailureDetail()
+  const [detail, setDetail] = useState<AuthFailureDetail | null>(() =>
+    getActiveAuthFailureDetail(),
+  )
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthFailure((nextDetail: AuthFailureDetail) => {
+      setDetail(nextDetail)
+    })
+
+    return unsubscribe
+  }, [])
+
   if (!detail) {
     return null
   }
@@ -17,7 +31,10 @@ function ShellGlobalAlert() {
       <button
         type="button"
         className="shell-alert-dismiss"
-        onClick={() => resetAuthFailureState()}
+        onClick={() => {
+          resetAuthFailureState()
+          setDetail(null)
+        }}
       >
         Dismiss
       </button>
