@@ -248,8 +248,8 @@
 }
 
 .environment-platform {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   border: 1px solid #b9d2f6;
   background: #e8f1ff;
@@ -260,8 +260,8 @@
 }
 
 .environment-platform-icon {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 
 .environment-platform-icon path,
