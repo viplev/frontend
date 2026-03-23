@@ -1,34 +1,104 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import type { FormEvent } from 'react'
+import { loginWithCredentials } from './auth/service'
+import { loadAuthSession, saveAuthSession } from './auth/storage'
+import type { AuthSession } from './auth/types'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    loadAuthSession(),
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (isSubmitting) {
+      return
+    }
+
+    setLoginError(null)
+    setIsSubmitting(true)
+
+    try {
+      const authenticatedSession = await loginWithCredentials({
+        email,
+        password,
+      })
+      saveAuthSession(authenticatedSession)
+      setSession(authenticatedSession)
+      setPassword('')
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setLoginError(error.message)
+      } else {
+        setLoginError('Sign-in failed.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (session) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card">
+          <h1>VIPLEV</h1>
+          <p className="auth-text">Authenticated session initialized.</p>
+          <p className="auth-session">
+            Signed in as <strong>{session.email}</strong>
+          </p>
+        </section>
+      </main>
+    )
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+    <main className="auth-shell">
+      <section className="auth-card">
+        <h1>VIPLEV Sign in</h1>
+        <p className="auth-text">
+          Sign in with your email and password to access protected features.
         </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label className="auth-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            className="auth-input"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+
+          <label className="auth-label" htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            className="auth-input"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+
+          {loginError ? <p className="auth-error">{loginError}</p> : null}
+
+          <button type="submit" className="auth-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+      </section>
+    </main>
   )
 }
 
