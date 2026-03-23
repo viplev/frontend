@@ -7,17 +7,17 @@ function DockerLogo() {
   return (
     <svg
       className="environment-platform-icon"
-      viewBox="0 0 32 24"
+      viewBox="0 0 64 48"
       aria-hidden="true"
     >
-      <rect x="3" y="9" width="4" height="4" rx="0.8" />
-      <rect x="8" y="9" width="4" height="4" rx="0.8" />
-      <rect x="13" y="9" width="4" height="4" rx="0.8" />
-      <rect x="18" y="9" width="4" height="4" rx="0.8" />
-      <rect x="8" y="4" width="4" height="4" rx="0.8" />
-      <rect x="13" y="4" width="4" height="4" rx="0.8" />
-      <rect x="18" y="4" width="4" height="4" rx="0.8" />
-      <path d="M23 12c1.5 0 2.7-.2 3.7-1.1.5.8.4 2.1-.2 3.2-.9 1.7-2.6 3-5.1 3H10.6c-3 0-5-1.6-5.6-4h18z" />
+      <rect x="6" y="18" width="8" height="8" rx="1.2" />
+      <rect x="16" y="18" width="8" height="8" rx="1.2" />
+      <rect x="26" y="18" width="8" height="8" rx="1.2" />
+      <rect x="16" y="8" width="8" height="8" rx="1.2" />
+      <rect x="26" y="8" width="8" height="8" rx="1.2" />
+      <path d="M35 20h7.4c3 0 5.2-1.2 6.9-3.4 1.3 1.1 1.6 3.1.8 5-1.4 3.4-4.8 6.4-10.2 6.4H21.5c-5.8 0-9.9-3-11.5-8h25z" />
+      <path d="M51 13.5c1.8-.9 3.2-2.7 3.6-5 1.7 1.9 2 4.7.7 7.4" />
+      <circle cx="44.5" cy="20.7" r="0.9" />
     </svg>
   )
 }
