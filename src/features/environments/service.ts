@@ -29,7 +29,7 @@ function readErrorMessage(
   }
 
   if (error.response.status >= 500) {
-    return `Server error while ${action === 'load' ? 'loading' : 'creating'} environment.`
+    return `Server error while ${action === 'load' ? 'loading environments' : 'creating environment'}.`
   }
 
   return `Unable to ${action === 'load' ? 'load environments' : 'create environment'} right now.`
