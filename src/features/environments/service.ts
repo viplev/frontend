@@ -21,7 +21,7 @@ function readErrorMessage(
   action: 'load' | 'create',
 ): string {
   if (action === 'create' && error.response.status === 400) {
-    return 'Please fix the highlighted fields and try again.'
+    return 'There was a problem with your request. Please review the form and try again.'
   }
 
   if (error.response.status === 404) {
