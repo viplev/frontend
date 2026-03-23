@@ -1,11 +1,11 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { loadAuthSession } from './storage'
+import { useAuthSession } from './AuthSessionContext'
 
 export function AuthGuard() {
   const location = useLocation()
-  const session = loadAuthSession()
+  const { isAuthenticated } = useAuthSession()
 
-  if (!session) {
+  if (!isAuthenticated) {
     return (
       <Navigate
         to="/login"

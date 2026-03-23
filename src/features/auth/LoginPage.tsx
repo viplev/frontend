@@ -7,14 +7,15 @@ import {
   resetAuthFailureState,
   subscribeToAuthFailure,
 } from '../../auth/failure'
+import { useAuthSession } from '../../auth/AuthSessionContext'
 import { loginWithCredentials } from '../../auth/service'
-import { saveAuthSession } from '../../auth/storage'
 
 interface LoginLocationState {
   from?: string
 }
 
 export function LoginPage() {
+  const { setSession } = useAuthSession()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LoginLocationState | null
@@ -52,7 +53,7 @@ export function LoginPage() {
 
     try {
       const session = await loginWithCredentials({ email, password })
-      saveAuthSession(session)
+      setSession(session)
       resetAuthFailureState()
       setAuthRecoveryMessage(null)
       setPassword('')

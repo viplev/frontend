@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { clearAuthSession, loadAuthSession } from '../../auth/storage'
+import { useAuthSession } from '../../auth/AuthSessionContext'
 
 export function ProtectedHomePage() {
   const navigate = useNavigate()
-  const session = loadAuthSession()
+  const { session, logout } = useAuthSession()
 
   const handleLogout = () => {
-    clearAuthSession()
+    logout()
     navigate('/login', { replace: true })
   }
 

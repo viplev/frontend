@@ -1,10 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { loadAuthSession } from './storage'
+import { useAuthSession } from './AuthSessionContext'
 
 export function PublicOnlyGuard() {
-  const session = loadAuthSession()
+  const { isAuthenticated } = useAuthSession()
 
-  if (session) {
+  if (isAuthenticated) {
     return <Navigate to="/" replace />
   }
 
