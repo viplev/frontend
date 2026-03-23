@@ -8,6 +8,7 @@ import { Configuration } from '../generated/openapi/runtime'
 import type { Middleware } from '../generated/openapi/runtime'
 import { clearAuthSession, loadAuthSession } from './storage'
 import { getApiBaseUrl } from '../config/api'
+import { publishAuthFailure } from './failure'
 
 type ApiConstructor<TApi> = new (configuration?: Configuration) => TApi
 
@@ -28,9 +29,15 @@ function createAuthMiddleware(): Middleware {
         },
       }
     },
-    post: async ({ response }) => {
-      if (response.status === 401) {
-        clearAuthSession()
+    post: async ({ response, init }) => {
+      if (response.status === 401 || response.status === 403) {
+        const hadAuthenticatedRequest = new Headers(init.headers).has(
+          'Authorization',
+        )
+        if (hadAuthenticatedRequest) {
+          clearAuthSession()
+          publishAuthFailure(response.status === 403 ? 'forbidden' : 'unauthorized')
+        }
       }
 
       return response
