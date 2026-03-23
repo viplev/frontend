@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import { EnvironmentsLoadError, listEnvironments } from './service'
@@ -16,6 +16,14 @@ function EnvironmentCard({ environment }: { environment: EnvironmentDTO }) {
         <EnvironmentPlatform type={environment.type} />
       </header>
       <p>{environment.description?.trim() || 'No description provided.'}</p>
+      {environment.id ? (
+        <Link
+          to={`/environments/${environment.id}`}
+          className="shell-alert-dismiss environment-view-details"
+        >
+          View details
+        </Link>
+      ) : null}
     </article>
   )
 }

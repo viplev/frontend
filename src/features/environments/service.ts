@@ -1,5 +1,6 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
+import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
 import { createEnvironmentApi } from '../../auth/client'
 
 export class EnvironmentsLoadError extends Error {
@@ -13,6 +14,16 @@ export class CreateEnvironmentError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'CreateEnvironmentError'
+  }
+}
+
+export class EnvironmentDetailsError extends Error {
+  notFound: boolean
+
+  constructor(message: string, notFound = false) {
+    super(message)
+    this.name = 'EnvironmentDetailsError'
+    this.notFound = notFound
   }
 }
 
@@ -68,6 +79,50 @@ export async function createEnvironment(
 
     throw new CreateEnvironmentError(
       'Network error while creating environment. Please try again.',
+    )
+  }
+}
+
+export async function getEnvironmentDetails(
+  environmentId: string,
+): Promise<EnvironmentDTO> {
+  const environmentApi = createEnvironmentApi()
+
+  try {
+    return await environmentApi.getEnvironment({ environmentId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new EnvironmentDetailsError('Environment not found.', true)
+      }
+
+      throw new EnvironmentDetailsError(readErrorMessage(error, 'load'))
+    }
+
+    throw new EnvironmentDetailsError(
+      'Network error while loading environment details. Please try again.',
+    )
+  }
+}
+
+export async function getEnvironmentServices(
+  environmentId: string,
+): Promise<Array<ServiceDTO>> {
+  const environmentApi = createEnvironmentApi()
+
+  try {
+    return await environmentApi.listServices({ environmentId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new EnvironmentDetailsError('Environment not found.', true)
+      }
+
+      throw new EnvironmentDetailsError('Unable to load services right now.')
+    }
+
+    throw new EnvironmentDetailsError(
+      'Network error while loading services. Please try again.',
     )
   }
 }
