@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import { loadAuthSession, saveAuthSession } from './storage'
+import { isTokenExpired } from './jwt'
 import { performLogoutTeardown, subscribeToLogoutResets } from './logout'
 import type { AuthSession } from './types'
 
@@ -34,7 +35,6 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     performLogoutTeardown()
-    setSessionState(null)
   }, [])
 
   useEffect(() => {
@@ -44,6 +44,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (session && isTokenExpired(session.token)) {
+      performLogoutTeardown()
+    }
+  }, [session])
 
   const value = useMemo<AuthSessionContextValue>(
     () => ({

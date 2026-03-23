@@ -20,6 +20,13 @@ function createAuthMiddleware(): Middleware {
       const headers = new Headers(init.headers)
       if (session?.token) {
         headers.set('Authorization', `Bearer ${session.token}`)
+      } else {
+        const hasStaleAuthorization = headers.has('Authorization')
+        if (hasStaleAuthorization) {
+          performLogoutTeardown()
+          publishAuthFailure('unauthorized')
+          headers.delete('Authorization')
+        }
       }
 
       return {
