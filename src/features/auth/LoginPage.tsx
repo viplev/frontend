@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import type { AuthFailureDetail } from '../../auth/failure'
+import { resetAuthFailureState, subscribeToAuthFailure } from '../../auth/failure'
 import { loginWithCredentials } from '../../auth/service'
 import { saveAuthSession } from '../../auth/storage'
 
@@ -17,6 +19,18 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [authRecoveryMessage, setAuthRecoveryMessage] = useState<string | null>(
+    null,
+  )
+  const feedbackMessage = loginError ?? authRecoveryMessage
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthFailure((detail: AuthFailureDetail) => {
+      setAuthRecoveryMessage(detail.message)
+    })
+
+    return unsubscribe
+  }, [])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -30,6 +44,8 @@ export function LoginPage() {
     try {
       const session = await loginWithCredentials({ email, password })
       saveAuthSession(session)
+      resetAuthFailureState()
+      setAuthRecoveryMessage(null)
       setPassword('')
 
       const from = state?.from
@@ -57,6 +73,15 @@ export function LoginPage() {
           Sign in with your email and password to access protected features.
         </p>
         <form className="auth-form" onSubmit={handleSubmit}>
+          {feedbackMessage ? (
+            <p
+              className={`auth-notice${loginError ? ' auth-notice-error' : ''}`}
+              role={loginError ? 'alert' : 'status'}
+            >
+              {feedbackMessage}
+            </p>
+          ) : null}
+
           <label className="auth-label" htmlFor="email">
             Email
           </label>
@@ -82,8 +107,6 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-
-          {loginError ? <p className="auth-error">{loginError}</p> : null}
 
           <button type="submit" className="auth-button" disabled={isSubmitting}>
             {isSubmitting ? 'Signing in...' : 'Sign in'}

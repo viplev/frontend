@@ -71,10 +71,20 @@
   margin-top: 0.5rem;
 }
 
-.auth-error {
-  margin: 0.25rem 0 0;
-  color: #b42318;
+.auth-notice {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #f1b24b;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #7a2e0b;
   font-size: 0.9rem;
+}
+
+.auth-notice-error {
+  border-color: #ef9a9a;
+  background: #fdecea;
+  color: #b42318;
 }
 
 .auth-session {
