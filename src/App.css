@@ -446,6 +446,21 @@
   margin: 0;
 }
 
+.benchmark-empty-cta {
+  display: block;
+  text-decoration: none;
+}
+
+.benchmark-empty-cta:hover {
+  border-color: #9fc1ea;
+  background: #f3f8ff;
+}
+
+.benchmark-empty-cta h2,
+.benchmark-empty-cta p {
+  color: inherit;
+}
+
 .benchmark-form {
   display: flex;
   flex-direction: column;

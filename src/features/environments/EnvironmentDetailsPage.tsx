@@ -293,73 +293,81 @@ export function EnvironmentDetailsPage() {
           <AsyncStateView
             isLoading={isBenchmarksLoading}
             error={benchmarksError}
-            isEmpty={!isBenchmarksLoading && !benchmarksError && sortedBenchmarks.length === 0}
-            emptyTitle="No benchmarks yet"
-            emptyDescription="Create a benchmark to start running scenarios in this environment."
+            isEmpty={false}
           >
-            <div className="environment-benchmarks-table-wrap">
-              <table className="environment-benchmarks-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                    <th>Edit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedBenchmarks.map((benchmark) => {
-                    const isRunning = Boolean(
-                      benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
-                    )
+            {sortedBenchmarks.length === 0 ? (
+              <Link
+                className="async-state async-state-empty benchmark-empty-cta"
+                to={`/environments/${environmentId}/benchmarks/new`}
+              >
+                <h2>No benchmarks yet</h2>
+                <p>Create a benchmark to start running scenarios in this environment.</p>
+              </Link>
+            ) : (
+              <div className="environment-benchmarks-table-wrap">
+                <table className="environment-benchmarks-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                      <th>Edit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedBenchmarks.map((benchmark) => {
+                      const isRunning = Boolean(
+                        benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
+                      )
 
-                    return (
-                      <tr key={benchmark.id ?? benchmark.name}>
-                        <td>{benchmark.name}</td>
-                        <td>{benchmark.description?.trim() || 'No description provided.'}</td>
-                        <td>
-                          {isRunning ? (
-                            <span className="benchmark-status-active">Active run</span>
-                          ) : (
-                            'Idle'
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="auth-button benchmark-table-action"
-                            onClick={() => navigate('/benchmarks')}
-                            disabled={isRunning || !benchmark.id}
-                            title={
-                              isRunning
-                                ? 'This benchmark is already running in this environment.'
-                                : undefined
-                            }
-                          >
-                            Start benchmark
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="shell-alert-dismiss benchmark-table-action-secondary"
-                            onClick={() =>
-                              navigate(
-                                `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
-                              )
-                            }
-                            disabled={!benchmark.id}
-                          >
-                            Edit
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr key={benchmark.id ?? benchmark.name}>
+                          <td>{benchmark.name}</td>
+                          <td>{benchmark.description?.trim() || 'No description provided.'}</td>
+                          <td>
+                            {isRunning ? (
+                              <span className="benchmark-status-active">Active run</span>
+                            ) : (
+                              'Idle'
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="auth-button benchmark-table-action"
+                              onClick={() => navigate('/benchmarks')}
+                              disabled={isRunning || !benchmark.id}
+                              title={
+                                isRunning
+                                  ? 'This benchmark is already running in this environment.'
+                                  : undefined
+                              }
+                            >
+                              Start benchmark
+                            </button>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="shell-alert-dismiss benchmark-table-action-secondary"
+                              onClick={() =>
+                                navigate(
+                                  `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
+                                )
+                              }
+                              disabled={!benchmark.id}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </AsyncStateView>
         </section>
 
