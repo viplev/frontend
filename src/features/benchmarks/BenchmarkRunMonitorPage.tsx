@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import {
@@ -80,7 +80,11 @@ function formatRatePercent(value?: number): string {
 }
 
 function formatBytes(value?: number): string {
-  if (value == null || value <= 0) {
+  if (value == null || Number.isNaN(value)) {
+    return 'n/a'
+  }
+
+  if (value <= 0) {
     return '0 B'
   }
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -174,6 +178,8 @@ export function BenchmarkRunMonitorPage() {
   } | null>(null)
   const [isStoppingRun, setIsStoppingRun] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
+  const isMountedRef = useRef(true)
+  const latestRunDetailsRequestRef = useRef(0)
   const runStatus = runData?.status
   const runStatusVariant = toStatusVariant(runStatus)
   const runStatusText = formatRunStatus(runStatus)
@@ -191,13 +197,17 @@ export function BenchmarkRunMonitorPage() {
 
   const loadRunDetails = useCallback(
     async (mode: 'initial' | 'poll' = 'initial') => {
+      const requestId = ++latestRunDetailsRequestRef.current
+
       if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
-        setLoadError('Environment ID, benchmark ID, or run ID is missing.')
-        setIsRunLoading(false)
+        if (isMountedRef.current) {
+          setLoadError('Environment ID, benchmark ID, or run ID is missing.')
+          setIsRunLoading(false)
+        }
         return
       }
 
-      if (mode === 'initial') {
+      if (mode === 'initial' && isMountedRef.current) {
         setIsRunLoading(true)
         setLoadError(null)
         setPollError(null)
@@ -205,11 +215,19 @@ export function BenchmarkRunMonitorPage() {
 
       try {
         const runDetails = await getBenchmarkRunDetails(environmentId, benchmarkId, runId)
+        if (!isMountedRef.current || requestId !== latestRunDetailsRequestRef.current) {
+          return
+        }
+
         applyRunDetails(runDetails)
         if (mode === 'poll') {
           setPollError(null)
         }
       } catch (error: unknown) {
+        if (!isMountedRef.current || requestId !== latestRunDetailsRequestRef.current) {
+          return
+        }
+
         const message =
           error instanceof BenchmarkRunDetailsError
             ? error.message
@@ -221,13 +239,23 @@ export function BenchmarkRunMonitorPage() {
           setLoadError(message)
         }
       } finally {
-        if (mode === 'initial') {
+        if (
+          mode === 'initial' &&
+          isMountedRef.current &&
+          requestId === latestRunDetailsRequestRef.current
+        ) {
           setIsRunLoading(false)
         }
       }
     },
     [applyRunDetails, benchmarkId, environmentId, runId],
   )
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
@@ -277,12 +305,30 @@ export function BenchmarkRunMonitorPage() {
       return
     }
 
-    const timer = window.setInterval(() => {
-      void loadRunDetails('poll')
-    }, POLL_INTERVAL_MS)
+    let cancelled = false
+    let timeoutId: number | undefined
+
+    const pollOnce = async () => {
+      if (cancelled) {
+        return
+      }
+
+      await loadRunDetails('poll')
+
+      if (!cancelled) {
+        timeoutId = window.setTimeout(() => {
+          void pollOnce()
+        }, POLL_INTERVAL_MS)
+      }
+    }
+
+    void pollOnce()
 
     return () => {
-      window.clearInterval(timer)
+      cancelled = true
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
     }
   }, [loadRunDetails, shouldPoll])
 
@@ -527,8 +573,8 @@ export function BenchmarkRunMonitorPage() {
                 <p>No HTTP metrics available yet.</p>
               ) : (
                 <ul className="run-metric-list">
-                  {topHttp.map((metric, index) => (
-                    <li key={`${metric.requestGroup ?? 'group'}-${index}`}>
+                  {topHttp.map((metric) => (
+                    <li key={`${metric.requestGroup ?? ''}|${metric.url ?? ''}`}>
                       <strong>{metric.requestGroup ?? metric.url ?? 'Request group'}</strong>
                       <span>
                         {metric.totalRequests ?? 0} req, {formatRatePercent(metric.errorRate)} err
@@ -545,8 +591,8 @@ export function BenchmarkRunMonitorPage() {
                 <p>No host metrics available yet.</p>
               ) : (
                 <ul className="run-metric-list">
-                  {hostMetrics.slice(0, 4).map((host, index) => (
-                    <li key={`${host.hostId ?? 'host'}-${index}`}>
+                  {hostMetrics.slice(0, 4).map((host) => (
+                    <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
                       <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
                       <span>
                         CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
