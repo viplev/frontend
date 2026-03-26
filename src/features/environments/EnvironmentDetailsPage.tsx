@@ -242,43 +242,54 @@ export function EnvironmentDetailsPage() {
             emptyTitle="No benchmarks yet"
             emptyDescription="Create a benchmark to start running scenarios in this environment."
           >
-            <section className="benchmark-list">
-              {sortedBenchmarks.map((benchmark) => {
-                const isRunning = Boolean(
-                  benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
-                )
+            <div className="environment-benchmarks-table-wrap">
+              <table className="environment-benchmarks-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedBenchmarks.map((benchmark) => {
+                    const isRunning = Boolean(
+                      benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
+                    )
 
-                return (
-                  <article
-                    key={benchmark.id ?? benchmark.name}
-                    className={`benchmark-card ${isRunning ? 'benchmark-card-active' : ''}`}
-                  >
-                    <header className="benchmark-card-header">
-                      <h2>{benchmark.name}</h2>
-                      {isRunning ? (
-                        <span className="benchmark-status-active">Active run</span>
-                      ) : null}
-                    </header>
-                    <p>{benchmark.description?.trim() || 'No description provided.'}</p>
-                    <div className="benchmark-card-actions">
-                      <button
-                        type="button"
-                        className="auth-button"
-                        onClick={() => navigate('/benchmarks')}
-                        disabled={isRunning || !benchmark.id}
-                        title={
-                          isRunning
-                            ? 'This benchmark is already running in this environment.'
-                            : undefined
-                        }
-                      >
-                        Start benchmark
-                      </button>
-                    </div>
-                  </article>
-                )
-              })}
-            </section>
+                    return (
+                      <tr key={benchmark.id ?? benchmark.name}>
+                        <td>{benchmark.name}</td>
+                        <td>{benchmark.description?.trim() || 'No description provided.'}</td>
+                        <td>
+                          {isRunning ? (
+                            <span className="benchmark-status-active">Active run</span>
+                          ) : (
+                            'Idle'
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="auth-button benchmark-table-action"
+                            onClick={() => navigate('/benchmarks')}
+                            disabled={isRunning || !benchmark.id}
+                            title={
+                              isRunning
+                                ? 'This benchmark is already running in this environment.'
+                                : undefined
+                            }
+                          >
+                            Start benchmark
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </AsyncStateView>
         </section>
 
