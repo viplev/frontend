@@ -163,9 +163,17 @@ export function EnvironmentDetailsPage() {
             Service overview refreshes automatically every 15 seconds.
           </p>
         </div>
-        <Link className="shell-alert-dismiss" to="/environments">
-          Back
-        </Link>
+        <div className="environment-header-actions">
+          <Link
+            className="auth-button environment-inline-action"
+            to={`/environments/${environmentId}/benchmarks`}
+          >
+            View benchmarks
+          </Link>
+          <Link className="shell-alert-dismiss" to="/environments">
+            Back
+          </Link>
+        </div>
       </div>
 
       <AsyncStateView

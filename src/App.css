@@ -368,6 +368,71 @@
   border-bottom: 0;
 }
 
+.environment-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.benchmark-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.benchmark-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+}
+
+.benchmark-card {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: #f8fbff;
+}
+
+.benchmark-card-active {
+  border-color: #86d19f;
+  background: #ecfbf1;
+}
+
+.benchmark-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.benchmark-card-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #17324a;
+}
+
+.benchmark-card p {
+  margin: 0.45rem 0 0.7rem;
+  color: #3d4b5c;
+}
+
+.benchmark-status-active {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #86d19f;
+  background: #dff7e8;
+  color: #1e4a2e;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.benchmark-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .async-state {
   border: 1px dashed #c7d4e3;
   border-radius: 10px;
