@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
   createBenchmark,
@@ -50,7 +50,6 @@ export function BenchmarkFormPage() {
     benchmarkId?: string
   }>()
   const navigate = useNavigate()
-  const location = useLocation()
   const isEditMode = Boolean(benchmarkId)
 
   const [values, setValues] = useState<BenchmarkFormValues>({
@@ -63,6 +62,7 @@ export function BenchmarkFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [retryAttempt, setRetryAttempt] = useState(0)
 
   useEffect(() => {
     if (!isEditMode || !benchmarkId) {
@@ -114,7 +114,7 @@ export function BenchmarkFormPage() {
     return () => {
       isActive = false
     }
-  }, [benchmarkId, environmentId, isEditMode])
+  }, [benchmarkId, environmentId, isEditMode, retryAttempt])
 
   const handleChange =
     (key: keyof BenchmarkFormValues) =>
@@ -163,7 +163,6 @@ export function BenchmarkFormPage() {
       navigate(`/environments/${environmentId}`, {
         replace: true,
         state: {
-          ...(location.state as object | null),
           benchmarkNotice: {
             type: isEditMode ? 'updated' : 'created',
             name: saved.name,
@@ -200,8 +199,7 @@ export function BenchmarkFormPage() {
         isEmpty={false}
         onRetry={() => {
           if (isEditMode) {
-            setIsLoading(true)
-            setLoadError(null)
+            setRetryAttempt((current) => current + 1)
           }
         }}
         loadingTitle="Loading benchmark"

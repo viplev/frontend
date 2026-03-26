@@ -51,18 +51,30 @@
   border-color: #4895ef;
 }
 
-.auth-button {
-  margin-top: 0.5rem;
+.auth-button,
+.shell-alert-dismiss {
   border: 0;
   border-radius: 8px;
   padding: 0.7rem 0.9rem;
   font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.2;
   color: #ffffff;
   background: #2a6fdb;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.auth-button:disabled {
+.auth-button {
+  margin-top: 0.5rem;
+  background: #2a6fdb;
+}
+
+.auth-button:disabled,
+.shell-alert-dismiss:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
@@ -181,12 +193,25 @@
 }
 
 .shell-alert-dismiss {
-  border: 1px solid #d6a03f;
-  border-radius: 6px;
-  background: #ffe9bf;
-  color: #6f2d12;
-  padding: 0.35rem 0.55rem;
-  cursor: pointer;
+  margin-top: 0;
+  background: #94a3b8;
+  color: #0f172a;
+}
+
+.shell-alert-dismiss:hover,
+.shell-alert-dismiss:focus-visible {
+  background: #cbd5e1;
+}
+
+.benchmark-table-action-secondary {
+  margin: 0;
+  background: #f4b36a;
+  color: #7c2d12;
+}
+
+.benchmark-table-action-secondary:hover,
+.benchmark-table-action-secondary:focus-visible {
+  background: #f8c38a;
 }
 
 .shell-content {
@@ -272,10 +297,26 @@
   border-radius: 10px;
   background: #ecfbf1;
   color: #1e4a2e;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .environment-created-notice p {
   margin: 0;
+  flex: 1 1 320px;
+}
+
+.environment-created-dismiss {
+  margin-left: auto;
+  background: #a7d9b7;
+  color: #1e4a2e;
+}
+
+.environment-created-dismiss:hover,
+.environment-created-dismiss:focus-visible {
+  background: #92cea6;
 }
 
 .environment-created-detail {
@@ -440,10 +481,18 @@
 
 .benchmark-table-action {
   margin: 0;
+  background: #16a34a;
 }
 
-.benchmark-table-action-secondary {
-  margin: 0;
+.benchmark-table-action:hover,
+.benchmark-table-action:focus-visible {
+  background: #15803d;
+}
+
+.benchmark-table-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .benchmark-empty-cta {
@@ -484,6 +533,13 @@
   display: flex;
   gap: 0.6rem;
   margin-top: 0.4rem;
+  align-items: center;
+}
+
+.benchmark-form-actions .auth-button,
+.benchmark-form-actions .shell-alert-dismiss {
+  margin-top: 0;
+  min-height: 40px;
 }
 
 .async-state {

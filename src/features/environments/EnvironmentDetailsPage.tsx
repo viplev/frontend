@@ -203,6 +203,25 @@ export function EnvironmentDetailsPage() {
     [benchmarks],
   )
 
+  const benchmarkNoticeCard = benchmarkNotice ? (
+    <section className="environment-created-notice" role="status">
+      <p>
+        Benchmark <strong>{benchmarkNotice.name}</strong>{' '}
+        {benchmarkNotice.type === 'created' ? 'was created' : 'was updated'} successfully.
+      </p>
+      <button
+        type="button"
+        className="shell-alert-dismiss environment-created-dismiss"
+        onClick={() => {
+          setBenchmarkNotice(null)
+          navigate(location.pathname, { replace: true })
+        }}
+      >
+        Dismiss
+      </button>
+    </section>
+  ) : null
+
   if (notFound) {
     return (
       <article className="shell-page">
@@ -241,25 +260,6 @@ export function EnvironmentDetailsPage() {
         }}
         loadingTitle="Loading environment details"
       >
-        {benchmarkNotice ? (
-          <section className="environment-created-notice" role="status">
-            <p>
-              Benchmark <strong>{benchmarkNotice.name}</strong>{' '}
-              {benchmarkNotice.type === 'created' ? 'was created' : 'was updated'} successfully.
-            </p>
-            <button
-              type="button"
-              className="shell-alert-dismiss"
-              onClick={() => {
-                setBenchmarkNotice(null)
-                navigate(location.pathname, { replace: true })
-              }}
-            >
-              Dismiss
-            </button>
-          </section>
-        ) : null}
-
         <section className="environment-detail-grid">
           <div>
             <p className="shell-context-label">Type</p>
@@ -290,6 +290,7 @@ export function EnvironmentDetailsPage() {
               Create benchmark
             </button>
           </div>
+          {benchmarkNotice ? benchmarkNoticeCard : null}
           <AsyncStateView
             isLoading={isBenchmarksLoading}
             error={benchmarksError}
@@ -311,8 +312,7 @@ export function EnvironmentDetailsPage() {
                       <th>Name</th>
                       <th>Description</th>
                       <th>Status</th>
-                      <th>Action</th>
-                      <th>Edit</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -333,33 +333,33 @@ export function EnvironmentDetailsPage() {
                             )}
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="auth-button benchmark-table-action"
-                              onClick={() => navigate('/benchmarks')}
-                              disabled={isRunning || !benchmark.id}
-                              title={
-                                isRunning
-                                  ? 'This benchmark is already running in this environment.'
-                                  : undefined
-                              }
-                            >
-                              Start benchmark
-                            </button>
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="shell-alert-dismiss benchmark-table-action-secondary"
-                              onClick={() =>
-                                navigate(
-                                  `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
-                                )
-                              }
-                              disabled={!benchmark.id}
-                            >
-                              Edit
-                            </button>
+                            <div className="benchmark-table-actions">
+                              <button
+                                type="button"
+                                className="auth-button benchmark-table-action"
+                                onClick={() => navigate('/benchmarks')}
+                                disabled={isRunning || !benchmark.id}
+                                title={
+                                  isRunning
+                                    ? 'This benchmark is already running in this environment.'
+                                    : undefined
+                                }
+                              >
+                                Start benchmark
+                              </button>
+                              <button
+                                type="button"
+                                className="shell-alert-dismiss benchmark-table-action-secondary"
+                                onClick={() =>
+                                  navigate(
+                                    `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
+                                  )
+                                }
+                                disabled={!benchmark.id}
+                              >
+                                Edit
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
