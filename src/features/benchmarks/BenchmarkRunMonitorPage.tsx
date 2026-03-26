@@ -1,12 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import {
+  BenchmarkRunDetailsError,
   getBenchmark,
   getBenchmarkRunDetails,
-  BenchmarkRunDetailsError,
+  stopBenchmarkRun,
+  StopBenchmarkRunError,
 } from './service'
+import {
+  BenchmarkRunDTOStatusEnum,
+  type BenchmarkRunDTO,
+} from '../../generated/openapi/models/BenchmarkRunDTO'
+import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
+import type { DerivedHostSummaryDTO } from '../../generated/openapi/models/DerivedHostSummaryDTO'
+import type { DerivedHttpSummaryDTO } from '../../generated/openapi/models/DerivedHttpSummaryDTO'
+import type { DerivedVusSummaryDTO } from '../../generated/openapi/models/DerivedVusSummaryDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
+
+const POLL_INTERVAL_MS = 5000
 
 function formatTimestamp(value?: Date): string {
   if (!value) {
@@ -52,6 +64,35 @@ function formatRuntime(startedAt?: Date, finishedAt?: Date): string | null {
   return `${seconds}s`
 }
 
+function formatMetric(value?: number, unit = ''): string {
+  if (value == null || Number.isNaN(value)) {
+    return 'n/a'
+  }
+
+  return `${value.toFixed(2)}${unit}`
+}
+
+function formatRatePercent(value?: number): string {
+  if (value == null || Number.isNaN(value)) {
+    return 'n/a'
+  }
+  return `${(value * 100).toFixed(2)}%`
+}
+
+function formatBytes(value?: number): string {
+  if (value == null || value <= 0) {
+    return '0 B'
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let size = value
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+  return `${size.toFixed(size >= 100 ? 0 : size >= 10 ? 1 : 2)} ${units[unitIndex]}`
+}
+
 function toStatusVariant(
   status?: string,
 ):
@@ -62,20 +103,35 @@ function toStatusVariant(
   | 'failed'
   | 'unknown' {
   switch (status) {
-    case 'PENDING_START':
-    case 'PENDING_STOP':
+    case BenchmarkRunDTOStatusEnum.PendingStart:
+    case BenchmarkRunDTOStatusEnum.PendingStop:
       return 'pending'
-    case 'STARTED':
+    case BenchmarkRunDTOStatusEnum.Started:
       return 'running'
-    case 'FINISHED':
+    case BenchmarkRunDTOStatusEnum.Finished:
       return 'success'
-    case 'STOPPED':
+    case BenchmarkRunDTOStatusEnum.Stopped:
       return 'stopped'
-    case 'FAILED':
+    case BenchmarkRunDTOStatusEnum.Failed:
       return 'failed'
     default:
       return 'unknown'
   }
+}
+
+function isActiveStatus(status?: string): boolean {
+  return (
+    status === BenchmarkRunDTOStatusEnum.PendingStart ||
+    status === BenchmarkRunDTOStatusEnum.Started ||
+    status === BenchmarkRunDTOStatusEnum.PendingStop
+  )
+}
+
+function isStoppableStatus(status?: string): boolean {
+  return (
+    status === BenchmarkRunDTOStatusEnum.PendingStart ||
+    status === BenchmarkRunDTOStatusEnum.Started
+  )
 }
 
 function getStatusSymbol(variant: ReturnType<typeof toStatusVariant>): string {
@@ -103,51 +159,90 @@ export function BenchmarkRunMonitorPage() {
   }>()
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
   const [benchmarkName, setBenchmarkName] = useState<string | null>(null)
-  const [runStartedAt, setRunStartedAt] = useState<Date | undefined>()
-  const [runFinishedAt, setRunFinishedAt] = useState<Date | undefined>()
-  const [runStatus, setRunStatus] = useState<string | undefined>()
-  const [runStatusReason, setRunStatusReason] = useState<string | undefined>()
-  const [runCreatedAt, setRunCreatedAt] = useState<Date | undefined>()
+  const [runData, setRunData] = useState<BenchmarkRunDTO | null>(null)
+  const [httpMetrics, setHttpMetrics] = useState<Array<DerivedHttpSummaryDTO>>([])
+  const [hostMetrics, setHostMetrics] = useState<Array<DerivedHostSummaryDTO>>([])
+  const [vusMetrics, setVusMetrics] = useState<DerivedVusSummaryDTO | null>(null)
   const [isLoadingNames, setIsLoadingNames] = useState(true)
+  const [isRunLoading, setIsRunLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [pollError, setPollError] = useState<string | null>(null)
   const [retryAttempt, setRetryAttempt] = useState(0)
   const [copyMessage, setCopyMessage] = useState<{
     type: 'success' | 'error'
     text: string
   } | null>(null)
+  const [isStoppingRun, setIsStoppingRun] = useState(false)
+  const [stopError, setStopError] = useState<string | null>(null)
+  const runStatus = runData?.status
   const runStatusVariant = toStatusVariant(runStatus)
   const runStatusText = formatRunStatus(runStatus)
-  const runStatusWithReason = runStatusReason?.trim()
-    ? `${runStatusText} (${runStatusReason.trim()})`
+  const runStatusWithReason = runData?.statusReason?.trim()
+    ? `${runStatusText} (${runData.statusReason.trim()})`
     : runStatusText
+  const shouldPoll = isActiveStatus(runStatus)
+
+  const applyRunDetails = useCallback((details: BenchmarkRunDerivedDTO) => {
+    setRunData(details.run ?? null)
+    setHttpMetrics(details.http ?? [])
+    setHostMetrics(details.hosts ?? [])
+    setVusMetrics(details.vus ?? null)
+  }, [])
+
+  const loadRunDetails = useCallback(
+    async (mode: 'initial' | 'poll' = 'initial') => {
+      if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
+        setLoadError('Environment ID, benchmark ID, or run ID is missing.')
+        setIsRunLoading(false)
+        return
+      }
+
+      if (mode === 'initial') {
+        setIsRunLoading(true)
+        setLoadError(null)
+        setPollError(null)
+      }
+
+      try {
+        const runDetails = await getBenchmarkRunDetails(environmentId, benchmarkId, runId)
+        applyRunDetails(runDetails)
+        if (mode === 'poll') {
+          setPollError(null)
+        }
+      } catch (error: unknown) {
+        const message =
+          error instanceof BenchmarkRunDetailsError
+            ? error.message
+            : 'Unable to load benchmark run details right now.'
+
+        if (mode === 'poll') {
+          setPollError(message)
+        } else {
+          setLoadError(message)
+        }
+      } finally {
+        if (mode === 'initial') {
+          setIsRunLoading(false)
+        }
+      }
+    },
+    [applyRunDetails, benchmarkId, environmentId, runId],
+  )
 
   useEffect(() => {
     if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
       setLoadError('Environment ID, benchmark ID, or run ID is missing.')
-      setRunStartedAt(undefined)
-      setRunFinishedAt(undefined)
-      setRunStatus(undefined)
-      setRunStatusReason(undefined)
-      setRunCreatedAt(undefined)
       setIsLoadingNames(false)
       return
     }
 
     let isActive = true
     setIsLoadingNames(true)
-    setLoadError(null)
-    // Clear previous run metadata so stale status/details do not flash while loading.
-    setRunStartedAt(undefined)
-    setRunFinishedAt(undefined)
-    setRunStatus(undefined)
-    setRunStatusReason(undefined)
-    setRunCreatedAt(undefined)
 
-    const loadNames = async () => {
-      const [environmentResult, benchmarkResult, runResult] = await Promise.allSettled([
+    const loadContext = async () => {
+      const [environmentResult, benchmarkResult] = await Promise.allSettled([
         getEnvironmentDetails(environmentId),
         getBenchmark(environmentId, benchmarkId),
-        getBenchmarkRunDetails(environmentId, benchmarkId, runId),
       ])
 
       if (!isActive) {
@@ -166,38 +261,30 @@ export function BenchmarkRunMonitorPage() {
         setBenchmarkName(benchmarkId)
       }
 
-      if (runResult.status === 'fulfilled') {
-        setRunStartedAt(runResult.value.run?.startedAt)
-        setRunFinishedAt(runResult.value.run?.finishedAt)
-        setRunStatus(runResult.value.run?.status)
-        setRunStatusReason(runResult.value.run?.statusReason)
-        setRunCreatedAt(runResult.value.run?.createdAt)
-      } else {
-        setRunStartedAt(undefined)
-        setRunFinishedAt(undefined)
-        setRunStatus(undefined)
-        setRunStatusReason(undefined)
-        setRunCreatedAt(undefined)
-      }
-
-      if (runResult.status === 'rejected') {
-        const reason = runResult.reason
-        if (reason instanceof BenchmarkRunDetailsError) {
-          setLoadError(reason.message)
-        } else {
-          setLoadError('Unable to load benchmark run details right now.')
-        }
-      }
-
       setIsLoadingNames(false)
     }
 
-    void loadNames()
+    void loadContext()
+    void loadRunDetails('initial')
 
     return () => {
       isActive = false
     }
-  }, [benchmarkId, environmentId, retryAttempt, runId])
+  }, [benchmarkId, environmentId, loadRunDetails, retryAttempt, runId])
+
+  useEffect(() => {
+    if (!shouldPoll) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      void loadRunDetails('poll')
+    }, POLL_INTERVAL_MS)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [loadRunDetails, shouldPoll])
 
   useEffect(() => {
     if (!copyMessage) {
@@ -245,36 +332,138 @@ export function BenchmarkRunMonitorPage() {
     }
   }
 
+  const handleStopRun = async () => {
+    if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
+      setStopError('Environment ID, benchmark ID, or run ID is missing.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Stop this benchmark run now? This action cannot be undone.',
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setIsStoppingRun(true)
+    setStopError(null)
+
+    try {
+      const stopped = await stopBenchmarkRun(environmentId, benchmarkId, runId)
+      setRunData((current) =>
+        current
+          ? { ...current, status: stopped.status, id: stopped.runId ?? current.id }
+          : current,
+      )
+      await loadRunDetails('initial')
+    } catch (error: unknown) {
+      if (error instanceof StopBenchmarkRunError) {
+        setStopError(error.message)
+      } else {
+        setStopError('Unable to stop benchmark run right now.')
+      }
+    } finally {
+      setIsStoppingRun(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    void loadRunDetails('initial')
+  }
+
+  const isLoading = isLoadingNames || isRunLoading
+  const endedWithRuntime = runData?.finishedAt
+    ? `${formatTimestamp(runData.finishedAt)}${
+        formatRuntime(runData.startedAt, runData.finishedAt)
+          ? ` (${formatRuntime(runData.startedAt, runData.finishedAt)})`
+          : ''
+      }`
+    : 'Not finished yet'
+  const topHttp = useMemo(
+    () => [...httpMetrics].sort((a, b) => (b.totalRequests ?? 0) - (a.totalRequests ?? 0)).slice(0, 5),
+    [httpMetrics],
+  )
+
   return (
     <article className="shell-page">
       <div className="run-monitor-top-row">
         <div>
           <h1>Run monitor</h1>
           <p className="auth-text run-monitor-byline">
-            Live monitoring will be implemented in issue #12. You are now in the correct run
-            context.
+            This screen auto-refreshes while the run is active.
           </p>
         </div>
-        <section
-          className={`run-monitor-status run-monitor-status-${runStatusVariant}`}
-          aria-live="polite"
-        >
-          <p className="run-monitor-status-value">
-            <span className="run-monitor-status-symbol" aria-hidden="true">
-              {getStatusSymbol(runStatusVariant)}
-            </span>
-            <span>{runStatusWithReason}</span>
-          </p>
-        </section>
+        <div className="run-monitor-header-controls">
+          <div className="run-monitor-header-actions">
+            {isStoppableStatus(runStatus) ? (
+              <button
+                type="button"
+                className="shell-alert-dismiss run-monitor-stop"
+                onClick={() => void handleStopRun()}
+                disabled={isStoppingRun}
+              >
+                {isStoppingRun ? 'Stopping...' : 'Stop run'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="shell-alert-dismiss run-monitor-refresh"
+              onClick={handleRefresh}
+              disabled={isRunLoading || isStoppingRun}
+              aria-label={isRunLoading ? 'Refreshing run details' : 'Refresh run details'}
+              title="Refresh run details"
+            >
+              <svg
+                className="run-monitor-refresh-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M21 12a9 9 0 0 0-15.36-6.36" />
+                <polyline points="9 4.5 5 5.5 6 1.5" />
+                <path d="M3 12a9 9 0 0 0 15.36 6.36" />
+                <polyline points="15 19.5 19 18.5 18 22.5" />
+              </svg>
+            </button>
+          </div>
+          <section
+            className={`run-monitor-status run-monitor-status-${runStatusVariant}`}
+            aria-live="polite"
+          >
+            <p className="run-monitor-status-value">
+              <span className="run-monitor-status-symbol" aria-hidden="true">
+                {getStatusSymbol(runStatusVariant)}
+              </span>
+              <span>{runStatusWithReason}</span>
+            </p>
+          </section>
+        </div>
       </div>
 
       <AsyncStateView
-        isLoading={isLoadingNames}
+        isLoading={isLoading}
         error={loadError}
         isEmpty={false}
         onRetry={() => setRetryAttempt((current) => current + 1)}
         loadingTitle="Loading run context"
       >
+        {pollError ? (
+          <p className="auth-notice auth-notice-error benchmark-copy-feedback" role="alert">
+            {pollError}
+          </p>
+        ) : null}
+
+        {stopError ? (
+          <p className="auth-notice auth-notice-error benchmark-copy-feedback" role="alert">
+            {stopError}
+          </p>
+        ) : null}
+
         <section className="run-monitor-details-section">
           <section className="environment-detail-grid run-monitor-details-grid">
             <div>
@@ -309,25 +498,67 @@ export function BenchmarkRunMonitorPage() {
             </div>
             <div>
               <p className="shell-context-label">Queued at</p>
-              <p className="shell-context-value">{formatTimestamp(runCreatedAt)}</p>
+              <p className="shell-context-value">{formatTimestamp(runData?.createdAt)}</p>
             </div>
             <div>
               <p className="shell-context-label">Started at</p>
-              <p className="shell-context-value">{formatTimestamp(runStartedAt)}</p>
+              <p className="shell-context-value">{formatTimestamp(runData?.startedAt)}</p>
             </div>
             <div>
               <p className="shell-context-label">Ended at</p>
-              <p className="shell-context-value">
-                {runFinishedAt
-                  ? `${formatTimestamp(runFinishedAt)}${
-                      formatRuntime(runStartedAt, runFinishedAt)
-                        ? ` (${formatRuntime(runStartedAt, runFinishedAt)})`
-                        : ''
-                    }`
-                  : 'Not finished yet'}
-              </p>
+              <p className="shell-context-value">{endedWithRuntime}</p>
             </div>
           </section>
+        </section>
+
+        <section className="run-monitor-metrics">
+          <h2>Live metrics snapshot</h2>
+          <div className="run-monitor-metrics-grid">
+            <article className="run-metric-card">
+              <h3>VUs</h3>
+              <p>Avg: {formatMetric(vusMetrics?.avg)}</p>
+              <p>Min: {formatMetric(vusMetrics?.min)}</p>
+              <p>Max: {formatMetric(vusMetrics?.max)}</p>
+            </article>
+
+            <article className="run-metric-card">
+              <h3>HTTP overview</h3>
+              {topHttp.length === 0 ? (
+                <p>No HTTP metrics available yet.</p>
+              ) : (
+                <ul className="run-metric-list">
+                  {topHttp.map((metric, index) => (
+                    <li key={`${metric.requestGroup ?? 'group'}-${index}`}>
+                      <strong>{metric.requestGroup ?? metric.url ?? 'Request group'}</strong>
+                      <span>
+                        {metric.totalRequests ?? 0} req, {formatRatePercent(metric.errorRate)} err
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+
+            <article className="run-metric-card">
+              <h3>Host resources</h3>
+              {hostMetrics.length === 0 ? (
+                <p>No host metrics available yet.</p>
+              ) : (
+                <ul className="run-metric-list">
+                  {hostMetrics.slice(0, 4).map((host, index) => (
+                    <li key={`${host.hostId ?? 'host'}-${index}`}>
+                      <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
+                      <span>
+                        CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
+                        {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
+                        {formatBytes(host.resource?.networkInTotalBytes)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          </div>
         </section>
 
         {copyMessage ? (

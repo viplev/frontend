@@ -54,6 +54,13 @@ export class StartBenchmarkError extends Error {
   }
 }
 
+export class StopBenchmarkRunError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'StopBenchmarkRunError'
+  }
+}
+
 export class BenchmarkRunDetailsError extends Error {
   constructor(message: string) {
     super(message)
@@ -244,6 +251,37 @@ export async function startBenchmark(
 
     throw new StartBenchmarkError(
       'Network error while starting benchmark. Please try again.',
+    )
+  }
+}
+
+export async function stopBenchmarkRun(
+  environmentId: string,
+  benchmarkId: string,
+  runId: string,
+): Promise<BenchmarkStatusDTO> {
+  const benchmarkActionsApi = createBenchmarkActionsApi()
+
+  try {
+    return await benchmarkActionsApi.stopBenchmarkRun({ environmentId, benchmarkId, runId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 400) {
+        throw new StopBenchmarkRunError(
+          'This run is not in a stoppable state right now.',
+        )
+      }
+      if (error.response.status === 404) {
+        throw new StopBenchmarkRunError('Benchmark run was not found.')
+      }
+      if (error.response.status >= 500) {
+        throw new StopBenchmarkRunError('Server error while trying to stop benchmark run.')
+      }
+      throw new StopBenchmarkRunError('Unable to stop benchmark run right now.')
+    }
+
+    throw new StopBenchmarkRunError(
+      'Network error while stopping benchmark run. Please try again.',
     )
   }
 }
