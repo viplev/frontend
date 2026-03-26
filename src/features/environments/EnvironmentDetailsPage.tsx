@@ -41,51 +41,96 @@ export function EnvironmentDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
 
-  const load = useCallback(async () => {
-    if (!environmentId.trim()) {
-      setError('Environment id is missing.')
-      setNotFound(true)
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-    setNotFound(false)
-
-    try {
-      const [details, nextServices] = await Promise.all([
-        getEnvironmentDetails(environmentId),
-        getEnvironmentServices(environmentId),
-      ])
-
-      setEnvironment(details)
-      setServices(nextServices)
-    } catch (nextError: unknown) {
-      if (nextError instanceof EnvironmentDetailsError) {
-        setError(nextError.message)
-        setNotFound(nextError.notFound)
-      } else {
-        setError('Unable to load environment details right now.')
+  const load = useCallback(
+    async (signal: AbortSignal, isInitialLoad = true) => {
+      if (!environmentId.trim()) {
+        setError('Environment ID is missing or invalid.')
+        setNotFound(false)
+        setIsLoading(false)
+        return
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [environmentId])
+
+      if (isInitialLoad) {
+        setIsLoading(true)
+      }
+      setError(null)
+      setNotFound(false)
+
+      try {
+        const [detailsResult, servicesResult] = await Promise.allSettled([
+          getEnvironmentDetails(environmentId),
+          getEnvironmentServices(environmentId),
+        ])
+
+        // Only update state if this request hasn't been aborted
+        if (signal.aborted) {
+          return
+        }
+
+        // Handle environment details result
+        if (detailsResult.status === 'rejected') {
+          const nextError = detailsResult.reason
+
+          if (nextError instanceof EnvironmentDetailsError) {
+            setError(nextError.message)
+            setNotFound(nextError.notFound)
+          } else {
+            setError('Unable to load environment details right now.')
+          }
+
+          return
+        }
+
+        // Details succeeded - update environment
+        setEnvironment(detailsResult.value)
+
+        // Handle services result (non-blocking)
+        if (servicesResult.status === 'fulfilled') {
+          setServices(servicesResult.value)
+        }
+        // If services failed, we keep existing services and don't show error
+        // The empty state will show if services array is empty
+      } catch {
+        // This catch should not be reached with Promise.allSettled
+        // But keeping it as a safety net
+        if (signal.aborted) {
+          return
+        }
+
+        setError('An unexpected error occurred.')
+      } finally {
+        if (!signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    },
+    [environmentId],
+  )
 
   useEffect(() => {
-    void load()
+    const controller = new AbortController()
+    void load(controller.signal, true)
+
+    return () => {
+      controller.abort()
+    }
   }, [load])
 
   useEffect(() => {
+    const controller = new AbortController()
     const timer = window.setInterval(() => {
-      void load()
+      // Stop polling if we've confirmed a 404
+      if (notFound) {
+        return
+      }
+      void load(controller.signal, false)
     }, REFRESH_INTERVAL_MS)
 
     return () => {
+      controller.abort()
       window.clearInterval(timer)
     }
-  }, [load])
+  }, [load, notFound])
 
   const sortedServices = useMemo(
     () =>
@@ -127,7 +172,10 @@ export function EnvironmentDetailsPage() {
         isLoading={isLoading}
         error={error}
         isEmpty={false}
-        onRetry={load}
+        onRetry={() => {
+          const controller = new AbortController()
+          void load(controller.signal, true)
+        }}
         loadingTitle="Loading environment details"
       >
         <section className="environment-detail-grid">

@@ -29,21 +29,34 @@ export class EnvironmentDetailsError extends Error {
 
 function readErrorMessage(
   error: ResponseError,
-  action: 'load' | 'create',
+  action: 'load' | 'create' | 'load-details',
+  subject?: string,
 ): string {
   if (action === 'create' && error.response.status === 400) {
     return 'There was a problem with your request. Please review the form and try again.'
   }
 
   if (error.response.status === 404) {
-    return 'Environments endpoint was not found.'
+    return `${subject ?? 'Resource'} endpoint was not found.`
   }
 
   if (error.response.status >= 500) {
-    return `Server error while ${action === 'load' ? 'loading environments' : 'creating environment'}.`
+    if (action === 'load') {
+      return `Server error while loading ${subject ?? 'data'}.`
+    } else if (action === 'load-details') {
+      return `Server error while loading ${subject ?? 'details'}.`
+    } else {
+      return `Server error while creating ${subject ?? 'resource'}.`
+    }
   }
 
-  return `Unable to ${action === 'load' ? 'load environments' : 'create environment'} right now.`
+  if (action === 'load') {
+    return `Unable to load ${subject ?? 'data'} right now.`
+  } else if (action === 'load-details') {
+    return `Unable to load ${subject ?? 'details'} right now.`
+  } else {
+    return `Unable to create ${subject ?? 'resource'} right now.`
+  }
 }
 
 export async function listEnvironments(): Promise<Array<EnvironmentDTO>> {
@@ -53,7 +66,7 @@ export async function listEnvironments(): Promise<Array<EnvironmentDTO>> {
     return await environmentApi.listEnvironments()
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
-      const message = readErrorMessage(error, 'load')
+      const message = readErrorMessage(error, 'load', 'environments')
       throw new EnvironmentsLoadError(message)
     }
 
@@ -74,7 +87,9 @@ export async function createEnvironment(
     return await environmentApi.createEnvironment({ environmentDTO: input })
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
-      throw new CreateEnvironmentError(readErrorMessage(error, 'create'))
+      throw new CreateEnvironmentError(
+        readErrorMessage(error, 'create', 'environment'),
+      )
     }
 
     throw new CreateEnvironmentError(
@@ -96,7 +111,9 @@ export async function getEnvironmentDetails(
         throw new EnvironmentDetailsError('Environment not found.', true)
       }
 
-      throw new EnvironmentDetailsError(readErrorMessage(error, 'load'))
+      throw new EnvironmentDetailsError(
+        readErrorMessage(error, 'load-details', 'environment details'),
+      )
     }
 
     throw new EnvironmentDetailsError(
