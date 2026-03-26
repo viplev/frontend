@@ -2,14 +2,47 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
+import type { MessageDTO } from '../../generated/openapi/models/MessageDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
   EnvironmentDetailsError,
   getEnvironmentDetails,
   getEnvironmentServices,
+  getEnvironmentMessages,
 } from './service'
 
 const REFRESH_INTERVAL_MS = 15000
+
+function MessageCard({ message }: { message: MessageDTO }) {
+  const messageTypeLabel =
+    message.messageType === 'PENDING_START' ? 'Start benchmark' : 'Stop benchmark'
+  const messageTypeClass =
+    message.messageType === 'PENDING_START'
+      ? 'environment-message-type-start'
+      : 'environment-message-type-stop'
+
+  return (
+    <article className="environment-message-card">
+      <span className={`environment-message-type ${messageTypeClass}`}>
+        {messageTypeLabel}
+      </span>
+      <div className="environment-message-details">
+        {message.benchmarkId ? (
+          <div>
+            <span className="environment-message-label">Benchmark ID:</span>
+            <code className="environment-message-value">{message.benchmarkId}</code>
+          </div>
+        ) : null}
+        {message.runId ? (
+          <div>
+            <span className="environment-message-label">Run ID:</span>
+            <code className="environment-message-value">{message.runId}</code>
+          </div>
+        ) : null}
+      </div>
+    </article>
+  )
+}
 
 function formatMemory(bytes?: number): string {
   if (!bytes || bytes <= 0) {
@@ -37,6 +70,7 @@ export function EnvironmentDetailsPage() {
   const { environmentId = '' } = useParams<{ environmentId: string }>()
   const [environment, setEnvironment] = useState<EnvironmentDTO | null>(null)
   const [services, setServices] = useState<Array<ServiceDTO>>([])
+  const [messages, setMessages] = useState<Array<MessageDTO>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -57,9 +91,10 @@ export function EnvironmentDetailsPage() {
       setNotFound(false)
 
       try {
-        const [detailsResult, servicesResult] = await Promise.allSettled([
+        const [detailsResult, servicesResult, messagesResult] = await Promise.allSettled([
           getEnvironmentDetails(environmentId),
           getEnvironmentServices(environmentId),
+          getEnvironmentMessages(environmentId),
         ])
 
         // Only update state if this request hasn't been aborted
@@ -90,6 +125,12 @@ export function EnvironmentDetailsPage() {
         }
         // If services failed, we keep existing services and don't show error
         // The empty state will show if services array is empty
+
+        // Handle messages result (non-blocking)
+        if (messagesResult.status === 'fulfilled') {
+          setMessages(messagesResult.value)
+        }
+        // If messages failed, we keep existing messages and don't show error
       } catch {
         // This catch should not be reached with Promise.allSettled
         // But keeping it as a safety net
@@ -227,6 +268,26 @@ export function EnvironmentDetailsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </AsyncStateView>
+        </section>
+
+        <section className="environment-messages-section">
+          <h2>Pending messages</h2>
+          <AsyncStateView
+            isLoading={false}
+            error={null}
+            isEmpty={messages.length === 0}
+            emptyTitle="No pending messages"
+            emptyDescription="The agent has no queued actions at this time."
+          >
+            <div className="environment-messages-list">
+              {messages.map((message, index) => (
+                <MessageCard
+                  key={`${message.benchmarkId}-${message.runId}-${index}`}
+                  message={message}
+                />
+              ))}
             </div>
           </AsyncStateView>
         </section>

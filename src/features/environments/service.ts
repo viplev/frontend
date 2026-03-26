@@ -1,7 +1,8 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
-import { createEnvironmentApi } from '../../auth/client'
+import type { MessageDTO } from '../../generated/openapi/models/MessageDTO'
+import { createEnvironmentApi, createAgentApi } from '../../auth/client'
 
 export class EnvironmentsLoadError extends Error {
   constructor(message: string) {
@@ -140,6 +141,28 @@ export async function getEnvironmentServices(
 
     throw new EnvironmentDetailsError(
       'Network error while loading services. Please try again.',
+    )
+  }
+}
+
+export async function getEnvironmentMessages(
+  environmentId: string,
+): Promise<Array<MessageDTO>> {
+  const agentApi = createAgentApi()
+
+  try {
+    return await agentApi.listMessages({ environmentId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new EnvironmentDetailsError('Environment not found.', true)
+      }
+
+      throw new EnvironmentDetailsError('Unable to load messages right now.')
+    }
+
+    throw new EnvironmentDetailsError(
+      'Network error while loading messages. Please try again.',
     )
   }
 }
