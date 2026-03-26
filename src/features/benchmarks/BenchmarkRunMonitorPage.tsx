@@ -179,7 +179,7 @@ export function BenchmarkRunMonitorPage() {
   const [isStoppingRun, setIsStoppingRun] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
   const isMountedRef = useRef(true)
-  const latestRunDetailsRequestRef = useRef(0)
+  const runDetailsRequestTokenRef = useRef(0)
   const runStatus = runData?.status
   const runStatusVariant = toStatusVariant(runStatus)
   const runStatusText = formatRunStatus(runStatus)
@@ -197,7 +197,10 @@ export function BenchmarkRunMonitorPage() {
 
   const loadRunDetails = useCallback(
     async (mode: 'initial' | 'poll' = 'initial') => {
-      const requestId = ++latestRunDetailsRequestRef.current
+      const requestToken =
+        mode === 'initial'
+          ? ++runDetailsRequestTokenRef.current
+          : runDetailsRequestTokenRef.current
 
       if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
         if (isMountedRef.current) {
@@ -215,7 +218,7 @@ export function BenchmarkRunMonitorPage() {
 
       try {
         const runDetails = await getBenchmarkRunDetails(environmentId, benchmarkId, runId)
-        if (!isMountedRef.current || requestId !== latestRunDetailsRequestRef.current) {
+        if (!isMountedRef.current || requestToken !== runDetailsRequestTokenRef.current) {
           return
         }
 
@@ -224,7 +227,7 @@ export function BenchmarkRunMonitorPage() {
           setPollError(null)
         }
       } catch (error: unknown) {
-        if (!isMountedRef.current || requestId !== latestRunDetailsRequestRef.current) {
+        if (!isMountedRef.current || requestToken !== runDetailsRequestTokenRef.current) {
           return
         }
 
@@ -242,7 +245,7 @@ export function BenchmarkRunMonitorPage() {
         if (
           mode === 'initial' &&
           isMountedRef.current &&
-          requestId === latestRunDetailsRequestRef.current
+          requestToken === runDetailsRequestTokenRef.current
         ) {
           setIsRunLoading(false)
         }
@@ -252,6 +255,8 @@ export function BenchmarkRunMonitorPage() {
   )
 
   useEffect(() => {
+    isMountedRef.current = true
+
     return () => {
       isMountedRef.current = false
     }
@@ -301,7 +306,7 @@ export function BenchmarkRunMonitorPage() {
   }, [benchmarkId, environmentId, loadRunDetails, retryAttempt, runId])
 
   useEffect(() => {
-    if (!shouldPoll) {
+    if (!shouldPoll || isRunLoading) {
       return
     }
 
@@ -330,7 +335,7 @@ export function BenchmarkRunMonitorPage() {
         window.clearTimeout(timeoutId)
       }
     }
-  }, [loadRunDetails, shouldPoll])
+  }, [isRunLoading, loadRunDetails, shouldPoll])
 
   useEffect(() => {
     if (!copyMessage) {
