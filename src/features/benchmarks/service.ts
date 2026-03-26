@@ -59,6 +59,7 @@ export async function listActiveEnvironmentRuns(
       environmentId,
       page: 0,
       size: 50,
+      sort: ['startedAt,desc'],
     })
 
     const runs = response.runs ?? []
