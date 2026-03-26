@@ -374,6 +374,12 @@
   color: #1f3347;
 }
 
+.environment-services-section {
+  margin-top: 1.75rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #e3ebf5;
+}
+
 .benchmark-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
