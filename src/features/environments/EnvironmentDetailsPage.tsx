@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import type { EnvironmentRunSummaryDTO } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
@@ -39,6 +39,7 @@ function formatTimestamp(value?: Date): string {
 export function EnvironmentDetailsPage() {
   const { environmentId = '' } = useParams<{ environmentId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [environment, setEnvironment] = useState<EnvironmentDTO | null>(null)
   const [benchmarks, setBenchmarks] = useState<Array<BenchmarkDTO>>([])
   const [activeRunsByBenchmarkId, setActiveRunsByBenchmarkId] = useState<
@@ -52,6 +53,20 @@ export function EnvironmentDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [benchmarkNotice, setBenchmarkNotice] = useState<{
+    type: 'created' | 'updated'
+    name: string
+  } | null>(() => {
+    const state = location.state as
+      | {
+          benchmarkNotice?: {
+            type: 'created' | 'updated'
+            name: string
+          }
+        }
+      | undefined
+    return state?.benchmarkNotice ?? null
+  })
 
   const load = useCallback(
     async (signal: AbortSignal, isInitialLoad = true) => {
@@ -188,6 +203,25 @@ export function EnvironmentDetailsPage() {
     [benchmarks],
   )
 
+  const benchmarkNoticeCard = benchmarkNotice ? (
+    <section className="environment-created-notice" role="status">
+      <p>
+        Benchmark <strong>{benchmarkNotice.name}</strong>{' '}
+        {benchmarkNotice.type === 'created' ? 'was created' : 'was updated'} successfully.
+      </p>
+      <button
+        type="button"
+        className="shell-alert-dismiss environment-created-dismiss"
+        onClick={() => {
+          setBenchmarkNotice(null)
+          navigate(location.pathname, { replace: true })
+        }}
+      >
+        Dismiss
+      </button>
+    </section>
+  ) : null
+
   if (notFound) {
     return (
       <article className="shell-page">
@@ -246,62 +280,94 @@ export function EnvironmentDetailsPage() {
         </section>
 
         <section className="environment-benchmarks-section">
-          <h2>Benchmarks</h2>
+          <div className="benchmark-section-header">
+            <h2>Benchmarks</h2>
+            <button
+              type="button"
+              className="auth-button benchmark-section-action"
+              onClick={() => navigate(`/environments/${environmentId}/benchmarks/new`)}
+            >
+              Create benchmark
+            </button>
+          </div>
+          {benchmarkNotice ? benchmarkNoticeCard : null}
           <AsyncStateView
             isLoading={isBenchmarksLoading}
             error={benchmarksError}
-            isEmpty={!isBenchmarksLoading && !benchmarksError && sortedBenchmarks.length === 0}
-            emptyTitle="No benchmarks yet"
-            emptyDescription="Create a benchmark to start running scenarios in this environment."
+            isEmpty={false}
           >
-            <div className="environment-benchmarks-table-wrap">
-              <table className="environment-benchmarks-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedBenchmarks.map((benchmark) => {
-                    const isRunning = Boolean(
-                      benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
-                    )
+            {sortedBenchmarks.length === 0 ? (
+              <Link
+                className="async-state async-state-empty benchmark-empty-cta"
+                to={`/environments/${environmentId}/benchmarks/new`}
+              >
+                <h2>No benchmarks yet</h2>
+                <p>Create a benchmark to start running scenarios in this environment.</p>
+              </Link>
+            ) : (
+              <div className="environment-benchmarks-table-wrap">
+                <table className="environment-benchmarks-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedBenchmarks.map((benchmark) => {
+                      const isRunning = Boolean(
+                        benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
+                      )
 
-                    return (
-                      <tr key={benchmark.id ?? benchmark.name}>
-                        <td>{benchmark.name}</td>
-                        <td>{benchmark.description?.trim() || 'No description provided.'}</td>
-                        <td>
-                          {isRunning ? (
-                            <span className="benchmark-status-active">Active run</span>
-                          ) : (
-                            'Idle'
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="auth-button benchmark-table-action"
-                            onClick={() => navigate('/benchmarks')}
-                            disabled={isRunning || !benchmark.id}
-                            title={
-                              isRunning
-                                ? 'This benchmark is already running in this environment.'
-                                : undefined
-                            }
-                          >
-                            Start benchmark
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr key={benchmark.id ?? benchmark.name}>
+                          <td>{benchmark.name}</td>
+                          <td>{benchmark.description?.trim() || 'No description provided.'}</td>
+                          <td>
+                            {isRunning ? (
+                              <span className="benchmark-status-active">Active run</span>
+                            ) : (
+                              'Idle'
+                            )}
+                          </td>
+                          <td>
+                            <div className="benchmark-table-actions">
+                              <button
+                                type="button"
+                                className="auth-button benchmark-table-action"
+                                onClick={() => navigate('/benchmarks')}
+                                disabled={isRunning || !benchmark.id}
+                                title={
+                                  isRunning
+                                    ? 'This benchmark is already running in this environment.'
+                                    : undefined
+                                }
+                              >
+                                Start benchmark
+                              </button>
+                              <button
+                                type="button"
+                                className="shell-alert-dismiss benchmark-table-action-secondary"
+                                onClick={() =>
+                                  navigate(
+                                    `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
+                                  )
+                                }
+                                disabled={!benchmark.id}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </AsyncStateView>
         </section>
 

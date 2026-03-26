@@ -20,6 +20,27 @@ export class BenchmarkRunsLoadError extends Error {
   }
 }
 
+export class CreateBenchmarkError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CreateBenchmarkError'
+  }
+}
+
+export class GetBenchmarkError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GetBenchmarkError'
+  }
+}
+
+export class UpdateBenchmarkError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UpdateBenchmarkError'
+  }
+}
+
 function readLoadErrorMessage(error: ResponseError, subject: string): string {
   if (error.response.status === 404) {
     return `${subject} endpoint was not found.`
@@ -31,6 +52,34 @@ function readLoadErrorMessage(error: ResponseError, subject: string): string {
 
   return `Unable to load ${subject} right now.`
 }
+
+function readMutationErrorMessage(
+  error: ResponseError,
+  action: 'create' | 'get' | 'update',
+): string {
+  if ((action === 'create' || action === 'update') && error.response.status === 400) {
+    return 'There was a problem with your benchmark data. Please review the form and try again.'
+  }
+
+  if (error.response.status === 404) {
+    return action === 'get'
+      ? 'Benchmark was not found.'
+      : 'Benchmark target was not found.'
+  }
+
+  const actionLabel =
+    action === 'create' ? 'create' : action === 'update' ? 'update' : 'load'
+  if (error.response.status >= 500) {
+    return `Server error while trying to ${actionLabel} benchmark.`
+  }
+
+  return `Unable to ${actionLabel} benchmark right now.`
+}
+
+type BenchmarkMutationInput = Pick<
+  BenchmarkDTO,
+  'name' | 'description' | 'k6Instructions'
+>
 
 export async function listBenchmarks(
   environmentId: string,
@@ -46,6 +95,68 @@ export async function listBenchmarks(
 
     throw new BenchmarksLoadError(
       'Network error while loading benchmarks. Please try again.',
+    )
+  }
+}
+
+export async function createBenchmark(
+  environmentId: string,
+  input: BenchmarkMutationInput,
+): Promise<BenchmarkDTO> {
+  const benchmarkApi = createBenchmarkApi()
+
+  try {
+    return await benchmarkApi.createBenchmark({ environmentId, benchmarkDTO: input })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      throw new CreateBenchmarkError(readMutationErrorMessage(error, 'create'))
+    }
+
+    throw new CreateBenchmarkError(
+      'Network error while creating benchmark. Please try again.',
+    )
+  }
+}
+
+export async function getBenchmark(
+  environmentId: string,
+  benchmarkId: string,
+): Promise<BenchmarkDTO> {
+  const benchmarkApi = createBenchmarkApi()
+
+  try {
+    return await benchmarkApi.getBenchmark({ environmentId, benchmarkId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      throw new GetBenchmarkError(readMutationErrorMessage(error, 'get'))
+    }
+
+    throw new GetBenchmarkError(
+      'Network error while loading benchmark details. Please try again.',
+    )
+  }
+}
+
+export async function updateBenchmark(
+  environmentId: string,
+  benchmarkId: string,
+  input: BenchmarkMutationInput,
+): Promise<BenchmarkDTO> {
+  const benchmarkApi = createBenchmarkApi()
+
+  try {
+    return await benchmarkApi.updateBenchmark({
+      environmentId,
+      benchmarkId,
+      benchmarkDTO: input,
+    })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      throw new UpdateBenchmarkError(readMutationErrorMessage(error, 'update'))
+    }
+
+    throw new UpdateBenchmarkError(
+      'Network error while updating benchmark. Please try again.',
     )
   }
 }

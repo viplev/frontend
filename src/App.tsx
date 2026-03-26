@@ -8,6 +8,7 @@ import { ProtectedHomePage } from './features/auth/ProtectedHomePage'
 import { EnvironmentsPage } from './features/environments/EnvironmentsPage'
 import { CreateEnvironmentPage } from './features/environments/CreateEnvironmentPage'
 import { EnvironmentDetailsPage } from './features/environments/EnvironmentDetailsPage'
+import { BenchmarkFormPage } from './features/benchmarks/BenchmarkFormPage'
 import './App.css'
 
 function App() {
@@ -24,6 +25,14 @@ function App() {
           <Route
             path="/environments/:environmentId"
             element={<EnvironmentDetailsPage />}
+          />
+          <Route
+            path="/environments/:environmentId/benchmarks/new"
+            element={<BenchmarkFormPage />}
+          />
+          <Route
+            path="/environments/:environmentId/benchmarks/:benchmarkId/edit"
+            element={<BenchmarkFormPage />}
           />
           <Route
             path="/benchmarks"
