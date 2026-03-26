@@ -6,6 +6,7 @@ import {
   CreateBenchmarkError,
   getBenchmark,
   GetBenchmarkError,
+  listActiveEnvironmentRuns,
   updateBenchmark,
   UpdateBenchmarkError,
 } from './service'
@@ -82,8 +83,36 @@ export function BenchmarkFormPage() {
       setLoadError(null)
 
       try {
-        const benchmark = await getBenchmark(environmentId, benchmarkId)
+        const [benchmarkResult, activeRunsResult] = await Promise.allSettled([
+          getBenchmark(environmentId, benchmarkId),
+          listActiveEnvironmentRuns(environmentId),
+        ])
         if (!isActive) {
+          return
+        }
+
+        if (benchmarkResult.status === 'rejected') {
+          const error = benchmarkResult.reason
+          if (error instanceof GetBenchmarkError) {
+            setLoadError(error.message)
+          } else {
+            setLoadError('Unable to load benchmark details right now.')
+          }
+          return
+        }
+
+        const benchmark = benchmarkResult.value
+        if (activeRunsResult.status === 'rejected') {
+          setLoadError(
+            'Unable to verify whether this benchmark is running. Please try again.',
+          )
+          return
+        }
+
+        const activeRuns = activeRunsResult.value
+        const hasActiveRun = activeRuns.some((run) => run.benchmarkId === benchmarkId)
+        if (hasActiveRun) {
+          setLoadError('This benchmark is currently running and cannot be edited.')
           return
         }
 
@@ -142,11 +171,27 @@ export function BenchmarkFormPage() {
     setErrors(validation)
     setSubmitError(null)
 
-    if (Object.keys(validation).length > 0) {
-      return
-    }
+      if (Object.keys(validation).length > 0) {
+        return
+      }
 
-    setIsSubmitting(true)
+      if (isEditMode && benchmarkId) {
+        try {
+          const activeRuns = await listActiveEnvironmentRuns(environmentId)
+          const hasActiveRun = activeRuns.some((run) => run.benchmarkId === benchmarkId)
+          if (hasActiveRun) {
+            setSubmitError('This benchmark is currently running and cannot be edited.')
+            return
+          }
+        } catch {
+          setSubmitError(
+            'Unable to verify benchmark run status right now. Please try again.',
+          )
+          return
+        }
+      }
+
+      setIsSubmitting(true)
 
     try {
       const payload = {
