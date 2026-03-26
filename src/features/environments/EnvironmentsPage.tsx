@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import { EnvironmentsLoadError, listEnvironments } from './service'
@@ -9,21 +9,25 @@ function EnvironmentPlatform({ type }: { type: EnvironmentDTO['type'] }) {
 }
 
 function EnvironmentCard({ environment }: { environment: EnvironmentDTO }) {
+  const navigate = useNavigate()
+
+  const handleClick = () => {
+    if (environment.id) {
+      navigate(`/environments/${environment.id}`)
+    }
+  }
+
   return (
-    <article className="environment-card">
+    <article
+      className="environment-card"
+      onClick={handleClick}
+      style={{ cursor: environment.id ? 'pointer' : 'default' }}
+    >
       <header className="environment-card-header">
         <h2>{environment.name}</h2>
         <EnvironmentPlatform type={environment.type} />
       </header>
       <p>{environment.description?.trim() || 'No description provided.'}</p>
-      {environment.id ? (
-        <Link
-          to={`/environments/${environment.id}`}
-          className="shell-alert-dismiss environment-view-details"
-        >
-          View details
-        </Link>
-      ) : null}
     </article>
   )
 }
