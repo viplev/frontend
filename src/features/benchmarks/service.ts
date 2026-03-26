@@ -61,6 +61,37 @@ export class BenchmarkRunDetailsError extends Error {
   }
 }
 
+async function findEnvironmentRunSummary(
+  environmentId: string,
+  runId: string,
+): Promise<EnvironmentRunSummaryDTO | null> {
+  const runsApi = createBenchmarkRunsApi()
+  const size = 100
+  let page = 0
+
+  while (page < 20) {
+    const response = await runsApi.listEnvironmentRuns({
+      environmentId,
+      page,
+      size,
+      sort: 'startedAt,desc',
+    })
+
+    const match = (response.runs ?? []).find((run) => run.runId === runId)
+    if (match) {
+      return match
+    }
+
+    const totalPages = response.pagination?.totalPages ?? 0
+    page += 1
+    if (totalPages === 0 || page >= totalPages) {
+      break
+    }
+  }
+
+  return null
+}
+
 function readLoadErrorMessage(error: ResponseError, subject: string): string {
   if (error.response.status === 404) {
     return `${subject} endpoint was not found.`
@@ -228,9 +259,45 @@ export async function getBenchmarkRunDetails(
     return await runsApi.getBenchmarkRun({ environmentId, benchmarkId, runId })
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new BenchmarkRunDetailsError('Benchmark run was not found.')
+      }
+
+      try {
+        const summary = await findEnvironmentRunSummary(environmentId, runId)
+        if (summary) {
+          return {
+            run: {
+              id: summary.runId,
+              status: summary.status,
+              startedAt: summary.startedAt,
+              finishedAt: summary.finishedAt,
+            },
+          }
+        }
+      } catch {
+        // Keep original API error handling below if fallback lookup also fails.
+      }
+
       throw new BenchmarkRunDetailsError(
         readLoadErrorMessage(error, 'benchmark run details'),
       )
+    }
+
+    try {
+      const summary = await findEnvironmentRunSummary(environmentId, runId)
+      if (summary) {
+        return {
+          run: {
+            id: summary.runId,
+            status: summary.status,
+            startedAt: summary.startedAt,
+            finishedAt: summary.finishedAt,
+          },
+        }
+      }
+    } catch {
+      // Keep original network error below if fallback lookup also fails.
     }
 
     throw new BenchmarkRunDetailsError(

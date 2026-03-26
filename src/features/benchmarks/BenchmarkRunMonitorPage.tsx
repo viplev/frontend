@@ -122,8 +122,13 @@ export function BenchmarkRunMonitorPage() {
     : runStatusText
 
   useEffect(() => {
-    if (!environmentId.trim() || !benchmarkId.trim()) {
-      setLoadError('Environment ID or benchmark ID is missing.')
+    if (!environmentId.trim() || !benchmarkId.trim() || !runId.trim()) {
+      setLoadError('Environment ID, benchmark ID, or run ID is missing.')
+      setRunStartedAt(undefined)
+      setRunFinishedAt(undefined)
+      setRunStatus(undefined)
+      setRunStatusReason(undefined)
+      setRunCreatedAt(undefined)
       setIsLoadingNames(false)
       return
     }
@@ -131,6 +136,12 @@ export function BenchmarkRunMonitorPage() {
     let isActive = true
     setIsLoadingNames(true)
     setLoadError(null)
+    // Clear previous run metadata so stale status/details do not flash while loading.
+    setRunStartedAt(undefined)
+    setRunFinishedAt(undefined)
+    setRunStatus(undefined)
+    setRunStatusReason(undefined)
+    setRunCreatedAt(undefined)
 
     const loadNames = async () => {
       const [environmentResult, benchmarkResult, runResult] = await Promise.allSettled([
@@ -169,16 +180,12 @@ export function BenchmarkRunMonitorPage() {
         setRunCreatedAt(undefined)
       }
 
-      if (
-        environmentResult.status === 'rejected' &&
-        benchmarkResult.status === 'rejected' &&
-        runResult.status === 'rejected'
-      ) {
+      if (runResult.status === 'rejected') {
         const reason = runResult.reason
         if (reason instanceof BenchmarkRunDetailsError) {
           setLoadError(reason.message)
         } else {
-          setLoadError('Unable to load run context details right now.')
+          setLoadError('Unable to load benchmark run details right now.')
         }
       }
 

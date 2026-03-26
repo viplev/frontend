@@ -83,7 +83,7 @@ export function BenchmarkFormPage() {
       setLoadError(null)
 
       try {
-        const [benchmark, activeRuns] = await Promise.all([
+        const [benchmarkResult, activeRunsResult] = await Promise.allSettled([
           getBenchmark(environmentId, benchmarkId),
           listActiveEnvironmentRuns(environmentId),
         ])
@@ -91,6 +91,25 @@ export function BenchmarkFormPage() {
           return
         }
 
+        if (benchmarkResult.status === 'rejected') {
+          const error = benchmarkResult.reason
+          if (error instanceof GetBenchmarkError) {
+            setLoadError(error.message)
+          } else {
+            setLoadError('Unable to load benchmark details right now.')
+          }
+          return
+        }
+
+        const benchmark = benchmarkResult.value
+        if (activeRunsResult.status === 'rejected') {
+          setLoadError(
+            'Unable to verify whether this benchmark is running. Please try again.',
+          )
+          return
+        }
+
+        const activeRuns = activeRunsResult.value
         const hasActiveRun = activeRuns.some((run) => run.benchmarkId === benchmarkId)
         if (hasActiveRun) {
           setLoadError('This benchmark is currently running and cannot be edited.')
