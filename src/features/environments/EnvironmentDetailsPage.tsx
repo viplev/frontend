@@ -45,6 +45,10 @@ export function EnvironmentDetailsPage() {
     Record<string, EnvironmentRunSummaryDTO>
   >({})
   const [services, setServices] = useState<Array<ServiceDTO>>([])
+  const [isBenchmarksLoading, setIsBenchmarksLoading] = useState(true)
+  const [benchmarksError, setBenchmarksError] = useState<string | null>(null)
+  const [isServicesLoading, setIsServicesLoading] = useState(true)
+  const [servicesError, setServicesError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -60,45 +64,43 @@ export function EnvironmentDetailsPage() {
 
       if (isInitialLoad) {
         setIsLoading(true)
+        setIsBenchmarksLoading(true)
+        setIsServicesLoading(true)
       }
+      setBenchmarksError(null)
+      setServicesError(null)
       setError(null)
       setNotFound(false)
 
       try {
-        const [detailsResult, benchmarksResult, runsResult, servicesResult] =
+        const detailsResult = await getEnvironmentDetails(environmentId)
+
+        if (signal.aborted) {
+          return
+        }
+
+        setEnvironment(detailsResult)
+        if (isInitialLoad) {
+          setIsLoading(false)
+        }
+
+        const [benchmarksResult, runsResult, servicesResult] =
           await Promise.allSettled([
-          getEnvironmentDetails(environmentId),
-          listBenchmarks(environmentId),
-          listActiveEnvironmentRuns(environmentId),
-          getEnvironmentServices(environmentId),
-        ])
+            listBenchmarks(environmentId),
+            listActiveEnvironmentRuns(environmentId),
+            getEnvironmentServices(environmentId),
+          ])
 
         // Only update state if this request hasn't been aborted
         if (signal.aborted) {
           return
         }
 
-        // Handle environment details result
-        if (detailsResult.status === 'rejected') {
-          const nextError = detailsResult.reason
-
-          if (nextError instanceof EnvironmentDetailsError) {
-            setError(nextError.message)
-            setNotFound(nextError.notFound)
-          } else {
-            setError('Unable to load environment details right now.')
-          }
-
-          return
-        }
-
-        // Details succeeded - update environment
-        setEnvironment(detailsResult.value)
-
         if (benchmarksResult.status === 'fulfilled') {
           setBenchmarks(benchmarksResult.value)
+          setBenchmarksError(null)
         } else {
-          setBenchmarks([])
+          setBenchmarksError('Unable to load benchmarks right now.')
         }
 
         if (runsResult.status === 'fulfilled') {
@@ -109,27 +111,39 @@ export function EnvironmentDetailsPage() {
             }
           }
           setActiveRunsByBenchmarkId(nextActiveRuns)
-        } else {
-          setActiveRunsByBenchmarkId({})
         }
+        setIsBenchmarksLoading(false)
 
         // Handle services result (non-blocking)
         if (servicesResult.status === 'fulfilled') {
           setServices(servicesResult.value)
+          setServicesError(null)
+        } else {
+          setServicesError('Unable to load services right now.')
         }
-        // If services failed, we keep existing services and don't show error
-        // The empty state will show if services array is empty
-      } catch {
-        // This catch should not be reached with Promise.allSettled
-        // But keeping it as a safety net
+        setIsServicesLoading(false)
+      } catch (nextError: unknown) {
         if (signal.aborted) {
           return
         }
 
-        setError('An unexpected error occurred.')
+        setBenchmarksError(null)
+        setServicesError(null)
+
+        setIsBenchmarksLoading(false)
+        setIsServicesLoading(false)
+
+        if (nextError instanceof EnvironmentDetailsError) {
+          setError(nextError.message)
+          setNotFound(nextError.notFound)
+        } else {
+          setError('Unable to load environment details right now.')
+        }
       } finally {
         if (!signal.aborted) {
-          setIsLoading(false)
+          if (isInitialLoad) {
+            setIsLoading(false)
+          }
         }
       }
     },
@@ -234,9 +248,9 @@ export function EnvironmentDetailsPage() {
         <section className="environment-benchmarks-section">
           <h2>Benchmarks</h2>
           <AsyncStateView
-            isLoading={false}
-            error={null}
-            isEmpty={sortedBenchmarks.length === 0}
+            isLoading={isBenchmarksLoading}
+            error={benchmarksError}
+            isEmpty={!isBenchmarksLoading && !benchmarksError && sortedBenchmarks.length === 0}
             emptyTitle="No benchmarks yet"
             emptyDescription="Create a benchmark to start running scenarios in this environment."
           >
@@ -294,9 +308,9 @@ export function EnvironmentDetailsPage() {
         <section className="environment-services-section">
           <h2>Registered services</h2>
           <AsyncStateView
-            isLoading={false}
-            error={null}
-            isEmpty={sortedServices.length === 0}
+            isLoading={isServicesLoading}
+            error={servicesError}
+            isEmpty={!isServicesLoading && !servicesError && sortedServices.length === 0}
             emptyTitle="No services registered"
             emptyDescription="No services have reported into this environment yet."
           >

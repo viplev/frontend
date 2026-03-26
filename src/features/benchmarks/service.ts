@@ -1,6 +1,9 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
-import type { EnvironmentRunSummaryDTO } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
+import {
+  EnvironmentRunSummaryDTOStatusEnum,
+  type EnvironmentRunSummaryDTO,
+} from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
 import { createBenchmarkApi, createBenchmarkRunsApi } from '../../auth/client'
 
 export class BenchmarksLoadError extends Error {
@@ -47,7 +50,11 @@ export async function listBenchmarks(
   }
 }
 
-const ACTIVE_STATUS_SET = new Set(['PENDING_START', 'STARTED', 'PENDING_STOP'])
+const ACTIVE_STATUS_SET = new Set([
+  EnvironmentRunSummaryDTOStatusEnum.PendingStart,
+  EnvironmentRunSummaryDTOStatusEnum.Started,
+  EnvironmentRunSummaryDTOStatusEnum.PendingStop,
+])
 
 export async function listActiveEnvironmentRuns(
   environmentId: string,
@@ -59,12 +66,19 @@ export async function listActiveEnvironmentRuns(
       environmentId,
       page: 0,
       size: 50,
-      sort: ['startedAt,desc'],
+      sort: 'startedAt,desc',
     })
 
     const runs = response.runs ?? []
     return runs.filter(
-      (run) => run.status != null && ACTIVE_STATUS_SET.has(run.status),
+      (run) =>
+        run.status != null &&
+        ACTIVE_STATUS_SET.has(
+          run.status as
+            | typeof EnvironmentRunSummaryDTOStatusEnum.PendingStart
+            | typeof EnvironmentRunSummaryDTOStatusEnum.Started
+            | typeof EnvironmentRunSummaryDTOStatusEnum.PendingStop,
+        ),
     )
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
