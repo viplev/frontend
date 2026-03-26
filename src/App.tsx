@@ -8,7 +8,6 @@ import { ProtectedHomePage } from './features/auth/ProtectedHomePage'
 import { EnvironmentsPage } from './features/environments/EnvironmentsPage'
 import { CreateEnvironmentPage } from './features/environments/CreateEnvironmentPage'
 import { EnvironmentDetailsPage } from './features/environments/EnvironmentDetailsPage'
-import { BenchmarksPage } from './features/benchmarks/BenchmarksPage'
 import './App.css'
 
 function App() {
@@ -25,10 +24,6 @@ function App() {
           <Route
             path="/environments/:environmentId"
             element={<EnvironmentDetailsPage />}
-          />
-          <Route
-            path="/environments/:environmentId/benchmarks"
-            element={<BenchmarksPage />}
           />
           <Route
             path="/benchmarks"

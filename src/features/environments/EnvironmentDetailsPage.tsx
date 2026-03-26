@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
+import type { EnvironmentRunSummaryDTO } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
+import { listActiveEnvironmentRuns, listBenchmarks } from '../benchmarks/service'
 import {
   EnvironmentDetailsError,
   getEnvironmentDetails,
@@ -35,7 +38,12 @@ function formatTimestamp(value?: Date): string {
 
 export function EnvironmentDetailsPage() {
   const { environmentId = '' } = useParams<{ environmentId: string }>()
+  const navigate = useNavigate()
   const [environment, setEnvironment] = useState<EnvironmentDTO | null>(null)
+  const [benchmarks, setBenchmarks] = useState<Array<BenchmarkDTO>>([])
+  const [activeRunsByBenchmarkId, setActiveRunsByBenchmarkId] = useState<
+    Record<string, EnvironmentRunSummaryDTO>
+  >({})
   const [services, setServices] = useState<Array<ServiceDTO>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,8 +65,11 @@ export function EnvironmentDetailsPage() {
       setNotFound(false)
 
       try {
-        const [detailsResult, servicesResult] = await Promise.allSettled([
+        const [detailsResult, benchmarksResult, runsResult, servicesResult] =
+          await Promise.allSettled([
           getEnvironmentDetails(environmentId),
+          listBenchmarks(environmentId),
+          listActiveEnvironmentRuns(environmentId),
           getEnvironmentServices(environmentId),
         ])
 
@@ -84,9 +95,29 @@ export function EnvironmentDetailsPage() {
         // Details succeeded - update environment
         setEnvironment(detailsResult.value)
 
+        if (benchmarksResult.status === 'fulfilled') {
+          setBenchmarks(benchmarksResult.value)
+        } else {
+          setBenchmarks([])
+        }
+
+        if (runsResult.status === 'fulfilled') {
+          const nextActiveRuns: Record<string, EnvironmentRunSummaryDTO> = {}
+          for (const run of runsResult.value) {
+            if (run.benchmarkId && !nextActiveRuns[run.benchmarkId]) {
+              nextActiveRuns[run.benchmarkId] = run
+            }
+          }
+          setActiveRunsByBenchmarkId(nextActiveRuns)
+        } else {
+          setActiveRunsByBenchmarkId({})
+        }
+
         // Handle services result (non-blocking)
         if (servicesResult.status === 'fulfilled') {
           setServices(servicesResult.value)
+        } else {
+          setServices([])
         }
         // If services failed, we keep existing services and don't show error
         // The empty state will show if services array is empty
@@ -140,6 +171,11 @@ export function EnvironmentDetailsPage() {
     [services],
   )
 
+  const sortedBenchmarks = useMemo(
+    () => [...benchmarks].sort((a, b) => a.name.localeCompare(b.name)),
+    [benchmarks],
+  )
+
   if (notFound) {
     return (
       <article className="shell-page">
@@ -160,20 +196,12 @@ export function EnvironmentDetailsPage() {
         <div>
           <h1>{environment?.name ?? 'Environment details'}</h1>
           <p className="auth-text">
-            Service overview refreshes automatically every 15 seconds.
+            Benchmarks and services refresh automatically every 15 seconds.
           </p>
         </div>
-        <div className="environment-header-actions">
-          <Link
-            className="auth-button environment-inline-action"
-            to={`/environments/${environmentId}/benchmarks`}
-          >
-            View benchmarks
-          </Link>
-          <Link className="shell-alert-dismiss" to="/environments">
-            Back
-          </Link>
-        </div>
+        <Link className="shell-alert-dismiss" to="/environments">
+          Back
+        </Link>
       </div>
 
       <AsyncStateView
@@ -203,6 +231,55 @@ export function EnvironmentDetailsPage() {
               {formatTimestamp(environment?.createdAt)}
             </p>
           </div>
+        </section>
+
+        <section className="environment-benchmarks-section">
+          <h2>Benchmarks</h2>
+          <AsyncStateView
+            isLoading={false}
+            error={null}
+            isEmpty={sortedBenchmarks.length === 0}
+            emptyTitle="No benchmarks yet"
+            emptyDescription="Create a benchmark to start running scenarios in this environment."
+          >
+            <section className="benchmark-list">
+              {sortedBenchmarks.map((benchmark) => {
+                const isRunning = Boolean(
+                  benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
+                )
+
+                return (
+                  <article
+                    key={benchmark.id ?? benchmark.name}
+                    className={`benchmark-card ${isRunning ? 'benchmark-card-active' : ''}`}
+                  >
+                    <header className="benchmark-card-header">
+                      <h2>{benchmark.name}</h2>
+                      {isRunning ? (
+                        <span className="benchmark-status-active">Active run</span>
+                      ) : null}
+                    </header>
+                    <p>{benchmark.description?.trim() || 'No description provided.'}</p>
+                    <div className="benchmark-card-actions">
+                      <button
+                        type="button"
+                        className="auth-button"
+                        onClick={() => navigate('/benchmarks')}
+                        disabled={isRunning || !benchmark.id}
+                        title={
+                          isRunning
+                            ? 'This benchmark is already running in this environment.'
+                            : undefined
+                        }
+                      >
+                        Start benchmark
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </section>
+          </AsyncStateView>
         </section>
 
         <section className="environment-services-section">
