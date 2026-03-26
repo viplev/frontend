@@ -116,8 +116,6 @@ export function EnvironmentDetailsPage() {
         // Handle services result (non-blocking)
         if (servicesResult.status === 'fulfilled') {
           setServices(servicesResult.value)
-        } else {
-          setServices([])
         }
         // If services failed, we keep existing services and don't show error
         // The empty state will show if services array is empty
