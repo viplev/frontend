@@ -531,7 +531,7 @@
 .run-monitor-top-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 0.75rem;
 }
@@ -540,13 +540,26 @@
   margin-bottom: 0;
 }
 
+.run-monitor-header-controls {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.run-monitor-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .run-monitor-status {
   border: 1px solid #c9d6e8;
   border-radius: 12px;
   padding: 0.65rem 0.8rem;
   min-width: 300px;
   max-width: 540px;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .run-monitor-status-value {
@@ -618,6 +631,86 @@
 
 .run-monitor-details-grid > div {
   padding: 0.2rem 0;
+}
+
+.run-monitor-refresh {
+  background: #2a6fdb;
+  color: #ffffff;
+  min-width: 2.9rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.run-monitor-refresh:hover,
+.run-monitor-refresh:focus-visible {
+  background: #1f5dbd;
+}
+
+.run-monitor-refresh-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: block;
+}
+
+.run-monitor-stop {
+  background: #f59e0b;
+  color: #7c2d12;
+}
+
+.run-monitor-stop:hover,
+.run-monitor-stop:focus-visible {
+  background: #fbbf24;
+}
+
+.run-monitor-metrics {
+  margin-top: 0.4rem;
+}
+
+.run-monitor-metrics h2 {
+  margin: 0 0 0.6rem;
+  color: #1f3347;
+}
+
+.run-monitor-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 0.7rem;
+}
+
+.run-metric-card {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0.7rem 0.8rem;
+}
+
+.run-metric-card h3 {
+  margin: 0 0 0.45rem;
+  color: #17324a;
+}
+
+.run-metric-card p {
+  margin: 0.2rem 0;
+  color: #2f475f;
+}
+
+.run-metric-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.run-metric-list li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.run-metric-list span {
+  color: #3d4b5c;
+  font-size: 0.9rem;
 }
 
 .benchmark-empty-cta {
