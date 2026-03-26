@@ -8,17 +8,16 @@ import {
 import { listActiveEnvironmentRuns } from '../benchmarks/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import { EnvironmentsLoadError, listEnvironments } from './service'
+import { formatTimestamp } from './format'
 
-function EnvironmentPlatform({ type }: { type: EnvironmentDTO['type'] }) {
+const AGENT_ACTIVE_THRESHOLD_MINUTES = 5
+
+function EnvironmentPlatform({
+  type,
+}: {
+  type: EnvironmentDTO['type']
+}) {
   return <span className="environment-type">{type}</span>
-}
-
-function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'Never'
-  }
-
-  return new Date(value).toLocaleString()
 }
 
 function resolveAgentStatus(lastSeenAt?: Date): { label: string; variant: 'active' | 'inactive' | 'never' } {
@@ -27,7 +26,7 @@ function resolveAgentStatus(lastSeenAt?: Date): { label: string; variant: 'activ
   }
 
   const minutesSinceSeen = (Date.now() - new Date(lastSeenAt).getTime()) / 60000
-  if (minutesSinceSeen <= 5) {
+  if (minutesSinceSeen <= AGENT_ACTIVE_THRESHOLD_MINUTES) {
     return { label: 'Agent: Active', variant: 'active' }
   }
 
@@ -46,13 +45,27 @@ function hasRunningOrPendingRun(runs: Array<EnvironmentRunSummaryDTO>): boolean 
 function EnvironmentCard({
   environment,
   hasActiveRuns,
+  benchmarkStatusKnown,
 }: {
   environment: EnvironmentDTO
   hasActiveRuns: boolean
+  benchmarkStatusKnown: boolean
 }) {
   const navigate = useNavigate()
   const agentStatus = resolveAgentStatus(environment.agentLastSeenAt)
-  const runsStatusLabel = hasActiveRuns ? 'Benchmarks: Running' : 'Benchmarks: Idle'
+  const runsStatusLabel = benchmarkStatusKnown
+    ? hasActiveRuns
+      ? 'Benchmarks: Running'
+      : 'Benchmarks: Idle'
+    : 'Benchmarks: Unknown'
+  const runStatusVariant = benchmarkStatusKnown
+    ? hasActiveRuns
+      ? 'environment-card-indicator-running'
+      : 'environment-card-indicator-idle'
+    : 'environment-card-indicator-unknown'
+  const runsStatusTitle = benchmarkStatusKnown
+    ? undefined
+    : 'Unable to determine benchmark run status right now.'
 
   const handleClick = () => {
     if (environment.id) {
@@ -78,11 +91,8 @@ function EnvironmentCard({
               {agentStatus.label}
             </span>
             <span
-              className={`environment-card-indicator ${
-                hasActiveRuns
-                  ? 'environment-card-indicator-running'
-                  : 'environment-card-indicator-idle'
-              }`}
+              className={`environment-card-indicator ${runStatusVariant}`}
+              title={runsStatusTitle}
             >
               {runsStatusLabel}
             </span>
@@ -101,6 +111,9 @@ export function EnvironmentsPage() {
   const [activeRunByEnvironmentId, setActiveRunByEnvironmentId] = useState<Record<string, boolean>>(
     {},
   )
+  const [benchmarkStatusKnownByEnvironmentId, setBenchmarkStatusKnownByEnvironmentId] = useState<
+    Record<string, boolean>
+  >({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [createdNotice, setCreatedNotice] = useState<{
@@ -132,25 +145,28 @@ export function EnvironmentsPage() {
         environments.map(async (environment) => {
           const environmentId = environment.id?.trim()
           if (!environmentId) {
-            return [environment.id ?? '', false] as const
+            return [environmentId, false, false] as const
           }
 
           try {
             const runs = await listActiveEnvironmentRuns(environmentId)
-            return [environmentId, hasRunningOrPendingRun(runs)] as const
+            return [environmentId, hasRunningOrPendingRun(runs), true] as const
           } catch {
-            return [environmentId, false] as const
+            return [environmentId, false, false] as const
           }
         }),
       )
 
       const nextActiveRunByEnvironmentId: Record<string, boolean> = {}
-      for (const [environmentId, hasActive] of activeRunEntries) {
+      const nextBenchmarkStatusKnownByEnvironmentId: Record<string, boolean> = {}
+      for (const [environmentId, hasActive, isKnown] of activeRunEntries) {
         if (environmentId) {
           nextActiveRunByEnvironmentId[environmentId] = hasActive
+          nextBenchmarkStatusKnownByEnvironmentId[environmentId] = isKnown
         }
       }
       setActiveRunByEnvironmentId(nextActiveRunByEnvironmentId)
+      setBenchmarkStatusKnownByEnvironmentId(nextBenchmarkStatusKnownByEnvironmentId)
     } catch (nextError: unknown) {
       if (nextError instanceof EnvironmentsLoadError) {
         setError(nextError.message)
@@ -230,15 +246,19 @@ export function EnvironmentsPage() {
         loadingTitle="Loading environments"
       >
         <section className="environment-list">
-          {sortedItems.map((environment) => (
+          {sortedItems.map((environment) => {
+            const environmentId = environment.id?.trim() ?? ''
+            return (
             <EnvironmentCard
               key={environment.id ?? `${environment.name}-${environment.type}`}
               environment={environment}
-              hasActiveRuns={Boolean(
-                environment.id ? activeRunByEnvironmentId[environment.id] : false,
+              hasActiveRuns={Boolean(environmentId ? activeRunByEnvironmentId[environmentId] : false)}
+              benchmarkStatusKnown={Boolean(
+                environmentId ? benchmarkStatusKnownByEnvironmentId[environmentId] : false,
               )}
             />
-          ))}
+            )
+          })}
         </section>
       </AsyncStateView>
     </article>

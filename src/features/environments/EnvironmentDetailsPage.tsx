@@ -19,6 +19,7 @@ import {
   getEnvironmentDetails,
   getEnvironmentServices,
 } from './service'
+import { formatTimestamp } from './format'
 
 const REFRESH_INTERVAL_MS = 15000
 
@@ -34,14 +35,6 @@ function formatMemory(bytes?: number): string {
 
   const mb = bytes / (1024 * 1024)
   return `${mb.toFixed(0)} MB`
-}
-
-function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'Never'
-  }
-
-  return new Date(value).toLocaleString()
 }
 
 function formatRunStatus(status?: string): string {

@@ -321,6 +321,12 @@
   color: #334155;
 }
 
+.environment-card-indicator-unknown {
+  border-color: #ef9a9a;
+  background: #fdecea;
+  color: #8a1f1b;
+}
+
 .environment-view-details {
   margin-top: 0.65rem;
   text-decoration: none;
