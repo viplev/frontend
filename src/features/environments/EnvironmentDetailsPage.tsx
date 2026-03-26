@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import type { EnvironmentRunSummaryDTO } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
@@ -39,6 +39,7 @@ function formatTimestamp(value?: Date): string {
 export function EnvironmentDetailsPage() {
   const { environmentId = '' } = useParams<{ environmentId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [environment, setEnvironment] = useState<EnvironmentDTO | null>(null)
   const [benchmarks, setBenchmarks] = useState<Array<BenchmarkDTO>>([])
   const [activeRunsByBenchmarkId, setActiveRunsByBenchmarkId] = useState<
@@ -52,6 +53,20 @@ export function EnvironmentDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [benchmarkNotice, setBenchmarkNotice] = useState<{
+    type: 'created' | 'updated'
+    name: string
+  } | null>(() => {
+    const state = location.state as
+      | {
+          benchmarkNotice?: {
+            type: 'created' | 'updated'
+            name: string
+          }
+        }
+      | undefined
+    return state?.benchmarkNotice ?? null
+  })
 
   const load = useCallback(
     async (signal: AbortSignal, isInitialLoad = true) => {
@@ -226,6 +241,25 @@ export function EnvironmentDetailsPage() {
         }}
         loadingTitle="Loading environment details"
       >
+        {benchmarkNotice ? (
+          <section className="environment-created-notice" role="status">
+            <p>
+              Benchmark <strong>{benchmarkNotice.name}</strong>{' '}
+              {benchmarkNotice.type === 'created' ? 'was created' : 'was updated'} successfully.
+            </p>
+            <button
+              type="button"
+              className="shell-alert-dismiss"
+              onClick={() => {
+                setBenchmarkNotice(null)
+                navigate(location.pathname, { replace: true })
+              }}
+            >
+              Dismiss
+            </button>
+          </section>
+        ) : null}
+
         <section className="environment-detail-grid">
           <div>
             <p className="shell-context-label">Type</p>
@@ -246,7 +280,16 @@ export function EnvironmentDetailsPage() {
         </section>
 
         <section className="environment-benchmarks-section">
-          <h2>Benchmarks</h2>
+          <div className="benchmark-section-header">
+            <h2>Benchmarks</h2>
+            <button
+              type="button"
+              className="auth-button benchmark-section-action"
+              onClick={() => navigate(`/environments/${environmentId}/benchmarks/new`)}
+            >
+              Create benchmark
+            </button>
+          </div>
           <AsyncStateView
             isLoading={isBenchmarksLoading}
             error={benchmarksError}
@@ -262,6 +305,7 @@ export function EnvironmentDetailsPage() {
                     <th>Description</th>
                     <th>Status</th>
                     <th>Action</th>
+                    <th>Edit</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -294,6 +338,20 @@ export function EnvironmentDetailsPage() {
                             }
                           >
                             Start benchmark
+                          </button>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="shell-alert-dismiss benchmark-table-action-secondary"
+                            onClick={() =>
+                              navigate(
+                                `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
+                              )
+                            }
+                            disabled={!benchmark.id}
+                          >
+                            Edit
                           </button>
                         </td>
                       </tr>

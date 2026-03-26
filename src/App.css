@@ -339,6 +339,23 @@
   color: #1f3347;
 }
 
+.benchmark-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.benchmark-section-header h2 {
+  margin: 0;
+  color: #1f3347;
+}
+
+.benchmark-section-action {
+  margin: 0;
+}
+
 .environment-services-table-wrap {
   overflow-x: auto;
 }
@@ -423,6 +440,35 @@
 
 .benchmark-table-action {
   margin: 0;
+}
+
+.benchmark-table-action-secondary {
+  margin: 0;
+}
+
+.benchmark-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-width: 760px;
+}
+
+.benchmark-textarea {
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+}
+
+.benchmark-field-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.9rem;
+}
+
+.benchmark-form-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
 }
 
 .async-state {
