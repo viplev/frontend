@@ -44,6 +44,18 @@ function formatTimestamp(value?: Date): string {
   return new Date(value).toLocaleString()
 }
 
+function formatRunStatus(status?: string): string {
+  if (!status) {
+    return 'Unknown'
+  }
+
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 export function EnvironmentDetailsPage() {
   const { environmentId = '' } = useParams<{ environmentId: string }>()
   const navigate = useNavigate()
@@ -392,7 +404,9 @@ export function EnvironmentDetailsPage() {
                           <td>{benchmark.description?.trim() || 'No description provided.'}</td>
                           <td>
                             {isRunning ? (
-                              <span className="benchmark-status-active">Active run</span>
+                              <span className="benchmark-status-active">
+                                {formatRunStatus(activeRun?.status)}
+                              </span>
                             ) : (
                               'Idle'
                             )}
