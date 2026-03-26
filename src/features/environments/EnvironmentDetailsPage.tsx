@@ -2,10 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
-import type { EnvironmentRunSummaryDTO } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
+import {
+  EnvironmentRunSummaryDTOStatusEnum,
+  type EnvironmentRunSummaryDTO,
+} from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
-import { listActiveEnvironmentRuns, listBenchmarks } from '../benchmarks/service'
+import {
+  listActiveEnvironmentRuns,
+  listBenchmarks,
+  startBenchmark,
+  StartBenchmarkError,
+} from '../benchmarks/service'
 import {
   EnvironmentDetailsError,
   getEnvironmentDetails,
@@ -50,6 +58,10 @@ export function EnvironmentDetailsPage() {
   const [benchmarksError, setBenchmarksError] = useState<string | null>(null)
   const [isServicesLoading, setIsServicesLoading] = useState(true)
   const [servicesError, setServicesError] = useState<string | null>(null)
+  const [benchmarkActionError, setBenchmarkActionError] = useState<string | null>(null)
+  const [startInFlightByBenchmarkId, setStartInFlightByBenchmarkId] = useState<
+    Record<string, boolean>
+  >({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -222,6 +234,50 @@ export function EnvironmentDetailsPage() {
     </section>
   ) : null
 
+  const handleStartBenchmark = useCallback(
+    async (benchmark: BenchmarkDTO) => {
+      const benchmarkId = benchmark.id?.trim()
+      if (!benchmarkId) {
+        setBenchmarkActionError('This benchmark is missing an id and cannot be started.')
+        return
+      }
+
+      setBenchmarkActionError(null)
+      setStartInFlightByBenchmarkId((current) => ({ ...current, [benchmarkId]: true }))
+
+      try {
+        const started = await startBenchmark(environmentId, benchmarkId)
+        const runId = started.runId?.trim()
+        if (!runId) {
+          setBenchmarkActionError(
+            'Benchmark was started, but no run id was returned. Please refresh and try again.',
+          )
+          return
+        }
+
+        setActiveRunsByBenchmarkId((current) => ({
+          ...current,
+          [benchmarkId]: {
+            benchmarkId,
+            runId,
+            status: started.status ?? EnvironmentRunSummaryDTOStatusEnum.PendingStart,
+          },
+        }))
+
+        navigate(`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`)
+      } catch (nextError: unknown) {
+        if (nextError instanceof StartBenchmarkError) {
+          setBenchmarkActionError(nextError.message)
+        } else {
+          setBenchmarkActionError('Unable to start benchmark right now.')
+        }
+      } finally {
+        setStartInFlightByBenchmarkId((current) => ({ ...current, [benchmarkId]: false }))
+      }
+    },
+    [environmentId, navigate],
+  )
+
   if (notFound) {
     return (
       <article className="shell-page">
@@ -296,6 +352,11 @@ export function EnvironmentDetailsPage() {
             error={benchmarksError}
             isEmpty={false}
           >
+            {benchmarkActionError ? (
+              <p className="auth-notice auth-notice-error benchmark-action-error" role="alert">
+                {benchmarkActionError}
+              </p>
+            ) : null}
             {sortedBenchmarks.length === 0 ? (
               <Link
                 className="async-state async-state-empty benchmark-empty-cta"
@@ -317,8 +378,12 @@ export function EnvironmentDetailsPage() {
                   </thead>
                   <tbody>
                     {sortedBenchmarks.map((benchmark) => {
-                      const isRunning = Boolean(
-                        benchmark.id ? activeRunsByBenchmarkId[benchmark.id] : null,
+                      const activeRun = benchmark.id
+                        ? activeRunsByBenchmarkId[benchmark.id]
+                        : null
+                      const isRunning = Boolean(activeRun)
+                      const isStarting = Boolean(
+                        benchmark.id ? startInFlightByBenchmarkId[benchmark.id] : false,
                       )
 
                       return (
@@ -334,19 +399,33 @@ export function EnvironmentDetailsPage() {
                           </td>
                           <td>
                             <div className="benchmark-table-actions">
-                              <button
-                                type="button"
-                                className="auth-button benchmark-table-action"
-                                onClick={() => navigate('/benchmarks')}
-                                disabled={isRunning || !benchmark.id}
-                                title={
-                                  isRunning
-                                    ? 'This benchmark is already running in this environment.'
-                                    : undefined
-                                }
-                              >
-                                Start benchmark
-                              </button>
+                              {isRunning && activeRun?.runId ? (
+                                <button
+                                  type="button"
+                                  className="auth-button benchmark-go-to-run-action"
+                                  onClick={() =>
+                                    navigate(
+                                      `/environments/${environmentId}/benchmarks/${benchmark.id}/runs/${activeRun.runId}`,
+                                    )
+                                  }
+                                >
+                                  Go to active run
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="auth-button benchmark-table-action"
+                                  onClick={() => void handleStartBenchmark(benchmark)}
+                                  disabled={isRunning || isStarting || !benchmark.id}
+                                  title={
+                                    isRunning
+                                      ? 'This benchmark is already running in this environment.'
+                                      : undefined
+                                  }
+                                >
+                                  {isStarting ? 'Starting...' : 'Start benchmark'}
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="shell-alert-dismiss benchmark-table-action-secondary"
@@ -355,7 +434,12 @@ export function EnvironmentDetailsPage() {
                                     `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
                                   )
                                 }
-                                disabled={!benchmark.id}
+                                disabled={!benchmark.id || isRunning || isStarting}
+                                title={
+                                  isRunning || isStarting
+                                    ? 'You cannot edit a benchmark while it has an active run.'
+                                    : undefined
+                                }
                               >
                                 Edit
                               </button>

@@ -1,10 +1,16 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
+import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
+import type { BenchmarkStatusDTO } from '../../generated/openapi/models/BenchmarkStatusDTO'
 import {
   EnvironmentRunSummaryDTOStatusEnum,
   type EnvironmentRunSummaryDTO,
 } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
-import { createBenchmarkApi, createBenchmarkRunsApi } from '../../auth/client'
+import {
+  createBenchmarkActionsApi,
+  createBenchmarkApi,
+  createBenchmarkRunsApi,
+} from '../../auth/client'
 
 export class BenchmarksLoadError extends Error {
   constructor(message: string) {
@@ -38,6 +44,20 @@ export class UpdateBenchmarkError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'UpdateBenchmarkError'
+  }
+}
+
+export class StartBenchmarkError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'StartBenchmarkError'
+  }
+}
+
+export class BenchmarkRunDetailsError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BenchmarkRunDetailsError'
   }
 }
 
@@ -157,6 +177,64 @@ export async function updateBenchmark(
 
     throw new UpdateBenchmarkError(
       'Network error while updating benchmark. Please try again.',
+    )
+  }
+}
+
+export async function startBenchmark(
+  environmentId: string,
+  benchmarkId: string,
+): Promise<BenchmarkStatusDTO> {
+  const benchmarkActionsApi = createBenchmarkActionsApi()
+
+  try {
+    return await benchmarkActionsApi.startBenchmark({ environmentId, benchmarkId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 400) {
+        throw new StartBenchmarkError(
+          'Benchmark could not be started with the current configuration.',
+        )
+      }
+      if (error.response.status === 404) {
+        throw new StartBenchmarkError('Benchmark was not found.')
+      }
+      if (error.response.status === 409) {
+        throw new StartBenchmarkError(
+          'This benchmark already has an active run in this environment.',
+        )
+      }
+      if (error.response.status >= 500) {
+        throw new StartBenchmarkError('Server error while trying to start benchmark.')
+      }
+
+      throw new StartBenchmarkError('Unable to start benchmark right now.')
+    }
+
+    throw new StartBenchmarkError(
+      'Network error while starting benchmark. Please try again.',
+    )
+  }
+}
+
+export async function getBenchmarkRunDetails(
+  environmentId: string,
+  benchmarkId: string,
+  runId: string,
+): Promise<BenchmarkRunDerivedDTO> {
+  const runsApi = createBenchmarkRunsApi()
+
+  try {
+    return await runsApi.getBenchmarkRun({ environmentId, benchmarkId, runId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      throw new BenchmarkRunDetailsError(
+        readLoadErrorMessage(error, 'benchmark run details'),
+      )
+    }
+
+    throw new BenchmarkRunDetailsError(
+      'Network error while loading benchmark run details. Please try again.',
     )
   }
 }
