@@ -19,6 +19,7 @@ import {
   getEnvironmentDetails,
   getEnvironmentServices,
 } from './service'
+import { formatTimestamp } from './format'
 
 const REFRESH_INTERVAL_MS = 15000
 
@@ -36,14 +37,6 @@ function formatMemory(bytes?: number): string {
   return `${mb.toFixed(0)} MB`
 }
 
-function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'Never'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
 function formatRunStatus(status?: string): string {
   if (!status) {
     return 'Unknown'
@@ -54,6 +47,38 @@ function formatRunStatus(status?: string): string {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
+}
+
+function toBenchmarkStatusVariant(
+  status?: string,
+): 'idle' | 'pending' | 'running' | 'stopped' | 'success' | 'failed' | 'unknown' {
+  if (!status) {
+    return 'idle'
+  }
+
+  switch (status) {
+    case EnvironmentRunSummaryDTOStatusEnum.PendingStart:
+    case EnvironmentRunSummaryDTOStatusEnum.PendingStop:
+      return 'pending'
+    case EnvironmentRunSummaryDTOStatusEnum.Started:
+      return 'running'
+    case EnvironmentRunSummaryDTOStatusEnum.Stopped:
+      return 'stopped'
+    case EnvironmentRunSummaryDTOStatusEnum.Finished:
+      return 'success'
+    case EnvironmentRunSummaryDTOStatusEnum.Failed:
+      return 'failed'
+    default:
+      return 'unknown'
+  }
+}
+
+function isStartBlockedStatus(status?: string): boolean {
+  return (
+    status === EnvironmentRunSummaryDTOStatusEnum.PendingStart ||
+    status === EnvironmentRunSummaryDTOStatusEnum.Started ||
+    status === EnvironmentRunSummaryDTOStatusEnum.PendingStop
+  )
 }
 
 export function EnvironmentDetailsPage() {
@@ -145,8 +170,9 @@ export function EnvironmentDetailsPage() {
         if (runsResult.status === 'fulfilled') {
           const nextActiveRuns: Record<string, EnvironmentRunSummaryDTO> = {}
           for (const run of runsResult.value) {
-            if (run.benchmarkId && !nextActiveRuns[run.benchmarkId]) {
-              nextActiveRuns[run.benchmarkId] = run
+            const runBenchmarkId = run.benchmarkId?.trim()
+            if (runBenchmarkId && !nextActiveRuns[runBenchmarkId]) {
+              nextActiveRuns[runBenchmarkId] = run
             }
           }
           setActiveRunsByBenchmarkId(nextActiveRuns)
@@ -388,38 +414,43 @@ export function EnvironmentDetailsPage() {
                       <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                    <tbody>
                     {sortedBenchmarks.map((benchmark) => {
-                      const activeRun = benchmark.id
-                        ? activeRunsByBenchmarkId[benchmark.id]
+                      const benchmarkId = benchmark.id?.trim() ?? ''
+                      const activeRun = benchmarkId
+                        ? activeRunsByBenchmarkId[benchmarkId]
                         : null
-                      const isRunning = Boolean(activeRun)
+                      const runStatus = activeRun?.status
+                      const isStartBlocked = isStartBlockedStatus(runStatus)
+                      const statusVariant = isStartBlocked
+                        ? toBenchmarkStatusVariant(runStatus)
+                        : 'idle'
+                      const statusLabel = isStartBlocked
+                        ? formatRunStatus(runStatus)
+                        : 'Idle'
+                      const canGoToRun = isStartBlocked && Boolean(activeRun?.runId)
                       const isStarting = Boolean(
-                        benchmark.id ? startInFlightByBenchmarkId[benchmark.id] : false,
+                        benchmarkId ? startInFlightByBenchmarkId[benchmarkId] : false,
                       )
 
                       return (
-                        <tr key={benchmark.id ?? benchmark.name}>
+                        <tr key={benchmarkId || benchmark.name}>
                           <td>{benchmark.name}</td>
                           <td>{benchmark.description?.trim() || 'No description provided.'}</td>
                           <td>
-                            {isRunning ? (
-                              <span className="benchmark-status-active">
-                                {formatRunStatus(activeRun?.status)}
-                              </span>
-                            ) : (
-                              'Idle'
-                            )}
+                            <span className={`benchmark-status-badge benchmark-status-${statusVariant}`}>
+                              {statusLabel}
+                            </span>
                           </td>
                           <td>
                             <div className="benchmark-table-actions">
-                              {isRunning && activeRun?.runId ? (
+                              {canGoToRun ? (
                                 <button
                                   type="button"
                                   className="auth-button benchmark-go-to-run-action"
                                   onClick={() =>
                                     navigate(
-                                      `/environments/${environmentId}/benchmarks/${benchmark.id}/runs/${activeRun.runId}`,
+                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRun.runId}`,
                                     )
                                   }
                                 >
@@ -430,30 +461,30 @@ export function EnvironmentDetailsPage() {
                                   type="button"
                                   className="auth-button benchmark-table-action"
                                   onClick={() => void handleStartBenchmark(benchmark)}
-                                  disabled={isRunning || isStarting || !benchmark.id}
+                                  disabled={isStartBlocked || isStarting || !benchmarkId}
                                   title={
-                                    isRunning
-                                      ? 'This benchmark is already running in this environment.'
+                                    isStartBlocked
+                                      ? 'This benchmark already has an active or pending run in this environment.'
                                       : undefined
                                   }
                                 >
                                   {isStarting ? 'Starting...' : 'Start benchmark'}
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                className="shell-alert-dismiss benchmark-table-action-secondary"
-                                onClick={() =>
-                                  navigate(
-                                    `/environments/${environmentId}/benchmarks/${benchmark.id}/edit`,
-                                  )
-                                }
-                                disabled={!benchmark.id || isRunning || isStarting}
-                                title={
-                                  isRunning || isStarting
-                                    ? 'You cannot edit a benchmark while it has an active run.'
-                                    : undefined
-                                }
+                                <button
+                                  type="button"
+                                  className="shell-alert-dismiss benchmark-table-action-secondary"
+                                  onClick={() =>
+                                    navigate(
+                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/edit`,
+                                    )
+                                  }
+                                  disabled={!benchmarkId || isStartBlocked || isStarting}
+                                  title={
+                                    isStartBlocked || isStarting
+                                      ? 'You cannot edit a benchmark while it has an active run.'
+                                      : undefined
+                                  }
                               >
                                 Edit
                               </button>

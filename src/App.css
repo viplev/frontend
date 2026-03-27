@@ -259,7 +259,15 @@
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
-  align-items: baseline;
+  align-items: flex-start;
+}
+
+.environment-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .environment-card-header h2 {
@@ -271,6 +279,52 @@
 .environment-card p {
   margin: 0.45rem 0 0;
   color: #3d4b5c;
+}
+
+.environment-card-indicators {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.environment-card-indicator {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #d3dce8;
+  background: #f6f8fb;
+  color: #334155;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.environment-card-indicator-active,
+.environment-card-indicator-running {
+  border-color: #86d19f;
+  background: #ecfbf1;
+  color: #1e4a2e;
+}
+
+.environment-card-indicator-inactive {
+  border-color: #f1c977;
+  background: #fff7e0;
+  color: #7a4a03;
+}
+
+.environment-card-indicator-never,
+.environment-card-indicator-idle {
+  border-color: #d3dce8;
+  background: #f6f8fb;
+  color: #334155;
+}
+
+.environment-card-indicator-unknown {
+  border-color: #ef9a9a;
+  background: #fdecea;
+  color: #8a1f1b;
 }
 
 .environment-view-details {
@@ -468,15 +522,48 @@
   border-top: 1px solid #e3ebf5;
 }
 
-.benchmark-status-active {
+.benchmark-status-badge {
   display: inline-flex;
   border-radius: 999px;
-  border: 1px solid #86d19f;
-  background: #dff7e8;
-  color: #1e4a2e;
+  border: 1px solid #d3dce8;
+  background: #f6f8fb;
+  color: #334155;
   font-size: 0.78rem;
   padding: 0.15rem 0.5rem;
   text-transform: uppercase;
+}
+
+.benchmark-status-idle,
+.benchmark-status-unknown,
+.benchmark-status-stopped {
+  border-color: #d3dce8;
+  background: #f6f8fb;
+  color: #334155;
+}
+
+.benchmark-status-pending {
+  border-radius: 999px;
+  border-color: #f1c977;
+  background: #fff7e0;
+  color: #7a4a03;
+}
+
+.benchmark-status-running {
+  border-color: #7ac8ff;
+  background: #e9f7ff;
+  color: #0f4a70;
+}
+
+.benchmark-status-success {
+  border-color: #86d19f;
+  background: #ecfbf1;
+  color: #1e4a2e;
+}
+
+.benchmark-status-failed {
+  border-color: #ef9a9a;
+  background: #fdecea;
+  color: #8a1f1b;
 }
 
 .benchmark-table-action {
