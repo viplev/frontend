@@ -47,7 +47,7 @@ export interface GetBenchmarkRunRequest {
     percentiles?: string;
 }
 
-export interface GetBenchmarkRunRawRequest {
+export interface GetBenchmarkRunDataRequest {
     environmentId: string;
     benchmarkId: string;
     runId: string;
@@ -214,27 +214,27 @@ export class BenchmarkRunsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for getBenchmarkRunRaw without sending the request
+     * Creates request options for getBenchmarkRunData without sending the request
      */
-    async getBenchmarkRunRawRequestOpts(requestParameters: GetBenchmarkRunRawRequest): Promise<runtime.RequestOpts> {
+    async getBenchmarkRunDataRequestOpts(requestParameters: GetBenchmarkRunDataRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['environmentId'] == null) {
             throw new runtime.RequiredError(
                 'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling getBenchmarkRunRaw().'
+                'Required parameter "environmentId" was null or undefined when calling getBenchmarkRunData().'
             );
         }
 
         if (requestParameters['benchmarkId'] == null) {
             throw new runtime.RequiredError(
                 'benchmarkId',
-                'Required parameter "benchmarkId" was null or undefined when calling getBenchmarkRunRaw().'
+                'Required parameter "benchmarkId" was null or undefined when calling getBenchmarkRunData().'
             );
         }
 
         if (requestParameters['runId'] == null) {
             throw new runtime.RequiredError(
                 'runId',
-                'Required parameter "runId" was null or undefined when calling getBenchmarkRunRaw().'
+                'Required parameter "runId" was null or undefined when calling getBenchmarkRunData().'
             );
         }
 
@@ -268,8 +268,8 @@ export class BenchmarkRunsApi extends runtime.BaseAPI {
      * Returns all raw resource and performance metrics for a run as time-series data
      * Get raw data for a run
      */
-    async getBenchmarkRunRawRaw(requestParameters: GetBenchmarkRunRawRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BenchmarkRunRawDTO>> {
-        const requestOptions = await this.getBenchmarkRunRawRequestOpts(requestParameters);
+    async getBenchmarkRunDataRaw(requestParameters: GetBenchmarkRunDataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BenchmarkRunRawDTO>> {
+        const requestOptions = await this.getBenchmarkRunDataRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => BenchmarkRunRawDTOFromJSON(jsonValue));
@@ -279,8 +279,8 @@ export class BenchmarkRunsApi extends runtime.BaseAPI {
      * Returns all raw resource and performance metrics for a run as time-series data
      * Get raw data for a run
      */
-    async getBenchmarkRunRaw(requestParameters: GetBenchmarkRunRawRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BenchmarkRunRawDTO> {
-        const response = await this.getBenchmarkRunRawRaw(requestParameters, initOverrides);
+    async getBenchmarkRunData(requestParameters: GetBenchmarkRunDataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BenchmarkRunRawDTO> {
+        const response = await this.getBenchmarkRunDataRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
