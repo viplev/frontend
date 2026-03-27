@@ -213,7 +213,6 @@ paths:
           $ref: '#/components/responses/500InternalServerError'
     post:
       tags:
-        - Environment
         - Agent
       summary: Agent can post a list of services
       operationId: registerServices
@@ -222,9 +221,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/ServiceDTO'
+              $ref: '#/components/schemas/ServiceRegistrationDTO'
       responses:
         '201':
           description: Services created
@@ -484,7 +481,6 @@ paths:
           format: uuid
     get:
       tags:
-        - Benchmark Actions
         - Agent
       summary: Get list of pending messages for current environment
       operationId: listMessages
@@ -540,6 +536,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkStatusDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '409':
+          $ref: '#/components/responses/409Conflict'
         '401':
           $ref: '#/components/responses/401Unauthorized'
         '404':
@@ -572,7 +570,7 @@ paths:
         - Benchmark Actions
       summary: Stop a benchmark run
       operationId: stopBenchmarkRun
-      description: Stops an ongoing benchmark run. Returns 400 if the run is not in a stoppable state.
+      description: Stops an ongoing benchmark run. Returns 409 if the run is not in a stoppable state.
       responses:
         '200':
           description: Benchmark run stopped
@@ -582,6 +580,8 @@ paths:
                 $ref: '#/components/schemas/BenchmarkStatusDTO'
         '400':
           $ref: '#/components/responses/400BadRequest'
+        '409':
+          $ref: '#/components/responses/409Conflict'
         '401':
           $ref: '#/components/responses/401Unauthorized'
         '404':
@@ -758,7 +758,6 @@ paths:
           format: uuid
     post:
       tags:
-        - Benchmark Runs
         - Agent
       summary: Store resource metrics
       operationId: storeResourceMetrics
@@ -803,7 +802,6 @@ paths:
           format: uuid
     post:
       tags:
-        - Benchmark Runs
         - Agent
       summary: Store performance metrics
       operationId: storePerformanceMetrics
@@ -849,7 +847,6 @@ paths:
           format: uuid
     post:
       tags:
-        - Benchmark Runs
         - Agent
       summary: Update run with a status
       operationId: updateBenchmarkRunStatus
@@ -937,6 +934,21 @@ components:
                 title: Not Found
                 status: 404
                 detail: Resource with id '123' not found
+                instance: /v1/environments/123
+    409Conflict:
+      description: Resource state conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDTO'
+          examples:
+            conflict:
+              summary: Resource state conflict
+              value:
+                type: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
+                title: Conflict - Resource state conflict
+                status: 409
+                detail: The requested action conflicts with the current state of the resource
                 instance: /v1/environments/123
     500InternalServerError:
       description: Internal server error
@@ -1127,11 +1139,6 @@ components:
           format: date-time
           readOnly: true
           description: Timestamp when run was created
-        updatedAt:
-          type: string
-          format: date-time
-          readOnly: true
-          description: Timestamp when run was last updated
 
     BenchmarkRunRawDTO:
       type: object
@@ -1415,6 +1422,11 @@ components:
 
     HostDTO:
       type: object
+      required:
+        - name
+        - machineId
+        - os
+        - ipAddress
       properties:
         id:
           type: string
@@ -1426,6 +1438,9 @@ components:
         name:
           type: string
           description: Hostname
+        machineId:
+          type: string
+          description: Unique machine identifier (e.g. /etc/machine-id on Linux)
         ipAddress:
           type: string
           description: IP address of the host
@@ -1455,8 +1470,23 @@ components:
           type: string
           description: RAM type (e.g. DDR4, DDR5)
 
+    ServiceRegistrationDTO:
+      type: object
+      required:
+        - host
+        - services
+      properties:
+        host:
+          $ref: '#/components/schemas/HostDTO'
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceDTO'
+
     ServiceDTO:
       type: object
+      required:
+        - serviceName
       properties:
         id:
           type: string
@@ -1491,21 +1521,11 @@ components:
           format: int64
           description: Memory reservation in bytes
 
-    MetricResourceServiceDTO:
+    MetricDataPointDTO:
       type: object
+      required:
+        - collectedAt
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          examples:
-            - "e5f6a7b8-c9d0-1234-ef01-234567890abc"
-        serviceId:
-          type: string
-          format: uuid
-          description: ID of the service
-          examples:
-            - "d4e5f6a7-b8c9-0123-def0-1234567890ab"
         collectedAt:
           type: string
           format: date-time
@@ -1541,54 +1561,44 @@ components:
 
     MetricResourceHostDTO:
       type: object
+      required:
+        - machineId
+        - metrics
       properties:
-        id:
+        machineId:
           type: string
-          format: uuid
-          readOnly: true
-          examples:
-            - "f6a7b8c9-d0e1-2345-f012-34567890abcd"
-        hostId:
+          description: Machine identifier known by the agent
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricDataPointDTO'
+
+    MetricResourceServiceDTO:
+      type: object
+      required:
+        - serviceName
+        - metrics
+      properties:
+        serviceName:
           type: string
-          format: uuid
-          description: ID of the host
-          examples:
-            - "c3d4e5f6-a7b8-9012-cdef-123456789012"
-        collectedAt:
-          type: string
-          format: date-time
-          description: Timestamp when metric was collected
-        cpuPercentage:
-          type: number
-          format: double
-          description: CPU usage percentage
-        memoryUsageBytes:
-          type: number
-          format: double
-          description: Memory usage in bytes
-        memoryLimitBytes:
-          type: number
-          format: double
-          description: Memory limit in bytes
-        networkInBytes:
-          type: number
-          format: double
-          description: Network bytes received
-        networkOutBytes:
-          type: number
-          format: double
-          description: Network bytes sent
-        blockInBytes:
-          type: number
-          format: double
-          description: Block I/O bytes read
-        blockOutBytes:
-          type: number
-          format: double
-          description: Block I/O bytes written
+          description: Docker service name known by the agent
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricDataPointDTO'
 
     MetricK6HttpDTO:
       type: object
+      required:
+        - collectedAt
+        - url
+        - httpMethod
+        - httpStatus
+        - expectedStatus
+        - dataReceivedByte
+        - dataSentByte
+        - httpReqDurationMs
+        - httpReqWaitingMs
       properties:
         id:
           type: string
@@ -1631,6 +1641,9 @@ components:
 
     MetricK6VusDTO:
       type: object
+      required:
+        - collectedAt
+        - vus
       properties:
         id:
           type: string
@@ -1662,15 +1675,15 @@ components:
     MetricResourceDTO:
       type: object
       description: Wrapper for resource metrics sent by the agent
+      required:
+        - host
       properties:
+        host:
+          $ref: '#/components/schemas/MetricResourceHostDTO'
         services:
           type: array
           items:
             $ref: '#/components/schemas/MetricResourceServiceDTO'
-        hosts:
-          type: array
-          items:
-            $ref: '#/components/schemas/MetricResourceHostDTO'
 
     MetricPerformanceDTO:
       type: object
