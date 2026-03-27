@@ -1,25 +1,24 @@
 
-# MetricResourceDTO
+# ServiceRegistrationDTO
 
-Wrapper for resource metrics sent by the agent
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`host` | [MetricResourceHostDTO](MetricResourceHostDTO.md)
-`services` | [Array&lt;MetricResourceServiceDTO&gt;](MetricResourceServiceDTO.md)
+`host` | [HostDTO](HostDTO.md)
+`services` | [Array&lt;ServiceDTO&gt;](ServiceDTO.md)
 
 ## Example
 
 ```typescript
-import type { MetricResourceDTO } from ''
+import type { ServiceRegistrationDTO } from ''
 
 // TODO: Update the object below with actual values
 const example = {
   "host": null,
   "services": null,
-} satisfies MetricResourceDTO
+} satisfies ServiceRegistrationDTO
 
 console.log(example)
 
@@ -28,7 +27,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as MetricResourceDTO
+const exampleParsed = JSON.parse(exampleJSON) as ServiceRegistrationDTO
 console.log(exampleParsed)
 ```
 

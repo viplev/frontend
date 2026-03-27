@@ -10,7 +10,6 @@ All URIs are relative to *http://localhost*
 | [**getService**](EnvironmentApi.md#getservice) | **GET** /v1/environments/{environmentId}/services/{serviceId} | Get a single service |
 | [**listEnvironments**](EnvironmentApi.md#listenvironments) | **GET** /v1/environments | Get all environments |
 | [**listServices**](EnvironmentApi.md#listservices) | **GET** /v1/environments/{environmentId}/services | Get all services on an Environment |
-| [**registerServices**](EnvironmentApi.md#registerservices) | **POST** /v1/environments/{environmentId}/services | Agent can post a list of services |
 | [**updateEnvironment**](EnvironmentApi.md#updateenvironment) | **PUT** /v1/environments/{environmentId} | Update an environment |
 
 
@@ -437,82 +436,6 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | List of all services |  -  |
-| **400** | Invalid request |  -  |
-| **401** | Authentication required |  -  |
-| **404** | Resource not found |  -  |
-| **500** | Internal server error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## registerServices
-
-> registerServices(environmentId, serviceDTO)
-
-Agent can post a list of services
-
-### Example
-
-```ts
-import {
-  Configuration,
-  EnvironmentApi,
-} from '';
-import type { RegisterServicesRequest } from '';
-
-async function example() {
-  console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
-
-  const body = {
-    // string
-    environmentId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
-    // Array<ServiceDTO>
-    serviceDTO: ...,
-  } satisfies RegisterServicesRequest;
-
-  try {
-    const data = await api.registerServices(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **environmentId** | `string` |  | [Defaults to `undefined`] |
-| **serviceDTO** | `Array<ServiceDTO>` |  | |
-
-### Return type
-
-`void` (Empty response body)
-
-### Authorization
-
-[bearerAuth](../README.md#bearerAuth)
-
-### HTTP request headers
-
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **201** | Services created |  -  |
 | **400** | Invalid request |  -  |
 | **401** | Authentication required |  -  |
 | **404** | Resource not found |  -  |

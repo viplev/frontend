@@ -17,20 +17,13 @@ import * as runtime from '../runtime';
 import type {
   BenchmarkStatusDTO,
   ErrorDTO,
-  MessageDTO,
 } from '../models/index';
 import {
     BenchmarkStatusDTOFromJSON,
     BenchmarkStatusDTOToJSON,
     ErrorDTOFromJSON,
     ErrorDTOToJSON,
-    MessageDTOFromJSON,
-    MessageDTOToJSON,
 } from '../models/index';
-
-export interface ListMessagesRequest {
-    environmentId: string;
-}
 
 export interface StartBenchmarkRequest {
     environmentId: string;
@@ -47,61 +40,6 @@ export interface StopBenchmarkRunRequest {
  * 
  */
 export class BenchmarkActionsApi extends runtime.BaseAPI {
-
-    /**
-     * Creates request options for listMessages without sending the request
-     */
-    async listMessagesRequestOpts(requestParameters: ListMessagesRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['environmentId'] == null) {
-            throw new runtime.RequiredError(
-                'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling listMessages().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("bearerAuth", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/environments/{environmentId}/message`;
-        urlPath = urlPath.replace(`{${"environmentId"}}`, encodeURIComponent(String(requestParameters['environmentId'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * This endpoint is used by the agent, to see if there are any benchmarks to start or stop.
-     * Get list of pending messages for current environment
-     */
-    async listMessagesRaw(requestParameters: ListMessagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<MessageDTO>>> {
-        const requestOptions = await this.listMessagesRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(MessageDTOFromJSON));
-    }
-
-    /**
-     * This endpoint is used by the agent, to see if there are any benchmarks to start or stop.
-     * Get list of pending messages for current environment
-     */
-    async listMessages(requestParameters: ListMessagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<MessageDTO>> {
-        const response = await this.listMessagesRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Creates request options for startBenchmark without sending the request
@@ -218,7 +156,7 @@ export class BenchmarkActionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Stops an ongoing benchmark run. Returns 400 if the run is not in a stoppable state.
+     * Stops an ongoing benchmark run. Returns 409 if the run is not in a stoppable state.
      * Stop a benchmark run
      */
     async stopBenchmarkRunRaw(requestParameters: StopBenchmarkRunRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BenchmarkStatusDTO>> {
@@ -229,7 +167,7 @@ export class BenchmarkActionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Stops an ongoing benchmark run. Returns 400 if the run is not in a stoppable state.
+     * Stops an ongoing benchmark run. Returns 409 if the run is not in a stoppable state.
      * Stop a benchmark run
      */
     async stopBenchmarkRun(requestParameters: StopBenchmarkRunRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BenchmarkStatusDTO> {

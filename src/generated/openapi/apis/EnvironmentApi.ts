@@ -49,11 +49,6 @@ export interface ListServicesRequest {
     environmentId: string;
 }
 
-export interface RegisterServicesRequest {
-    environmentId: string;
-    serviceDTO: Array<ServiceDTO>;
-}
-
 export interface UpdateEnvironmentRequest {
     environmentId: string;
     environmentDTO: Omit<EnvironmentDTO, 'id'|'token'|'agentCommand'|'agentLastSeenAt'|'createdAt'|'updatedAt'>;
@@ -381,68 +376,6 @@ export class EnvironmentApi extends runtime.BaseAPI {
     async listServices(requestParameters: ListServicesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ServiceDTO>> {
         const response = await this.listServicesRaw(requestParameters, initOverrides);
         return await response.value();
-    }
-
-    /**
-     * Creates request options for registerServices without sending the request
-     */
-    async registerServicesRequestOpts(requestParameters: RegisterServicesRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['environmentId'] == null) {
-            throw new runtime.RequiredError(
-                'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling registerServices().'
-            );
-        }
-
-        if (requestParameters['serviceDTO'] == null) {
-            throw new runtime.RequiredError(
-                'serviceDTO',
-                'Required parameter "serviceDTO" was null or undefined when calling registerServices().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("bearerAuth", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/environments/{environmentId}/services`;
-        urlPath = urlPath.replace(`{${"environmentId"}}`, encodeURIComponent(String(requestParameters['environmentId'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['serviceDTO']!.map(ServiceDTOToJSON),
-        };
-    }
-
-    /**
-     * Agent can post a list of services
-     */
-    async registerServicesRaw(requestParameters: RegisterServicesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        const requestOptions = await this.registerServicesRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     * Agent can post a list of services
-     */
-    async registerServices(requestParameters: RegisterServicesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.registerServicesRaw(requestParameters, initOverrides);
     }
 
     /**

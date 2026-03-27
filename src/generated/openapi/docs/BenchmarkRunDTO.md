@@ -13,7 +13,6 @@ Name | Type
 `startedAt` | Date
 `finishedAt` | Date
 `createdAt` | Date
-`updatedAt` | Date
 
 ## Example
 
@@ -29,7 +28,6 @@ const example = {
   "startedAt": null,
   "finishedAt": null,
   "createdAt": null,
-  "updatedAt": null,
 } satisfies BenchmarkRunDTO
 
 console.log(example)

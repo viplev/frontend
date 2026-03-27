@@ -30,19 +30,25 @@ export interface HostDTO {
      * @type {string}
      * @memberof HostDTO
      */
-    name?: string;
+    name: string;
+    /**
+     * Unique machine identifier (e.g. /etc/machine-id on Linux)
+     * @type {string}
+     * @memberof HostDTO
+     */
+    machineId: string;
     /**
      * IP address of the host
      * @type {string}
      * @memberof HostDTO
      */
-    ipAddress?: string;
+    ipAddress: string;
     /**
      * Operating system name
      * @type {string}
      * @memberof HostDTO
      */
-    os?: string;
+    os: string;
     /**
      * Operating system version
      * @type {string}
@@ -91,6 +97,10 @@ export interface HostDTO {
  * Check if a given object implements the HostDTO interface.
  */
 export function instanceOfHostDTO(value: object): value is HostDTO {
+    if (!('name' in value) || value['name'] === undefined) return false;
+    if (!('machineId' in value) || value['machineId'] === undefined) return false;
+    if (!('ipAddress' in value) || value['ipAddress'] === undefined) return false;
+    if (!('os' in value) || value['os'] === undefined) return false;
     return true;
 }
 
@@ -105,9 +115,10 @@ export function HostDTOFromJSONTyped(json: any, ignoreDiscriminator: boolean): H
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'name': json['name'] == null ? undefined : json['name'],
-        'ipAddress': json['ipAddress'] == null ? undefined : json['ipAddress'],
-        'os': json['os'] == null ? undefined : json['os'],
+        'name': json['name'],
+        'machineId': json['machineId'],
+        'ipAddress': json['ipAddress'],
+        'os': json['os'],
         'osVersion': json['osVersion'] == null ? undefined : json['osVersion'],
         'cpuModel': json['cpuModel'] == null ? undefined : json['cpuModel'],
         'cpuCores': json['cpuCores'] == null ? undefined : json['cpuCores'],
@@ -130,6 +141,7 @@ export function HostDTOToJSONTyped(value?: Omit<HostDTO, 'id'> | null, ignoreDis
     return {
         
         'name': value['name'],
+        'machineId': value['machineId'],
         'ipAddress': value['ipAddress'],
         'os': value['os'],
         'osVersion': value['osVersion'],

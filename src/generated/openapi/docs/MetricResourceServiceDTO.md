@@ -6,16 +6,8 @@
 
 Name | Type
 ------------ | -------------
-`id` | string
-`serviceId` | string
-`collectedAt` | Date
-`cpuPercentage` | number
-`memoryUsageBytes` | number
-`memoryLimitBytes` | number
-`networkInBytes` | number
-`networkOutBytes` | number
-`blockInBytes` | number
-`blockOutBytes` | number
+`serviceName` | string
+`metrics` | [Array&lt;MetricDataPointDTO&gt;](MetricDataPointDTO.md)
 
 ## Example
 
@@ -24,16 +16,8 @@ import type { MetricResourceServiceDTO } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "id": null,
-  "serviceId": null,
-  "collectedAt": null,
-  "cpuPercentage": null,
-  "memoryUsageBytes": null,
-  "memoryLimitBytes": null,
-  "networkInBytes": null,
-  "networkOutBytes": null,
-  "blockInBytes": null,
-  "blockOutBytes": null,
+  "serviceName": null,
+  "metrics": null,
 } satisfies MetricResourceServiceDTO
 
 console.log(example)

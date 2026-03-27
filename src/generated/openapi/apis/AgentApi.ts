@@ -21,7 +21,7 @@ import type {
   MessageDTO,
   MetricPerformanceDTO,
   MetricResourceDTO,
-  ServiceDTO,
+  ServiceRegistrationDTO,
 } from '../models/index';
 import {
     BenchmarkRunDTOFromJSON,
@@ -36,8 +36,8 @@ import {
     MetricPerformanceDTOToJSON,
     MetricResourceDTOFromJSON,
     MetricResourceDTOToJSON,
-    ServiceDTOFromJSON,
-    ServiceDTOToJSON,
+    ServiceRegistrationDTOFromJSON,
+    ServiceRegistrationDTOToJSON,
 } from '../models/index';
 
 export interface ListMessagesRequest {
@@ -46,7 +46,7 @@ export interface ListMessagesRequest {
 
 export interface RegisterServicesRequest {
     environmentId: string;
-    serviceDTO: Array<ServiceDTO>;
+    serviceRegistrationDTO: ServiceRegistrationDTO;
 }
 
 export interface StorePerformanceMetricsRequest {
@@ -141,10 +141,10 @@ export class AgentApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['serviceDTO'] == null) {
+        if (requestParameters['serviceRegistrationDTO'] == null) {
             throw new runtime.RequiredError(
-                'serviceDTO',
-                'Required parameter "serviceDTO" was null or undefined when calling registerServices().'
+                'serviceRegistrationDTO',
+                'Required parameter "serviceRegistrationDTO" was null or undefined when calling registerServices().'
             );
         }
 
@@ -171,7 +171,7 @@ export class AgentApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['serviceDTO']!.map(ServiceDTOToJSON),
+            body: ServiceRegistrationDTOToJSON(requestParameters['serviceRegistrationDTO']),
         };
     }
 

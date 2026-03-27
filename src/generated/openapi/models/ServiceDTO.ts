@@ -30,7 +30,7 @@ export interface ServiceDTO {
      * @type {string}
      * @memberof ServiceDTO
      */
-    serviceName?: string;
+    serviceName: string;
     /**
      * SHA hash of the container image
      * @type {string}
@@ -73,6 +73,7 @@ export interface ServiceDTO {
  * Check if a given object implements the ServiceDTO interface.
  */
 export function instanceOfServiceDTO(value: object): value is ServiceDTO {
+    if (!('serviceName' in value) || value['serviceName'] === undefined) return false;
     return true;
 }
 
@@ -87,7 +88,7 @@ export function ServiceDTOFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'serviceName': json['serviceName'] == null ? undefined : json['serviceName'],
+        'serviceName': json['serviceName'],
         'imageSha': json['imageSha'] == null ? undefined : json['imageSha'],
         'imageName': json['imageName'] == null ? undefined : json['imageName'],
         'cpuLimit': json['cpuLimit'] == null ? undefined : json['cpuLimit'],

@@ -1,4 +1,3 @@
-.openapi-generator-ignore
 apis/AgentApi.ts
 apis/AuthApi.ts
 apis/BenchmarkActionsApi.ts
@@ -32,6 +31,7 @@ docs/ErrorDTO.md
 docs/HostDTO.md
 docs/LoginDTO.md
 docs/MessageDTO.md
+docs/MetricDataPointDTO.md
 docs/MetricK6HttpDTO.md
 docs/MetricK6VusDTO.md
 docs/MetricPerformanceDTO.md
@@ -46,6 +46,7 @@ docs/RawResourceDataPointDTO.md
 docs/RawServiceTimeSeriesDTO.md
 docs/RawTimeSeriesDTO.md
 docs/ServiceDTO.md
+docs/ServiceRegistrationDTO.md
 index.ts
 models/BenchmarkDTO.ts
 models/BenchmarkRunDTO.ts
@@ -67,6 +68,7 @@ models/ErrorDTO.ts
 models/HostDTO.ts
 models/LoginDTO.ts
 models/MessageDTO.ts
+models/MetricDataPointDTO.ts
 models/MetricK6HttpDTO.ts
 models/MetricK6VusDTO.ts
 models/MetricPerformanceDTO.ts
@@ -81,5 +83,6 @@ models/RawResourceDataPointDTO.ts
 models/RawServiceTimeSeriesDTO.ts
 models/RawTimeSeriesDTO.ts
 models/ServiceDTO.ts
+models/ServiceRegistrationDTO.ts
 models/index.ts
 runtime.ts

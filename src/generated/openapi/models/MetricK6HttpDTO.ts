@@ -30,19 +30,19 @@ export interface MetricK6HttpDTO {
      * @type {Date}
      * @memberof MetricK6HttpDTO
      */
-    collectedAt?: Date;
+    collectedAt: Date;
     /**
      * Request URL
      * @type {string}
      * @memberof MetricK6HttpDTO
      */
-    url?: string;
+    url: string;
     /**
      * HTTP method used
      * @type {MetricK6HttpDTOHttpMethodEnum}
      * @memberof MetricK6HttpDTO
      */
-    httpMethod?: MetricK6HttpDTOHttpMethodEnum;
+    httpMethod: MetricK6HttpDTOHttpMethodEnum;
     /**
      * K6 request group name
      * @type {string}
@@ -54,37 +54,37 @@ export interface MetricK6HttpDTO {
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    httpStatus?: number;
+    httpStatus: number;
     /**
      * Expected HTTP status code
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    expectedStatus?: number;
+    expectedStatus: number;
     /**
      * Bytes received in the response
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    dataReceivedByte?: number;
+    dataReceivedByte: number;
     /**
      * Bytes sent in the request
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    dataSentByte?: number;
+    dataSentByte: number;
     /**
      * Total request duration in milliseconds
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    httpReqDurationMs?: number;
+    httpReqDurationMs: number;
     /**
      * Time to first byte (TTFB) in milliseconds
      * @type {number}
      * @memberof MetricK6HttpDTO
      */
-    httpReqWaitingMs?: number;
+    httpReqWaitingMs: number;
 }
 
 
@@ -105,6 +105,15 @@ export type MetricK6HttpDTOHttpMethodEnum = typeof MetricK6HttpDTOHttpMethodEnum
  * Check if a given object implements the MetricK6HttpDTO interface.
  */
 export function instanceOfMetricK6HttpDTO(value: object): value is MetricK6HttpDTO {
+    if (!('collectedAt' in value) || value['collectedAt'] === undefined) return false;
+    if (!('url' in value) || value['url'] === undefined) return false;
+    if (!('httpMethod' in value) || value['httpMethod'] === undefined) return false;
+    if (!('httpStatus' in value) || value['httpStatus'] === undefined) return false;
+    if (!('expectedStatus' in value) || value['expectedStatus'] === undefined) return false;
+    if (!('dataReceivedByte' in value) || value['dataReceivedByte'] === undefined) return false;
+    if (!('dataSentByte' in value) || value['dataSentByte'] === undefined) return false;
+    if (!('httpReqDurationMs' in value) || value['httpReqDurationMs'] === undefined) return false;
+    if (!('httpReqWaitingMs' in value) || value['httpReqWaitingMs'] === undefined) return false;
     return true;
 }
 
@@ -119,16 +128,16 @@ export function MetricK6HttpDTOFromJSONTyped(json: any, ignoreDiscriminator: boo
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'collectedAt': json['collectedAt'] == null ? undefined : (new Date(json['collectedAt'])),
-        'url': json['url'] == null ? undefined : json['url'],
-        'httpMethod': json['httpMethod'] == null ? undefined : json['httpMethod'],
+        'collectedAt': (new Date(json['collectedAt'])),
+        'url': json['url'],
+        'httpMethod': json['httpMethod'],
         'requestGroup': json['requestGroup'] == null ? undefined : json['requestGroup'],
-        'httpStatus': json['httpStatus'] == null ? undefined : json['httpStatus'],
-        'expectedStatus': json['expectedStatus'] == null ? undefined : json['expectedStatus'],
-        'dataReceivedByte': json['dataReceivedByte'] == null ? undefined : json['dataReceivedByte'],
-        'dataSentByte': json['dataSentByte'] == null ? undefined : json['dataSentByte'],
-        'httpReqDurationMs': json['httpReqDurationMs'] == null ? undefined : json['httpReqDurationMs'],
-        'httpReqWaitingMs': json['httpReqWaitingMs'] == null ? undefined : json['httpReqWaitingMs'],
+        'httpStatus': json['httpStatus'],
+        'expectedStatus': json['expectedStatus'],
+        'dataReceivedByte': json['dataReceivedByte'],
+        'dataSentByte': json['dataSentByte'],
+        'httpReqDurationMs': json['httpReqDurationMs'],
+        'httpReqWaitingMs': json['httpReqWaitingMs'],
     };
 }
 
@@ -143,7 +152,7 @@ export function MetricK6HttpDTOToJSONTyped(value?: Omit<MetricK6HttpDTO, 'id'> |
 
     return {
         
-        'collectedAt': value['collectedAt'] == null ? value['collectedAt'] : value['collectedAt'].toISOString(),
+        'collectedAt': value['collectedAt'].toISOString(),
         'url': value['url'],
         'httpMethod': value['httpMethod'],
         'requestGroup': value['requestGroup'],

@@ -30,19 +30,21 @@ export interface MetricK6VusDTO {
      * @type {Date}
      * @memberof MetricK6VusDTO
      */
-    collectedAt?: Date;
+    collectedAt: Date;
     /**
      * Number of virtual users active at this point
      * @type {number}
      * @memberof MetricK6VusDTO
      */
-    vus?: number;
+    vus: number;
 }
 
 /**
  * Check if a given object implements the MetricK6VusDTO interface.
  */
 export function instanceOfMetricK6VusDTO(value: object): value is MetricK6VusDTO {
+    if (!('collectedAt' in value) || value['collectedAt'] === undefined) return false;
+    if (!('vus' in value) || value['vus'] === undefined) return false;
     return true;
 }
 
@@ -57,8 +59,8 @@ export function MetricK6VusDTOFromJSONTyped(json: any, ignoreDiscriminator: bool
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'collectedAt': json['collectedAt'] == null ? undefined : (new Date(json['collectedAt'])),
-        'vus': json['vus'] == null ? undefined : json['vus'],
+        'collectedAt': (new Date(json['collectedAt'])),
+        'vus': json['vus'],
     };
 }
 
@@ -73,7 +75,7 @@ export function MetricK6VusDTOToJSONTyped(value?: Omit<MetricK6VusDTO, 'id'> | n
 
     return {
         
-        'collectedAt': value['collectedAt'] == null ? value['collectedAt'] : value['collectedAt'].toISOString(),
+        'collectedAt': value['collectedAt'].toISOString(),
         'vus': value['vus'],
     };
 }

@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `id` | string
 `name` | string
+`machineId` | string
 `ipAddress` | string
 `os` | string
 `osVersion` | string
@@ -27,6 +28,7 @@ import type { HostDTO } from ''
 const example = {
   "id": null,
   "name": null,
+  "machineId": null,
   "ipAddress": null,
   "os": null,
   "osVersion": null,

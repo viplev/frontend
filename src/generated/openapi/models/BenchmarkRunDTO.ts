@@ -61,12 +61,6 @@ export interface BenchmarkRunDTO {
      * @memberof BenchmarkRunDTO
      */
     readonly createdAt?: Date;
-    /**
-     * Timestamp when run was last updated
-     * @type {Date}
-     * @memberof BenchmarkRunDTO
-     */
-    readonly updatedAt?: Date;
 }
 
 
@@ -108,7 +102,6 @@ export function BenchmarkRunDTOFromJSONTyped(json: any, ignoreDiscriminator: boo
         'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
         'finishedAt': json['finishedAt'] == null ? undefined : (new Date(json['finishedAt'])),
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
-        'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
     };
 }
 
@@ -116,7 +109,7 @@ export function BenchmarkRunDTOToJSON(json: any): BenchmarkRunDTO {
     return BenchmarkRunDTOToJSONTyped(json, false);
 }
 
-export function BenchmarkRunDTOToJSONTyped(value?: Omit<BenchmarkRunDTO, 'id'|'startedBy'|'startedAt'|'finishedAt'|'createdAt'|'updatedAt'> | null, ignoreDiscriminator: boolean = false): any {
+export function BenchmarkRunDTOToJSONTyped(value?: Omit<BenchmarkRunDTO, 'id'|'startedBy'|'startedAt'|'finishedAt'|'createdAt'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

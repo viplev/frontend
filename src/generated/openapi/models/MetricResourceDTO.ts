@@ -36,22 +36,23 @@ import {
 export interface MetricResourceDTO {
     /**
      * 
+     * @type {MetricResourceHostDTO}
+     * @memberof MetricResourceDTO
+     */
+    host: MetricResourceHostDTO;
+    /**
+     * 
      * @type {Array<MetricResourceServiceDTO>}
      * @memberof MetricResourceDTO
      */
     services?: Array<MetricResourceServiceDTO>;
-    /**
-     * 
-     * @type {Array<MetricResourceHostDTO>}
-     * @memberof MetricResourceDTO
-     */
-    hosts?: Array<MetricResourceHostDTO>;
 }
 
 /**
  * Check if a given object implements the MetricResourceDTO interface.
  */
 export function instanceOfMetricResourceDTO(value: object): value is MetricResourceDTO {
+    if (!('host' in value) || value['host'] === undefined) return false;
     return true;
 }
 
@@ -65,8 +66,8 @@ export function MetricResourceDTOFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
+        'host': MetricResourceHostDTOFromJSON(json['host']),
         'services': json['services'] == null ? undefined : ((json['services'] as Array<any>).map(MetricResourceServiceDTOFromJSON)),
-        'hosts': json['hosts'] == null ? undefined : ((json['hosts'] as Array<any>).map(MetricResourceHostDTOFromJSON)),
     };
 }
 
@@ -81,8 +82,8 @@ export function MetricResourceDTOToJSONTyped(value?: MetricResourceDTO | null, i
 
     return {
         
+        'host': MetricResourceHostDTOToJSON(value['host']),
         'services': value['services'] == null ? undefined : ((value['services'] as Array<any>).map(MetricResourceServiceDTOToJSON)),
-        'hosts': value['hosts'] == null ? undefined : ((value['hosts'] as Array<any>).map(MetricResourceHostDTOToJSON)),
     };
 }
 

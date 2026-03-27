@@ -18,11 +18,8 @@ import type {
   BenchmarkRunDTO,
   BenchmarkRunDerivedDTO,
   BenchmarkRunRawDTO,
-  BenchmarkRunStatusUpdateDTO,
   EnvironmentRunsDTO,
   ErrorDTO,
-  MetricPerformanceDTO,
-  MetricResourceDTO,
 } from '../models/index';
 import {
     BenchmarkRunDTOFromJSON,
@@ -31,16 +28,10 @@ import {
     BenchmarkRunDerivedDTOToJSON,
     BenchmarkRunRawDTOFromJSON,
     BenchmarkRunRawDTOToJSON,
-    BenchmarkRunStatusUpdateDTOFromJSON,
-    BenchmarkRunStatusUpdateDTOToJSON,
     EnvironmentRunsDTOFromJSON,
     EnvironmentRunsDTOToJSON,
     ErrorDTOFromJSON,
     ErrorDTOToJSON,
-    MetricPerformanceDTOFromJSON,
-    MetricPerformanceDTOToJSON,
-    MetricResourceDTOFromJSON,
-    MetricResourceDTOToJSON,
 } from '../models/index';
 
 export interface DeleteBenchmarkRunRequest {
@@ -72,27 +63,6 @@ export interface ListEnvironmentRunsRequest {
     page?: number;
     size?: number;
     sort?: string;
-}
-
-export interface StorePerformanceMetricsRequest {
-    environmentId: string;
-    benchmarkId: string;
-    runId: string;
-    metricPerformanceDTO: MetricPerformanceDTO;
-}
-
-export interface StoreResourceMetricsRequest {
-    environmentId: string;
-    benchmarkId: string;
-    runId: string;
-    metricResourceDTO: MetricResourceDTO;
-}
-
-export interface UpdateBenchmarkRunStatusRequest {
-    environmentId: string;
-    benchmarkId: string;
-    runId: string;
-    benchmarkRunStatusUpdateDTO: BenchmarkRunStatusUpdateDTO;
 }
 
 /**
@@ -437,247 +407,6 @@ export class BenchmarkRunsApi extends runtime.BaseAPI {
      */
     async listEnvironmentRuns(requestParameters: ListEnvironmentRunsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<EnvironmentRunsDTO> {
         const response = await this.listEnvironmentRunsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for storePerformanceMetrics without sending the request
-     */
-    async storePerformanceMetricsRequestOpts(requestParameters: StorePerformanceMetricsRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['environmentId'] == null) {
-            throw new runtime.RequiredError(
-                'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling storePerformanceMetrics().'
-            );
-        }
-
-        if (requestParameters['benchmarkId'] == null) {
-            throw new runtime.RequiredError(
-                'benchmarkId',
-                'Required parameter "benchmarkId" was null or undefined when calling storePerformanceMetrics().'
-            );
-        }
-
-        if (requestParameters['runId'] == null) {
-            throw new runtime.RequiredError(
-                'runId',
-                'Required parameter "runId" was null or undefined when calling storePerformanceMetrics().'
-            );
-        }
-
-        if (requestParameters['metricPerformanceDTO'] == null) {
-            throw new runtime.RequiredError(
-                'metricPerformanceDTO',
-                'Required parameter "metricPerformanceDTO" was null or undefined when calling storePerformanceMetrics().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("bearerAuth", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/metrics/performance`;
-        urlPath = urlPath.replace(`{${"environmentId"}}`, encodeURIComponent(String(requestParameters['environmentId'])));
-        urlPath = urlPath.replace(`{${"benchmarkId"}}`, encodeURIComponent(String(requestParameters['benchmarkId'])));
-        urlPath = urlPath.replace(`{${"runId"}}`, encodeURIComponent(String(requestParameters['runId'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: MetricPerformanceDTOToJSON(requestParameters['metricPerformanceDTO']),
-        };
-    }
-
-    /**
-     * Used by the agent to send k6 performance metrics (response times, throughput, error rates etc.) when the test completes
-     * Store performance metrics
-     */
-    async storePerformanceMetricsRaw(requestParameters: StorePerformanceMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        const requestOptions = await this.storePerformanceMetricsRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     * Used by the agent to send k6 performance metrics (response times, throughput, error rates etc.) when the test completes
-     * Store performance metrics
-     */
-    async storePerformanceMetrics(requestParameters: StorePerformanceMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.storePerformanceMetricsRaw(requestParameters, initOverrides);
-    }
-
-    /**
-     * Creates request options for storeResourceMetrics without sending the request
-     */
-    async storeResourceMetricsRequestOpts(requestParameters: StoreResourceMetricsRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['environmentId'] == null) {
-            throw new runtime.RequiredError(
-                'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling storeResourceMetrics().'
-            );
-        }
-
-        if (requestParameters['benchmarkId'] == null) {
-            throw new runtime.RequiredError(
-                'benchmarkId',
-                'Required parameter "benchmarkId" was null or undefined when calling storeResourceMetrics().'
-            );
-        }
-
-        if (requestParameters['runId'] == null) {
-            throw new runtime.RequiredError(
-                'runId',
-                'Required parameter "runId" was null or undefined when calling storeResourceMetrics().'
-            );
-        }
-
-        if (requestParameters['metricResourceDTO'] == null) {
-            throw new runtime.RequiredError(
-                'metricResourceDTO',
-                'Required parameter "metricResourceDTO" was null or undefined when calling storeResourceMetrics().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("bearerAuth", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/metrics/resource`;
-        urlPath = urlPath.replace(`{${"environmentId"}}`, encodeURIComponent(String(requestParameters['environmentId'])));
-        urlPath = urlPath.replace(`{${"benchmarkId"}}`, encodeURIComponent(String(requestParameters['benchmarkId'])));
-        urlPath = urlPath.replace(`{${"runId"}}`, encodeURIComponent(String(requestParameters['runId'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: MetricResourceDTOToJSON(requestParameters['metricResourceDTO']),
-        };
-    }
-
-    /**
-     * Used by the agent to send resource metrics (CPU, memory, disk, network etc.) during a benchmark run (every 5 seconds)
-     * Store resource metrics
-     */
-    async storeResourceMetricsRaw(requestParameters: StoreResourceMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        const requestOptions = await this.storeResourceMetricsRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     * Used by the agent to send resource metrics (CPU, memory, disk, network etc.) during a benchmark run (every 5 seconds)
-     * Store resource metrics
-     */
-    async storeResourceMetrics(requestParameters: StoreResourceMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.storeResourceMetricsRaw(requestParameters, initOverrides);
-    }
-
-    /**
-     * Creates request options for updateBenchmarkRunStatus without sending the request
-     */
-    async updateBenchmarkRunStatusRequestOpts(requestParameters: UpdateBenchmarkRunStatusRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['environmentId'] == null) {
-            throw new runtime.RequiredError(
-                'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling updateBenchmarkRunStatus().'
-            );
-        }
-
-        if (requestParameters['benchmarkId'] == null) {
-            throw new runtime.RequiredError(
-                'benchmarkId',
-                'Required parameter "benchmarkId" was null or undefined when calling updateBenchmarkRunStatus().'
-            );
-        }
-
-        if (requestParameters['runId'] == null) {
-            throw new runtime.RequiredError(
-                'runId',
-                'Required parameter "runId" was null or undefined when calling updateBenchmarkRunStatus().'
-            );
-        }
-
-        if (requestParameters['benchmarkRunStatusUpdateDTO'] == null) {
-            throw new runtime.RequiredError(
-                'benchmarkRunStatusUpdateDTO',
-                'Required parameter "benchmarkRunStatusUpdateDTO" was null or undefined when calling updateBenchmarkRunStatus().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("bearerAuth", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/environments/{environmentId}/benchmarks/{benchmarkId}/runs/{runId}/status`;
-        urlPath = urlPath.replace(`{${"environmentId"}}`, encodeURIComponent(String(requestParameters['environmentId'])));
-        urlPath = urlPath.replace(`{${"benchmarkId"}}`, encodeURIComponent(String(requestParameters['benchmarkId'])));
-        urlPath = urlPath.replace(`{${"runId"}}`, encodeURIComponent(String(requestParameters['runId'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: BenchmarkRunStatusUpdateDTOToJSON(requestParameters['benchmarkRunStatusUpdateDTO']),
-        };
-    }
-
-    /**
-     * This endpoint is used to update the run status, if failed, error messages must be included
-     * Update run with a status
-     */
-    async updateBenchmarkRunStatusRaw(requestParameters: UpdateBenchmarkRunStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BenchmarkRunDTO>> {
-        const requestOptions = await this.updateBenchmarkRunStatusRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => BenchmarkRunDTOFromJSON(jsonValue));
-    }
-
-    /**
-     * This endpoint is used to update the run status, if failed, error messages must be included
-     * Update run with a status
-     */
-    async updateBenchmarkRunStatus(requestParameters: UpdateBenchmarkRunStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BenchmarkRunDTO> {
-        const response = await this.updateBenchmarkRunStatusRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -89,7 +89,7 @@ example().catch(console.error);
 
 ## registerServices
 
-> registerServices(environmentId, serviceDTO)
+> registerServices(environmentId, serviceRegistrationDTO)
 
 Agent can post a list of services
 
@@ -113,8 +113,8 @@ async function example() {
   const body = {
     // string
     environmentId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
-    // Array<ServiceDTO>
-    serviceDTO: ...,
+    // ServiceRegistrationDTO
+    serviceRegistrationDTO: ...,
   } satisfies RegisterServicesRequest;
 
   try {
@@ -135,7 +135,7 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **environmentId** | `string` |  | [Defaults to `undefined`] |
-| **serviceDTO** | `Array<ServiceDTO>` |  | |
+| **serviceRegistrationDTO** | [ServiceRegistrationDTO](ServiceRegistrationDTO.md) |  | |
 
 ### Return type
 

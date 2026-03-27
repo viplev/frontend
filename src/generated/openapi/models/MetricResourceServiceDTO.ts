@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { MetricDataPointDTO } from './MetricDataPointDTO';
+import {
+    MetricDataPointDTOFromJSON,
+    MetricDataPointDTOFromJSONTyped,
+    MetricDataPointDTOToJSON,
+    MetricDataPointDTOToJSONTyped,
+} from './MetricDataPointDTO';
+
 /**
  * 
  * @export
@@ -20,71 +28,25 @@ import { mapValues } from '../runtime';
  */
 export interface MetricResourceServiceDTO {
     /**
+     * Docker service name known by the agent
+     * @type {string}
+     * @memberof MetricResourceServiceDTO
+     */
+    serviceName: string;
+    /**
      * 
-     * @type {string}
+     * @type {Array<MetricDataPointDTO>}
      * @memberof MetricResourceServiceDTO
      */
-    readonly id?: string;
-    /**
-     * ID of the service
-     * @type {string}
-     * @memberof MetricResourceServiceDTO
-     */
-    serviceId?: string;
-    /**
-     * Timestamp when metric was collected
-     * @type {Date}
-     * @memberof MetricResourceServiceDTO
-     */
-    collectedAt?: Date;
-    /**
-     * CPU usage percentage
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    cpuPercentage?: number;
-    /**
-     * Memory usage in bytes
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    memoryUsageBytes?: number;
-    /**
-     * Memory limit in bytes
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    memoryLimitBytes?: number;
-    /**
-     * Network bytes received
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    networkInBytes?: number;
-    /**
-     * Network bytes sent
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    networkOutBytes?: number;
-    /**
-     * Block I/O bytes read
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    blockInBytes?: number;
-    /**
-     * Block I/O bytes written
-     * @type {number}
-     * @memberof MetricResourceServiceDTO
-     */
-    blockOutBytes?: number;
+    metrics: Array<MetricDataPointDTO>;
 }
 
 /**
  * Check if a given object implements the MetricResourceServiceDTO interface.
  */
 export function instanceOfMetricResourceServiceDTO(value: object): value is MetricResourceServiceDTO {
+    if (!('serviceName' in value) || value['serviceName'] === undefined) return false;
+    if (!('metrics' in value) || value['metrics'] === undefined) return false;
     return true;
 }
 
@@ -98,16 +60,8 @@ export function MetricResourceServiceDTOFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
         
-        'id': json['id'] == null ? undefined : json['id'],
-        'serviceId': json['serviceId'] == null ? undefined : json['serviceId'],
-        'collectedAt': json['collectedAt'] == null ? undefined : (new Date(json['collectedAt'])),
-        'cpuPercentage': json['cpuPercentage'] == null ? undefined : json['cpuPercentage'],
-        'memoryUsageBytes': json['memoryUsageBytes'] == null ? undefined : json['memoryUsageBytes'],
-        'memoryLimitBytes': json['memoryLimitBytes'] == null ? undefined : json['memoryLimitBytes'],
-        'networkInBytes': json['networkInBytes'] == null ? undefined : json['networkInBytes'],
-        'networkOutBytes': json['networkOutBytes'] == null ? undefined : json['networkOutBytes'],
-        'blockInBytes': json['blockInBytes'] == null ? undefined : json['blockInBytes'],
-        'blockOutBytes': json['blockOutBytes'] == null ? undefined : json['blockOutBytes'],
+        'serviceName': json['serviceName'],
+        'metrics': ((json['metrics'] as Array<any>).map(MetricDataPointDTOFromJSON)),
     };
 }
 
@@ -115,22 +69,15 @@ export function MetricResourceServiceDTOToJSON(json: any): MetricResourceService
     return MetricResourceServiceDTOToJSONTyped(json, false);
 }
 
-export function MetricResourceServiceDTOToJSONTyped(value?: Omit<MetricResourceServiceDTO, 'id'> | null, ignoreDiscriminator: boolean = false): any {
+export function MetricResourceServiceDTOToJSONTyped(value?: MetricResourceServiceDTO | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
 
     return {
         
-        'serviceId': value['serviceId'],
-        'collectedAt': value['collectedAt'] == null ? value['collectedAt'] : value['collectedAt'].toISOString(),
-        'cpuPercentage': value['cpuPercentage'],
-        'memoryUsageBytes': value['memoryUsageBytes'],
-        'memoryLimitBytes': value['memoryLimitBytes'],
-        'networkInBytes': value['networkInBytes'],
-        'networkOutBytes': value['networkOutBytes'],
-        'blockInBytes': value['blockInBytes'],
-        'blockOutBytes': value['blockOutBytes'],
+        'serviceName': value['serviceName'],
+        'metrics': ((value['metrics'] as Array<any>).map(MetricDataPointDTOToJSON)),
     };
 }
 
