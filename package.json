@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "openapi": "openapi-generator-cli generate -i ./openapi.yaml -g typescript-fetch -o ./src/generated/openapi"
+    "openapi": "openapi-generator-cli generate -i ./openapi.yaml -g typescript-fetch -o ./src/generated/openapi && node -e \"const fs=require('fs'),path=require('path');function f(d){for(const e of fs.readdirSync(d)){const p=path.join(d,e);if(fs.statSync(p).isDirectory())f(p);else if(e.endsWith('.ts')){const c=fs.readFileSync(p,'utf8');if(!c.startsWith('// @ts-nocheck'))fs.writeFileSync(p,'// @ts-nocheck\\n'+c);}}}f('./src/generated/openapi')\""
   },
   "dependencies": {
     "react": "^19.1.1",

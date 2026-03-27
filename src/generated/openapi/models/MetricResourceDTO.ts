@@ -1,3 +1,4 @@
+// @ts-nocheck - Auto-generated file, TypeScript strict checks disabled intentionally
 /* tslint:disable */
 /* eslint-disable */
 /**

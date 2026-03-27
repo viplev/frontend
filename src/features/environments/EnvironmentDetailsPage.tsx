@@ -450,7 +450,7 @@ export function EnvironmentDetailsPage() {
                                   className="auth-button benchmark-go-to-run-action"
                                   onClick={() =>
                                     navigate(
-                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRun.runId}`,
+                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRun!.runId}`,
                                     )
                                   }
                                 >
