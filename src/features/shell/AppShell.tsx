@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuthSession } from '../../auth/AuthSessionContext'
 import type { AuthFailureDetail } from '../../auth/failure'
@@ -27,7 +27,22 @@ function isEnvironmentLike(value: unknown): value is EnvironmentDTO {
 type SidebarEnvironmentItem = {
   id: string
   label: string
-  benchmarkStatus: 'running' | 'idle' | 'unknown'
+  indicator: 'inactive' | 'active-idle' | 'active-running'
+}
+
+const AGENT_ACTIVE_THRESHOLD_MS = 2 * 60 * 1000
+
+function isAgentCurrentlyActive(lastSeenAt?: Date | string): boolean {
+  if (!lastSeenAt) {
+    return false
+  }
+
+  const parsed = new Date(lastSeenAt)
+  if (Number.isNaN(parsed.getTime())) {
+    return false
+  }
+
+  return Date.now() - parsed.getTime() <= AGENT_ACTIVE_THRESHOLD_MS
 }
 
 function ShellGlobalAlert() {
@@ -91,6 +106,7 @@ export function AppShell() {
             return {
               id,
               label: getTrimmedString(environment.name) || id || 'Unnamed environment',
+              agentLastSeenAt: environment.agentLastSeenAt,
             }
           })
           .filter((environment) => environment.id)
@@ -107,11 +123,11 @@ export function AppShell() {
             try {
               const runs = await listActiveEnvironmentRuns(environment.id, controller.signal)
               if (controller.signal.aborted) {
-                return [environment.id, 'unknown'] as const
+                return [environment.id, false] as const
               }
-              return [environment.id, runs.length > 0 ? 'running' : 'idle'] as const
+              return [environment.id, runs.length > 0] as const
             } catch {
-              return [environment.id, 'unknown'] as const
+              return [environment.id, false] as const
             }
           }),
         )
@@ -123,10 +139,13 @@ export function AppShell() {
         const statusById = Object.fromEntries(runStatusEntries)
         setEnvMenuItems(
           validEnvironments.map((environment) => ({
-            ...environment,
-            benchmarkStatus:
-              (statusById[environment.id] as SidebarEnvironmentItem['benchmarkStatus']) ??
-              'unknown',
+            id: environment.id,
+            label: environment.label,
+            indicator: !isAgentCurrentlyActive(environment.agentLastSeenAt)
+              ? 'inactive'
+              : statusById[environment.id]
+                ? 'active-running'
+                : 'active-idle',
           })),
         )
       } catch (error: unknown) {
@@ -151,11 +170,6 @@ export function AppShell() {
     return () => controller.abort()
   }, [])
 
-  const environmentsLinkClassName = useMemo(
-    () => `shell-nav-link shell-nav-link-with-toggle${isEnvMenuOpen ? ' active' : ''}`,
-    [isEnvMenuOpen],
-  )
-
   return (
     <div className="app-shell">
       <aside className="shell-sidebar">
@@ -167,20 +181,19 @@ export function AppShell() {
             Dashboard
           </NavLink>
           <div className="shell-nav-group">
-            <div className="shell-nav-link-row">
-              <NavLink to="/environments" className={environmentsLinkClassName}>
-                Environments
-              </NavLink>
-              <button
-                type="button"
-                className="shell-nav-toggle"
-                aria-label={isEnvMenuOpen ? 'Collapse environments list' : 'Expand environments list'}
-                aria-expanded={isEnvMenuOpen}
-                onClick={() => setIsEnvMenuOpen((current) => !current)}
-              >
+            <NavLink
+              to="/environments"
+              className={({ isActive }) =>
+                `shell-nav-link shell-nav-link-expandable${isActive || isEnvMenuOpen ? ' active' : ''}`
+              }
+              aria-expanded={isEnvMenuOpen}
+              onClick={() => setIsEnvMenuOpen((current) => !current)}
+            >
+              <span>Environments</span>
+              <span className="shell-nav-caret" aria-hidden="true">
                 {isEnvMenuOpen ? '▾' : '▸'}
-              </button>
-            </div>
+              </span>
+            </NavLink>
             {isEnvMenuOpen ? (
               <div className="shell-submenu" role="group" aria-label="Environment quick navigation">
                 {isEnvMenuLoading ? (
@@ -198,13 +211,13 @@ export function AppShell() {
                     >
                       <span className="shell-submenu-link-label">{environment.label}</span>
                       <span
-                        className={`shell-submenu-indicator shell-submenu-indicator-${environment.benchmarkStatus}`}
+                        className={`shell-submenu-indicator shell-submenu-indicator-${environment.indicator}`}
                         title={
-                          environment.benchmarkStatus === 'running'
-                            ? 'Active benchmark run'
-                            : environment.benchmarkStatus === 'idle'
-                              ? 'No active benchmark runs'
-                              : 'Benchmark status unknown'
+                          environment.indicator === 'active-running'
+                            ? 'Agent active, benchmark running'
+                            : environment.indicator === 'active-idle'
+                              ? 'Agent active, no benchmark running'
+                              : 'Agent inactive or never seen'
                         }
                       />
                     </NavLink>

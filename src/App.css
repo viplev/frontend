@@ -152,31 +152,15 @@
   gap: 0.35rem;
 }
 
-.shell-nav-link-row {
+.shell-nav-link-expandable {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: space-between;
 }
 
-.shell-nav-link-with-toggle {
-  flex: 1;
-}
-
-.shell-nav-toggle {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
-  border-radius: 8px;
-  min-width: 1.8rem;
-  height: 1.8rem;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-.shell-nav-toggle:hover,
-.shell-nav-toggle:focus-visible {
-  background: #e2e8f0;
+.shell-nav-caret {
+  color: #64748b;
+  margin-left: 0.35rem;
 }
 
 .shell-submenu {
@@ -215,23 +199,24 @@
   height: 0.55rem;
   border-radius: 999px;
   border: 1px solid #cbd5e1;
-  background: #94a3b8;
+  background: #9ca3af;
   flex-shrink: 0;
 }
 
-.shell-submenu-indicator-running {
-  border-color: #86d19f;
+.shell-submenu-indicator-active-running {
+  border-color: #16a34a;
+  background: #22c55e;
+  animation: nav-indicator-pulse 1.4s ease-in-out infinite;
+}
+
+.shell-submenu-indicator-active-idle {
+  border-color: #16a34a;
   background: #16a34a;
 }
 
-.shell-submenu-indicator-idle {
-  border-color: #d3dce8;
-  background: #94a3b8;
-}
-
-.shell-submenu-indicator-unknown {
-  border-color: #ef9a9a;
-  background: #dc2626;
+.shell-submenu-indicator-inactive {
+  border-color: #9ca3af;
+  background: #9ca3af;
 }
 
 .shell-submenu-state {
@@ -243,6 +228,19 @@
 
 .shell-submenu-state-error {
   color: #8a1f1b;
+}
+
+@keyframes nav-indicator-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35);
+  }
+
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
 }
 
 .shell-main {
