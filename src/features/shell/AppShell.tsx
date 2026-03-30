@@ -82,6 +82,7 @@ function ShellGlobalAlert() {
 export function AppShell() {
   const { session, logout } = useAuthSession()
   const [isEnvMenuOpen, setIsEnvMenuOpen] = useState(false)
+  const [isEnvMenuPinnedOpen, setIsEnvMenuPinnedOpen] = useState(false)
   const [isEnvMenuLoading, setIsEnvMenuLoading] = useState(false)
   const [envMenuError, setEnvMenuError] = useState<string | null>(null)
   const [envMenuItems, setEnvMenuItems] = useState<Array<SidebarEnvironmentItem>>([])
@@ -183,27 +184,53 @@ export function AppShell() {
           <div
             className="shell-nav-group"
             onMouseEnter={() => setIsEnvMenuOpen(true)}
-            onMouseLeave={() => setIsEnvMenuOpen(false)}
+            onMouseLeave={() => {
+              if (!isEnvMenuPinnedOpen) {
+                setIsEnvMenuOpen(false)
+              }
+            }}
             onFocusCapture={() => setIsEnvMenuOpen(true)}
             onBlurCapture={(event) => {
               const nextFocused = event.relatedTarget
-              if (!(nextFocused instanceof Node) || !event.currentTarget.contains(nextFocused)) {
+              if (
+                (!nextFocused ||
+                  !(nextFocused instanceof Node) ||
+                  !event.currentTarget.contains(nextFocused)) &&
+                !isEnvMenuPinnedOpen
+              ) {
                 setIsEnvMenuOpen(false)
               }
             }}
           >
-            <NavLink
-              to="/environments"
-              className={({ isActive }) =>
-                `shell-nav-link shell-nav-link-expandable${isActive || isEnvMenuOpen ? ' active' : ''}`
-              }
-              aria-expanded={isEnvMenuOpen}
-            >
-              <span>Environments</span>
-              <span className="shell-nav-caret" aria-hidden="true">
-                {isEnvMenuOpen ? '▾' : '▸'}
-              </span>
-            </NavLink>
+            <div className="shell-nav-link-row">
+              <NavLink
+                to="/environments"
+                className={({ isActive }) =>
+                  `shell-nav-link shell-nav-link-expandable${isActive || isEnvMenuOpen ? ' active' : ''}`
+                }
+                aria-expanded={isEnvMenuOpen}
+              >
+                <span>Environments</span>
+              </NavLink>
+              <button
+                type="button"
+                className={`shell-nav-pin-toggle${isEnvMenuPinnedOpen ? ' active' : ''}`}
+                aria-label={
+                  isEnvMenuPinnedOpen
+                    ? 'Unpin environments menu'
+                    : 'Pin environments menu open'
+                }
+                aria-pressed={isEnvMenuPinnedOpen}
+                onClick={() => {
+                  setIsEnvMenuOpen(true)
+                  setIsEnvMenuPinnedOpen((current) => !current)
+                }}
+              >
+                <span className="shell-nav-caret" aria-hidden="true">
+                  {isEnvMenuOpen ? '▾' : '▸'}
+                </span>
+              </button>
+            </div>
             {isEnvMenuOpen ? (
               <div className="shell-submenu" role="group" aria-label="Environment quick navigation">
                 {isEnvMenuLoading ? (
