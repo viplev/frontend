@@ -59,11 +59,13 @@ function readErrorMessage(
   }
 }
 
-export async function listEnvironments(): Promise<Array<EnvironmentDTO>> {
+export async function listEnvironments(
+  signal?: AbortSignal,
+): Promise<Array<EnvironmentDTO>> {
   const environmentApi = createEnvironmentApi()
 
   try {
-    return await environmentApi.listEnvironments()
+    return await environmentApi.listEnvironments({ signal })
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
       const message = readErrorMessage(error, 'load', 'environments')

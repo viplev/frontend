@@ -146,6 +146,105 @@
   font-weight: 600;
 }
 
+.shell-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.shell-nav-link-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shell-nav-link-with-toggle {
+  flex: 1;
+}
+
+.shell-nav-toggle {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 8px;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.shell-nav-toggle:hover,
+.shell-nav-toggle:focus-visible {
+  background: #e2e8f0;
+}
+
+.shell-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.3rem;
+}
+
+.shell-submenu-link {
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  color: #29425a;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.shell-submenu-link.active {
+  background: #d9e7ff;
+  color: #1b3b72;
+  font-weight: 600;
+}
+
+.shell-submenu-link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-submenu-indicator {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.shell-submenu-indicator-running {
+  border-color: #86d19f;
+  background: #16a34a;
+}
+
+.shell-submenu-indicator-idle {
+  border-color: #d3dce8;
+  background: #94a3b8;
+}
+
+.shell-submenu-indicator-unknown {
+  border-color: #ef9a9a;
+  background: #dc2626;
+}
+
+.shell-submenu-state {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.shell-submenu-state-error {
+  color: #8a1f1b;
+}
+
 .shell-main {
   display: flex;
   flex-direction: column;
