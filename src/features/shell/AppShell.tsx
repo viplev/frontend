@@ -79,7 +79,6 @@ export function AppShell() {
     }
 
     const controller = new AbortController()
-    setHasLoadedEnvMenu(true)
     setIsEnvMenuLoading(true)
     setEnvMenuError(null)
     setEnvMenuItems([])
@@ -106,6 +105,7 @@ export function AppShell() {
 
         if (validEnvironments.length === 0) {
           setEnvMenuItems([])
+          setHasLoadedEnvMenu(true)
           setIsEnvMenuLoading(false)
           return
         }
@@ -147,6 +147,7 @@ export function AppShell() {
                   : 'inactive',
           })),
         )
+        setHasLoadedEnvMenu(true)
       } catch (error: unknown) {
         if (controller.signal.aborted) {
           return
@@ -158,9 +159,7 @@ export function AppShell() {
           setEnvMenuError('Unable to load environments in sidebar right now.')
         }
       } finally {
-        if (!controller.signal.aborted) {
-          setIsEnvMenuLoading(false)
-        }
+        setIsEnvMenuLoading(false)
       }
     }
 
