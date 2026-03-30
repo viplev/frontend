@@ -9,8 +9,7 @@ import { listActiveEnvironmentRuns } from '../benchmarks/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import { EnvironmentsLoadError, listEnvironments } from './service'
 import { formatTimestamp } from './format'
-
-const AGENT_ACTIVE_THRESHOLD_MINUTES = 5
+import { getTrimmedString, isEnvironmentLike, resolveAgentStatus } from './utils'
 
 function EnvironmentPlatform({
   type,
@@ -25,19 +24,6 @@ type EnvironmentListItem = {
   stableKey: string
 }
 
-function resolveAgentStatus(lastSeenAt?: Date): { label: string; variant: 'active' | 'inactive' | 'never' } {
-  if (!lastSeenAt) {
-    return { label: 'Agent: Never seen', variant: 'never' }
-  }
-
-  const minutesSinceSeen = (Date.now() - new Date(lastSeenAt).getTime()) / 60000
-  if (minutesSinceSeen <= AGENT_ACTIVE_THRESHOLD_MINUTES) {
-    return { label: 'Agent: Active', variant: 'active' }
-  }
-
-  return { label: 'Agent: Inactive', variant: 'inactive' }
-}
-
 function hasRunningOrPendingRun(runs: Array<EnvironmentRunSummaryDTO>): boolean {
   return runs.some(
     (run) =>
@@ -45,19 +31,6 @@ function hasRunningOrPendingRun(runs: Array<EnvironmentRunSummaryDTO>): boolean 
       run.status === EnvironmentRunSummaryDTOStatusEnum.Started ||
       run.status === EnvironmentRunSummaryDTOStatusEnum.PendingStop,
   )
-}
-
-function getTrimmedString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
-function isEnvironmentLike(value: unknown): value is EnvironmentDTO {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const candidate = value as { name?: unknown; type?: unknown }
-  return typeof candidate.name === 'string' && typeof candidate.type === 'string'
 }
 
 function EnvironmentCard({

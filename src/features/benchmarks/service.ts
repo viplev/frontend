@@ -395,6 +395,7 @@ const ACTIVE_STATUS_SET = new Set([
 
 export async function listActiveEnvironmentRuns(
   environmentId: string,
+  signal?: AbortSignal,
 ): Promise<Array<EnvironmentRunSummaryDTO>> {
   const runsApi = createBenchmarkRunsApi()
 
@@ -404,7 +405,7 @@ export async function listActiveEnvironmentRuns(
       page: 0,
       size: 50,
       sort: 'startedAt,desc',
-    })
+    }, { signal })
 
     const runs = response.runs ?? []
     return runs.filter(
