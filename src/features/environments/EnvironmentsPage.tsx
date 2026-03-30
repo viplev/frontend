@@ -203,13 +203,6 @@ export function EnvironmentsPage() {
             View all environments and pick one to manage services and benchmark runs.
           </p>
         </div>
-        <button
-          type="button"
-          className="auth-button environment-create-cta"
-          onClick={() => navigate('/environments/new')}
-        >
-          Create environment
-        </button>
       </div>
 
       {createdNotice ? (

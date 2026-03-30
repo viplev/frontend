@@ -308,6 +308,26 @@
   background: #ffffff;
 }
 
+.shell-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.shell-create-environment-cta {
+  margin-top: 0;
+  background: #1d4ed8;
+}
+
+.shell-create-environment-cta:hover,
+.shell-create-environment-cta:focus-visible {
+  background: #1e40af;
+}
+
+.shell-topbar-notice {
+  margin: 0.75rem 1.25rem 0;
+}
+
 .shell-context-label {
   margin: 0;
   font-size: 0.75rem;
