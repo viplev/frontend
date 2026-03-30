@@ -10,6 +10,7 @@ import { CreateEnvironmentPage } from './features/environments/CreateEnvironment
 import { EnvironmentDetailsPage } from './features/environments/EnvironmentDetailsPage'
 import { BenchmarkFormPage } from './features/benchmarks/BenchmarkFormPage'
 import { BenchmarkRunMonitorPage } from './features/benchmarks/BenchmarkRunMonitorPage'
+import { BenchmarkRunResultsPage } from './features/benchmarks/BenchmarkRunResultsPage'
 import './App.css'
 
 function App() {
@@ -38,6 +39,10 @@ function App() {
           <Route
             path="/environments/:environmentId/benchmarks/:benchmarkId/runs/:runId"
             element={<BenchmarkRunMonitorPage />}
+          />
+          <Route
+            path="/environments/:environmentId/benchmarks/:benchmarkId/runs/:runId/results"
+            element={<BenchmarkRunResultsPage />}
           />
           <Route
             path="/benchmarks"

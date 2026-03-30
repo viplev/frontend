@@ -17,52 +17,13 @@ import type { DerivedHostSummaryDTO } from '../../generated/openapi/models/Deriv
 import type { DerivedHttpSummaryDTO } from '../../generated/openapi/models/DerivedHttpSummaryDTO'
 import type { DerivedVusSummaryDTO } from '../../generated/openapi/models/DerivedVusSummaryDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
+import {
+  formatRunStatus,
+  formatRuntimeDuration,
+  formatTimestamp,
+} from './format'
 
 const POLL_INTERVAL_MS = 5000
-
-function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'n/a'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-function formatRunStatus(status?: string): string {
-  if (!status) {
-    return 'Unknown'
-  }
-
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-}
-
-function formatRuntime(startedAt?: Date, finishedAt?: Date): string | null {
-  if (!startedAt || !finishedAt) {
-    return null
-  }
-
-  const durationMs = finishedAt.getTime() - startedAt.getTime()
-  if (durationMs < 0) {
-    return null
-  }
-
-  const totalSeconds = Math.floor(durationMs / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`
-  }
-  return `${seconds}s`
-}
 
 function formatMetric(value?: number, unit = ''): string {
   if (value == null || Number.isNaN(value)) {
@@ -138,6 +99,13 @@ function isStoppableStatus(status?: string): boolean {
   )
 }
 
+function canViewResultsStatus(status?: string): boolean {
+  return (
+    status === BenchmarkRunDTOStatusEnum.Finished ||
+    status === BenchmarkRunDTOStatusEnum.Stopped
+  )
+}
+
 function getStatusSymbol(variant: ReturnType<typeof toStatusVariant>): string {
   switch (variant) {
     case 'pending':
@@ -187,6 +155,7 @@ export function BenchmarkRunMonitorPage() {
     ? `${runStatusText} (${runData.statusReason.trim()})`
     : runStatusText
   const shouldPoll = isActiveStatus(runStatus)
+  const canViewResults = canViewResultsStatus(runStatus)
 
   const applyRunDetails = useCallback((details: BenchmarkRunDerivedDTO) => {
     setRunData(details.run ?? null)
@@ -425,8 +394,8 @@ export function BenchmarkRunMonitorPage() {
   const isLoading = isLoadingNames || isRunLoading
   const endedWithRuntime = runData?.finishedAt
     ? `${formatTimestamp(runData.finishedAt)}${
-        formatRuntime(runData.startedAt, runData.finishedAt)
-          ? ` (${formatRuntime(runData.startedAt, runData.finishedAt)})`
+        formatRuntimeDuration(runData.startedAt, runData.finishedAt)
+          ? ` (${formatRuntimeDuration(runData.startedAt, runData.finishedAt)})`
           : ''
       }`
     : 'Not finished yet'
@@ -629,6 +598,14 @@ export function BenchmarkRunMonitorPage() {
       <Link className="shell-alert-dismiss" to={`/environments/${environmentId}`}>
         Back to environment
       </Link>
+      {canViewResults ? (
+        <Link
+          className="shell-alert-dismiss"
+          to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}/results`}
+        >
+          View results summary
+        </Link>
+      ) : null}
     </article>
   )
 }

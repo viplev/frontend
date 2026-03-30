@@ -20,6 +20,11 @@ function EnvironmentPlatform({
   return <span className="environment-type">{type}</span>
 }
 
+type EnvironmentListItem = {
+  environment: EnvironmentDTO
+  stableKey: string
+}
+
 function resolveAgentStatus(lastSeenAt?: Date): { label: string; variant: 'active' | 'inactive' | 'never' } {
   if (!lastSeenAt) {
     return { label: 'Agent: Never seen', variant: 'never' }
@@ -42,6 +47,19 @@ function hasRunningOrPendingRun(runs: Array<EnvironmentRunSummaryDTO>): boolean 
   )
 }
 
+function getTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function isEnvironmentLike(value: unknown): value is EnvironmentDTO {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as { name?: unknown; type?: unknown }
+  return typeof candidate.name === 'string' && typeof candidate.type === 'string'
+}
+
 function EnvironmentCard({
   environment,
   hasActiveRuns,
@@ -52,6 +70,7 @@ function EnvironmentCard({
   benchmarkStatusKnown: boolean
 }) {
   const navigate = useNavigate()
+  const environmentId = getTrimmedString(environment.id)
   const agentStatus = resolveAgentStatus(environment.agentLastSeenAt)
   const runsStatusLabel = benchmarkStatusKnown
     ? hasActiveRuns
@@ -68,8 +87,8 @@ function EnvironmentCard({
     : 'Unable to determine benchmark run status right now.'
 
   const handleClick = () => {
-    if (environment.id) {
-      navigate(`/environments/${environment.id}`)
+    if (environmentId) {
+      navigate(`/environments/${environmentId}`)
     }
   }
 
@@ -77,10 +96,10 @@ function EnvironmentCard({
     <article
       className="environment-card"
       onClick={handleClick}
-      style={{ cursor: environment.id ? 'pointer' : 'default' }}
+      style={{ cursor: environmentId ? 'pointer' : 'default' }}
     >
       <header className="environment-card-header">
-        <h2>{environment.name}</h2>
+        <h2>{getTrimmedString(environment.name) || environmentId || 'Unnamed environment'}</h2>
         <div className="environment-card-meta">
           <EnvironmentPlatform type={environment.type} />
           <div className="environment-card-indicators">
@@ -99,7 +118,7 @@ function EnvironmentCard({
           </div>
         </div>
       </header>
-      <p>{environment.description?.trim() || 'No description provided.'}</p>
+      <p>{getTrimmedString(environment.description) || 'No description provided.'}</p>
     </article>
   )
 }
@@ -107,7 +126,7 @@ function EnvironmentCard({
 export function EnvironmentsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [items, setItems] = useState<Array<EnvironmentDTO>>([])
+  const [items, setItems] = useState<Array<EnvironmentListItem>>([])
   const [activeRunByEnvironmentId, setActiveRunByEnvironmentId] = useState<Record<string, boolean>>(
     {},
   )
@@ -139,11 +158,21 @@ export function EnvironmentsPage() {
 
     try {
       const environments = await listEnvironments()
-      setItems(environments)
+      const validEnvironments = environments.filter(isEnvironmentLike)
+      const keyedEnvironments = validEnvironments.map((environment, index) => {
+        const environmentId = getTrimmedString(environment.id)
+        const environmentName = getTrimmedString(environment.name)
+        const fallbackDiscriminator = `${environmentName || 'environment'}-${environment.type}-${index}`
+        return {
+          environment,
+          stableKey: environmentId || fallbackDiscriminator,
+        }
+      })
+      setItems(keyedEnvironments)
 
       const activeRunEntries = await Promise.all(
-        environments.map(async (environment) => {
-          const environmentId = environment.id?.trim()
+        keyedEnvironments.map(async ({ environment }) => {
+          const environmentId = getTrimmedString(environment.id)
           if (!environmentId) {
             return [environmentId, false, false] as const
           }
@@ -171,7 +200,7 @@ export function EnvironmentsPage() {
       if (nextError instanceof EnvironmentsLoadError) {
         setError(nextError.message)
       } else {
-        setError('Unable to load environments right now.')
+        setError('Unable to process environments right now.')
       }
     } finally {
       setIsLoading(false)
@@ -183,7 +212,12 @@ export function EnvironmentsPage() {
   }, [load])
 
   const sortedItems = useMemo(
-    () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      [...items].sort((a, b) =>
+        getTrimmedString(a.environment.name).localeCompare(
+          getTrimmedString(b.environment.name),
+        ),
+      ),
     [items],
   )
 
@@ -246,17 +280,19 @@ export function EnvironmentsPage() {
         loadingTitle="Loading environments"
       >
         <section className="environment-list">
-          {sortedItems.map((environment) => {
-            const environmentId = environment.id?.trim() ?? ''
+          {sortedItems.map(({ environment, stableKey }) => {
+            const environmentId = getTrimmedString(environment.id)
             return (
-            <EnvironmentCard
-              key={environment.id ?? `${environment.name}-${environment.type}`}
-              environment={environment}
-              hasActiveRuns={Boolean(environmentId ? activeRunByEnvironmentId[environmentId] : false)}
-              benchmarkStatusKnown={Boolean(
-                environmentId ? benchmarkStatusKnownByEnvironmentId[environmentId] : false,
-              )}
-            />
+              <EnvironmentCard
+                key={stableKey}
+                environment={environment}
+                hasActiveRuns={Boolean(
+                  environmentId ? activeRunByEnvironmentId[environmentId] : false,
+                )}
+                benchmarkStatusKnown={Boolean(
+                  environmentId ? benchmarkStatusKnownByEnvironmentId[environmentId] : false,
+                )}
+              />
             )
           })}
         </section>
