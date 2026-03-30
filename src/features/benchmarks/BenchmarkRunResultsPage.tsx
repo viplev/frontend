@@ -11,26 +11,11 @@ import {
   getBenchmarkRunDetails,
   getBenchmarkRunRaw,
 } from './service'
-
-function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'n/a'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-function formatRunStatus(status?: string): string {
-  if (!status) {
-    return 'Unknown'
-  }
-
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-}
+import {
+  formatRunStatus,
+  formatRuntimeDuration,
+  formatTimestamp,
+} from './format'
 
 function formatMetric(value?: number, unit = ''): string {
   if (value == null || Number.isNaN(value)) {
@@ -67,32 +52,6 @@ function formatBytes(value?: number): string {
   }
 
   return `${size.toFixed(size >= 100 ? 0 : size >= 10 ? 1 : 2)} ${units[unitIndex]}`
-}
-
-function formatRuntime(startedAt?: Date, finishedAt?: Date): string {
-  if (!startedAt || !finishedAt) {
-    return 'n/a'
-  }
-
-  const durationMs = finishedAt.getTime() - startedAt.getTime()
-  if (durationMs < 0) {
-    return 'n/a'
-  }
-
-  const totalSeconds = Math.floor(durationMs / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`
-  }
-
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`
-  }
-
-  return `${seconds}s`
 }
 
 function getDerivedErrorMessage(error: unknown): string {
@@ -138,7 +97,7 @@ export function BenchmarkRunResultsPage() {
       return
     }
 
-    let isActive = true
+    const controller = new AbortController()
     setIsLoading(true)
     setFatalError(null)
     setDerivedError(null)
@@ -149,13 +108,13 @@ export function BenchmarkRunResultsPage() {
     const load = async () => {
       const [environmentResult, benchmarkResult, derivedResult, rawResult] =
         await Promise.allSettled([
-          getEnvironmentDetails(environmentId),
-          getBenchmark(environmentId, benchmarkId),
-          getBenchmarkRunDetails(environmentId, benchmarkId, runId),
-          getBenchmarkRunRaw(environmentId, benchmarkId, runId),
+          getEnvironmentDetails(environmentId, controller.signal),
+          getBenchmark(environmentId, benchmarkId, controller.signal),
+          getBenchmarkRunDetails(environmentId, benchmarkId, runId, controller.signal),
+          getBenchmarkRunRaw(environmentId, benchmarkId, runId, controller.signal),
         ])
 
-      if (!isActive) {
+      if (controller.signal.aborted) {
         return
       }
 
@@ -196,9 +155,7 @@ export function BenchmarkRunResultsPage() {
 
     void load()
 
-    return () => {
-      isActive = false
-    }
+    return () => controller.abort()
   }, [benchmarkId, environmentId, retryAttempt, runId])
 
   const run = derivedData?.run
@@ -298,7 +255,7 @@ export function BenchmarkRunResultsPage() {
             <div>
               <p className="shell-context-label">Runtime</p>
               <p className="shell-context-value">
-                {formatRuntime(run?.startedAt, run?.finishedAt)}
+                {formatRuntimeDuration(run?.startedAt, run?.finishedAt) ?? 'n/a'}
               </p>
             </div>
             <div>

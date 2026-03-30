@@ -187,11 +187,12 @@ export async function createBenchmark(
 export async function getBenchmark(
   environmentId: string,
   benchmarkId: string,
+  signal?: AbortSignal,
 ): Promise<BenchmarkDTO> {
   const benchmarkApi = createBenchmarkApi()
 
   try {
-    return await benchmarkApi.getBenchmark({ environmentId, benchmarkId })
+    return await benchmarkApi.getBenchmark({ environmentId, benchmarkId }, { signal })
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
       throw new GetBenchmarkError(readMutationErrorMessage(error, 'get'))
@@ -298,11 +299,15 @@ export async function getBenchmarkRunDetails(
   environmentId: string,
   benchmarkId: string,
   runId: string,
+  signal?: AbortSignal,
 ): Promise<BenchmarkRunDerivedDTO> {
   const runsApi = createBenchmarkRunsApi()
 
   try {
-    return await runsApi.getBenchmarkRun({ environmentId, benchmarkId, runId })
+    return await runsApi.getBenchmarkRun(
+      { environmentId, benchmarkId, runId },
+      { signal },
+    )
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
       if (error.response.status === 404) {
@@ -356,6 +361,7 @@ export async function getBenchmarkRunRaw(
   environmentId: string,
   benchmarkId: string,
   runId: string,
+  signal?: AbortSignal,
 ): Promise<BenchmarkRunRawDTO> {
   const runsApi = createBenchmarkRunsApi()
 
@@ -364,7 +370,7 @@ export async function getBenchmarkRunRaw(
       environmentId,
       benchmarkId,
       runId,
-    })
+    }, { signal })
     return await response.value()
   } catch (error: unknown) {
     if (error instanceof ResponseError) {

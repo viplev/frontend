@@ -20,6 +20,11 @@ function EnvironmentPlatform({
   return <span className="environment-type">{type}</span>
 }
 
+type EnvironmentListItem = {
+  environment: EnvironmentDTO
+  stableKey: string
+}
+
 function resolveAgentStatus(lastSeenAt?: Date): { label: string; variant: 'active' | 'inactive' | 'never' } {
   if (!lastSeenAt) {
     return { label: 'Agent: Never seen', variant: 'never' }
@@ -113,7 +118,7 @@ function EnvironmentCard({
           </div>
         </div>
       </header>
-      <p>{environment.description?.trim() || 'No description provided.'}</p>
+      <p>{getTrimmedString(environment.description) || 'No description provided.'}</p>
     </article>
   )
 }
@@ -121,7 +126,7 @@ function EnvironmentCard({
 export function EnvironmentsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [items, setItems] = useState<Array<EnvironmentDTO>>([])
+  const [items, setItems] = useState<Array<EnvironmentListItem>>([])
   const [activeRunByEnvironmentId, setActiveRunByEnvironmentId] = useState<Record<string, boolean>>(
     {},
   )
@@ -154,10 +159,19 @@ export function EnvironmentsPage() {
     try {
       const environments = await listEnvironments()
       const validEnvironments = environments.filter(isEnvironmentLike)
-      setItems(validEnvironments)
+      const keyedEnvironments = validEnvironments.map((environment, index) => {
+        const environmentId = getTrimmedString(environment.id)
+        const environmentName = getTrimmedString(environment.name)
+        const fallbackDiscriminator = `${environmentName || 'environment'}-${environment.type}-${index}`
+        return {
+          environment,
+          stableKey: environmentId || fallbackDiscriminator,
+        }
+      })
+      setItems(keyedEnvironments)
 
       const activeRunEntries = await Promise.all(
-        validEnvironments.map(async (environment) => {
+        keyedEnvironments.map(async ({ environment }) => {
           const environmentId = getTrimmedString(environment.id)
           if (!environmentId) {
             return [environmentId, false, false] as const
@@ -200,7 +214,9 @@ export function EnvironmentsPage() {
   const sortedItems = useMemo(
     () =>
       [...items].sort((a, b) =>
-        getTrimmedString(a.name).localeCompare(getTrimmedString(b.name)),
+        getTrimmedString(a.environment.name).localeCompare(
+          getTrimmedString(b.environment.name),
+        ),
       ),
     [items],
   )
@@ -264,12 +280,11 @@ export function EnvironmentsPage() {
         loadingTitle="Loading environments"
       >
         <section className="environment-list">
-          {sortedItems.map((environment) => {
+          {sortedItems.map(({ environment, stableKey }) => {
             const environmentId = getTrimmedString(environment.id)
-            const environmentName = getTrimmedString(environment.name) || 'environment'
             return (
               <EnvironmentCard
-                key={environmentId || `${environmentName}-${environment.type}`}
+                key={stableKey}
                 environment={environment}
                 hasActiveRuns={Boolean(
                   environmentId ? activeRunByEnvironmentId[environmentId] : false,

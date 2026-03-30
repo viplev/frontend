@@ -100,11 +100,12 @@ export async function createEnvironment(
 
 export async function getEnvironmentDetails(
   environmentId: string,
+  signal?: AbortSignal,
 ): Promise<EnvironmentDTO> {
   const environmentApi = createEnvironmentApi()
 
   try {
-    return await environmentApi.getEnvironment({ environmentId })
+    return await environmentApi.getEnvironment({ environmentId }, { signal })
   } catch (error: unknown) {
     if (error instanceof ResponseError) {
       if (error.response.status === 404) {
