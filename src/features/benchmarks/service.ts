@@ -1,6 +1,7 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
+import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import type { BenchmarkStatusDTO } from '../../generated/openapi/models/BenchmarkStatusDTO'
 import {
   EnvironmentRunSummaryDTOStatusEnum,
@@ -65,6 +66,13 @@ export class BenchmarkRunDetailsError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'BenchmarkRunDetailsError'
+  }
+}
+
+export class BenchmarkRunRawError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BenchmarkRunRawError'
   }
 }
 
@@ -340,6 +348,35 @@ export async function getBenchmarkRunDetails(
 
     throw new BenchmarkRunDetailsError(
       'Network error while loading benchmark run details. Please try again.',
+    )
+  }
+}
+
+export async function getBenchmarkRunRaw(
+  environmentId: string,
+  benchmarkId: string,
+  runId: string,
+): Promise<BenchmarkRunRawDTO> {
+  const runsApi = createBenchmarkRunsApi()
+
+  try {
+    const response = await runsApi.getBenchmarkRunDataRaw({
+      environmentId,
+      benchmarkId,
+      runId,
+    })
+    return await response.value()
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new BenchmarkRunRawError('Benchmark run was not found.')
+      }
+
+      throw new BenchmarkRunRawError(readLoadErrorMessage(error, 'benchmark run raw data'))
+    }
+
+    throw new BenchmarkRunRawError(
+      'Network error while loading benchmark run raw data. Please try again.',
     )
   }
 }

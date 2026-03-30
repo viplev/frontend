@@ -1,6 +1,8 @@
 FROM node:20-alpine AS build
 
 ARG APP_VERSION=1.0.0
+ARG VITE_API_BASE_URL=http://localhost:3000
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 WORKDIR /app
 

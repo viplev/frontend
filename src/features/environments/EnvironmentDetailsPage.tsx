@@ -420,6 +420,7 @@ export function EnvironmentDetailsPage() {
                       const activeRun = benchmarkId
                         ? activeRunsByBenchmarkId[benchmarkId]
                         : null
+                      const activeRunId = activeRun?.runId?.trim() ?? ''
                       const runStatus = activeRun?.status
                       const isStartBlocked = isStartBlockedStatus(runStatus)
                       const statusVariant = isStartBlocked
@@ -428,7 +429,7 @@ export function EnvironmentDetailsPage() {
                       const statusLabel = isStartBlocked
                         ? formatRunStatus(runStatus)
                         : 'Idle'
-                      const canGoToRun = isStartBlocked && Boolean(activeRun?.runId)
+                      const canGoToRun = isStartBlocked && Boolean(activeRunId)
                       const isStarting = Boolean(
                         benchmarkId ? startInFlightByBenchmarkId[benchmarkId] : false,
                       )
@@ -450,7 +451,7 @@ export function EnvironmentDetailsPage() {
                                   className="auth-button benchmark-go-to-run-action"
                                   onClick={() =>
                                     navigate(
-                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRun!.runId}`,
+                                      `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRunId}`,
                                     )
                                   }
                                 >
