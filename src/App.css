@@ -264,6 +264,11 @@
   background: #9ca3af;
 }
 
+.shell-submenu-indicator-unknown {
+  border-color: #f59e0b;
+  background: #f59e0b;
+}
+
 .shell-submenu-state {
   margin: 0;
   padding: 0.4rem 0.5rem;

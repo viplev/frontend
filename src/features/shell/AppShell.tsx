@@ -7,42 +7,18 @@ import {
   resetAuthFailureState,
   subscribeToAuthFailure,
 } from '../../auth/failure'
-import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import { listActiveEnvironmentRuns } from '../benchmarks/service'
 import { EnvironmentsLoadError, listEnvironments } from '../environments/service'
-
-function getTrimmedString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
-function isEnvironmentLike(value: unknown): value is EnvironmentDTO {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const candidate = value as { name?: unknown; type?: unknown }
-  return typeof candidate.name === 'string' && typeof candidate.type === 'string'
-}
+import {
+  getTrimmedString,
+  isEnvironmentLike,
+  resolveAgentStatus,
+} from '../environments/utils'
 
 type SidebarEnvironmentItem = {
   id: string
   label: string
-  indicator: 'inactive' | 'active-idle' | 'active-running'
-}
-
-const AGENT_ACTIVE_THRESHOLD_MS = 2 * 60 * 1000
-
-function isAgentCurrentlyActive(lastSeenAt?: Date | string): boolean {
-  if (!lastSeenAt) {
-    return false
-  }
-
-  const parsed = new Date(lastSeenAt)
-  if (Number.isNaN(parsed.getTime())) {
-    return false
-  }
-
-  return Date.now() - parsed.getTime() <= AGENT_ACTIVE_THRESHOLD_MS
+  indicator: 'inactive' | 'active-idle' | 'active-running' | 'unknown'
 }
 
 function ShellGlobalAlert() {
@@ -84,11 +60,17 @@ export function AppShell() {
   const [isEnvMenuOpen, setIsEnvMenuOpen] = useState(false)
   const [isEnvMenuPinnedOpen, setIsEnvMenuPinnedOpen] = useState(false)
   const [isEnvMenuLoading, setIsEnvMenuLoading] = useState(false)
+  const [hasLoadedEnvMenu, setHasLoadedEnvMenu] = useState(false)
   const [envMenuError, setEnvMenuError] = useState<string | null>(null)
   const [envMenuItems, setEnvMenuItems] = useState<Array<SidebarEnvironmentItem>>([])
 
   useEffect(() => {
+    if (!isEnvMenuOpen || hasLoadedEnvMenu) {
+      return
+    }
+
     const controller = new AbortController()
+    setHasLoadedEnvMenu(true)
     setIsEnvMenuLoading(true)
     setEnvMenuError(null)
     setEnvMenuItems([])
@@ -124,11 +106,11 @@ export function AppShell() {
             try {
               const runs = await listActiveEnvironmentRuns(environment.id, controller.signal)
               if (controller.signal.aborted) {
-                return [environment.id, false] as const
+                return [environment.id, false, false] as const
               }
-              return [environment.id, runs.length > 0] as const
+              return [environment.id, runs.length > 0, true] as const
             } catch {
-              return [environment.id, false] as const
+              return [environment.id, false, false] as const
             }
           }),
         )
@@ -137,16 +119,23 @@ export function AppShell() {
           return
         }
 
-        const statusById = Object.fromEntries(runStatusEntries)
+        const statusById = Object.fromEntries(
+          runStatusEntries.map(([environmentId, hasRunning]) => [environmentId, hasRunning]),
+        )
+        const statusKnownById = Object.fromEntries(
+          runStatusEntries.map(([environmentId, , isKnown]) => [environmentId, isKnown]),
+        )
         setEnvMenuItems(
           validEnvironments.map((environment) => ({
             id: environment.id,
             label: environment.label,
-            indicator: !isAgentCurrentlyActive(environment.agentLastSeenAt)
-              ? 'inactive'
+            indicator: !statusKnownById[environment.id]
+              ? 'unknown'
               : statusById[environment.id]
                 ? 'active-running'
-                : 'active-idle',
+                : resolveAgentStatus(environment.agentLastSeenAt).variant === 'active'
+                  ? 'active-idle'
+                  : 'inactive',
           })),
         )
       } catch (error: unknown) {
@@ -169,7 +158,7 @@ export function AppShell() {
     void loadSidebarEnvironments()
 
     return () => controller.abort()
-  }, [])
+  }, [hasLoadedEnvMenu, isEnvMenuOpen])
 
   return (
     <div className="app-shell">
@@ -254,7 +243,18 @@ export function AppShell() {
                             ? 'Agent active, benchmark running'
                             : environment.indicator === 'active-idle'
                               ? 'Agent active, no benchmark running'
-                              : 'Agent inactive or never seen'
+                              : environment.indicator === 'inactive'
+                                ? 'Agent inactive or never seen'
+                                : 'Benchmark status unknown'
+                        }
+                        aria-label={
+                          environment.indicator === 'active-running'
+                            ? 'Agent active, benchmark running'
+                            : environment.indicator === 'active-idle'
+                              ? 'Agent active, no benchmark running'
+                              : environment.indicator === 'inactive'
+                                ? 'Agent inactive or never seen'
+                                : 'Benchmark status unknown'
                         }
                       />
                     </NavLink>
