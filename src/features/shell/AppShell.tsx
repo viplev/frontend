@@ -180,14 +180,24 @@ export function AppShell() {
           <NavLink to="/" end className="shell-nav-link">
             Dashboard
           </NavLink>
-          <div className="shell-nav-group">
+          <div
+            className="shell-nav-group"
+            onMouseEnter={() => setIsEnvMenuOpen(true)}
+            onMouseLeave={() => setIsEnvMenuOpen(false)}
+            onFocusCapture={() => setIsEnvMenuOpen(true)}
+            onBlurCapture={(event) => {
+              const nextFocused = event.relatedTarget
+              if (!(nextFocused instanceof Node) || !event.currentTarget.contains(nextFocused)) {
+                setIsEnvMenuOpen(false)
+              }
+            }}
+          >
             <NavLink
               to="/environments"
               className={({ isActive }) =>
                 `shell-nav-link shell-nav-link-expandable${isActive || isEnvMenuOpen ? ' active' : ''}`
               }
               aria-expanded={isEnvMenuOpen}
-              onClick={() => setIsEnvMenuOpen((current) => !current)}
             >
               <span>Environments</span>
               <span className="shell-nav-caret" aria-hidden="true">
