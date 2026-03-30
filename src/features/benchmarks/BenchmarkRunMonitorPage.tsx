@@ -138,6 +138,13 @@ function isStoppableStatus(status?: string): boolean {
   )
 }
 
+function canViewResultsStatus(status?: string): boolean {
+  return (
+    status === BenchmarkRunDTOStatusEnum.Finished ||
+    status === BenchmarkRunDTOStatusEnum.Stopped
+  )
+}
+
 function getStatusSymbol(variant: ReturnType<typeof toStatusVariant>): string {
   switch (variant) {
     case 'pending':
@@ -187,6 +194,7 @@ export function BenchmarkRunMonitorPage() {
     ? `${runStatusText} (${runData.statusReason.trim()})`
     : runStatusText
   const shouldPoll = isActiveStatus(runStatus)
+  const canViewResults = canViewResultsStatus(runStatus)
 
   const applyRunDetails = useCallback((details: BenchmarkRunDerivedDTO) => {
     setRunData(details.run ?? null)
@@ -629,6 +637,14 @@ export function BenchmarkRunMonitorPage() {
       <Link className="shell-alert-dismiss" to={`/environments/${environmentId}`}>
         Back to environment
       </Link>
+      {canViewResults ? (
+        <Link
+          className="shell-alert-dismiss"
+          to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}/results`}
+        >
+          View results summary
+        </Link>
+      ) : null}
     </article>
   )
 }
