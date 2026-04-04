@@ -430,12 +430,14 @@
 
 .benchmark-details-edit-action {
   margin-top: 0;
+  background: #7c3aed;
+  color: #ffffff;
 }
 
 .benchmark-details-edit-action:hover,
 .benchmark-details-edit-action:focus-visible {
-  background: #d9c7f2;
-  color: #4b196e;
+  background: #6d28d9;
+  color: #ffffff;
 }
 
 .benchmark-details-start-action {
