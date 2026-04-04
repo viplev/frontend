@@ -159,7 +159,9 @@ export function AppShell() {
           setEnvMenuError('Unable to load environments in sidebar right now.')
         }
       } finally {
-        setIsEnvMenuLoading(false)
+        if (!controller.signal.aborted) {
+          setIsEnvMenuLoading(false)
+        }
       }
     }
 
@@ -176,13 +178,7 @@ export function AppShell() {
       return
     }
 
-    try {
-      navigate('/environments/new')
-    } catch {
-      setCreateEnvironmentError(
-        'Create environment is unavailable right now. Please open Environments and try again.',
-      )
-    }
+    navigate('/environments/new')
   }
 
   return (
