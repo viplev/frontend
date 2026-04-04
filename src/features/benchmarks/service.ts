@@ -1,6 +1,7 @@
 import { ResponseError } from '../../generated/openapi/runtime'
 import type { BenchmarkDTO } from '../../generated/openapi/models/BenchmarkDTO'
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
+import type { BenchmarkRunDTO } from '../../generated/openapi/models/BenchmarkRunDTO'
 import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import type { BenchmarkStatusDTO } from '../../generated/openapi/models/BenchmarkStatusDTO'
 import {
@@ -59,6 +60,13 @@ export class StopBenchmarkRunError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'StopBenchmarkRunError'
+  }
+}
+
+export class DeleteBenchmarkRunError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'DeleteBenchmarkRunError'
   }
 }
 
@@ -295,6 +303,44 @@ export async function stopBenchmarkRun(
   }
 }
 
+export async function deleteBenchmarkRun(
+  environmentId: string,
+  benchmarkId: string,
+  runId: string,
+): Promise<void> {
+  const runsApi = createBenchmarkRunsApi()
+
+  try {
+    await runsApi.deleteBenchmarkRun({ environmentId, benchmarkId, runId })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 400) {
+        throw new DeleteBenchmarkRunError(
+          'This run cannot be deleted in its current state.',
+        )
+      }
+      if (error.response.status === 404) {
+        throw new DeleteBenchmarkRunError('Benchmark run was not found.')
+      }
+      if (error.response.status === 409) {
+        throw new DeleteBenchmarkRunError(
+          'Active runs cannot be deleted. Cancel the run first.',
+        )
+      }
+      if (error.response.status >= 500) {
+        throw new DeleteBenchmarkRunError(
+          'Server error while trying to delete benchmark run.',
+        )
+      }
+      throw new DeleteBenchmarkRunError('Unable to delete benchmark run right now.')
+    }
+
+    throw new DeleteBenchmarkRunError(
+      'Network error while deleting benchmark run. Please try again.',
+    )
+  }
+}
+
 export async function getBenchmarkRunDetails(
   environmentId: string,
   benchmarkId: string,
@@ -383,6 +429,32 @@ export async function getBenchmarkRunRaw(
 
     throw new BenchmarkRunRawError(
       'Network error while loading benchmark run raw data. Please try again.',
+    )
+  }
+}
+
+export async function listBenchmarkRuns(
+  environmentId: string,
+  benchmarkId: string,
+  signal?: AbortSignal,
+): Promise<Array<BenchmarkRunDTO>> {
+  const runsApi = createBenchmarkRunsApi()
+
+  try {
+    return await runsApi.listBenchmarkRuns({ environmentId, benchmarkId }, { signal })
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        throw new BenchmarkRunsLoadError('Benchmark was not found.')
+      }
+
+      throw new BenchmarkRunsLoadError(
+        readLoadErrorMessage(error, 'benchmark runs'),
+      )
+    }
+
+    throw new BenchmarkRunsLoadError(
+      'Network error while loading benchmark runs. Please try again.',
     )
   }
 }

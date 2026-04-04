@@ -444,11 +444,23 @@ export function EnvironmentDetailsPage() {
                             </span>
                           </td>
                           <td>
-                            <div className="benchmark-table-actions">
-                              {canGoToRun ? (
-                                <button
-                                  type="button"
-                                  className="auth-button benchmark-go-to-run-action"
+                             <div className="benchmark-table-actions">
+                               <button
+                                 type="button"
+                                 className="shell-alert-dismiss benchmark-table-action-secondary"
+                                 onClick={() =>
+                                   navigate(
+                                     `/environments/${environmentId}/benchmarks/${benchmarkId}`,
+                                   )
+                                 }
+                                 disabled={!benchmarkId}
+                               >
+                                 Details
+                               </button>
+                               {canGoToRun ? (
+                                 <button
+                                   type="button"
+                                   className="auth-button benchmark-go-to-run-action"
                                   onClick={() =>
                                     navigate(
                                       `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRunId}`,
