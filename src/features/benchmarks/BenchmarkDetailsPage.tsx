@@ -243,10 +243,16 @@ export function BenchmarkDetailsPage() {
       ? 'A run is already active in this environment.'
       : undefined
   const hasBenchmarkActiveRun = runs.some((run) => isActiveRunStatus(run.status))
-  const isEditBlocked = hasBenchmarkActiveRun || !benchmarkId.trim()
+  const hasRunsLoadError = Boolean(runsError)
+  const isEditBlocked =
+    hasBenchmarkActiveRun || isLoading || hasRunsLoadError || !benchmarkId.trim()
   const editBlockedReason = hasBenchmarkActiveRun
     ? 'You cannot edit this benchmark while it has an active run.'
-    : undefined
+    : isLoading
+      ? 'Benchmark runs are still loading. Please wait before editing this benchmark.'
+      : hasRunsLoadError
+        ? 'Unable to verify benchmark run status right now, so editing is temporarily disabled.'
+        : undefined
 
   const instructionSource =
     instructions || '// No benchmark instructions were provided.'
@@ -384,7 +390,11 @@ export function BenchmarkDetailsPage() {
                   navigate(`/environments/${environmentId}/benchmarks/${benchmarkId}/edit`)
                 }
                 disabled={isEditBlocked}
-                title={editBlockedReason}
+                aria-describedby={
+                  isEditBlocked && editBlockedReason
+                    ? 'benchmark-edit-blocked-reason'
+                    : undefined
+                }
               >
                 Edit
               </button>
@@ -393,7 +403,11 @@ export function BenchmarkDetailsPage() {
                 className="auth-button benchmark-details-start-action"
                 onClick={() => void handleStartRun()}
                 disabled={isStartBlocked}
-                title={startBlockedReason}
+                aria-describedby={
+                  isStartBlocked && startBlockedReason
+                    ? 'benchmark-start-blocked-reason'
+                    : undefined
+                }
               >
                 {isStartingRun ? 'Starting...' : 'Start run'}
               </button>
@@ -408,6 +422,24 @@ export function BenchmarkDetailsPage() {
           <p className="auth-text benchmark-details-instructions-byline">
             These instructions are used when starting a new run for this benchmark.
           </p>
+          {isEditBlocked && editBlockedReason ? (
+            <p
+              id="benchmark-edit-blocked-reason"
+              className="auth-text benchmark-details-blocked-reason"
+              role="status"
+            >
+              Edit unavailable: {editBlockedReason}
+            </p>
+          ) : null}
+          {isStartBlocked && startBlockedReason ? (
+            <p
+              id="benchmark-start-blocked-reason"
+              className="auth-text benchmark-details-blocked-reason"
+              role="status"
+            >
+              Start run unavailable: {startBlockedReason}
+            </p>
+          ) : null}
         </div>
       </div>
 

@@ -288,6 +288,11 @@ export async function stopBenchmarkRun(
           'This run is not in a stoppable state right now.',
         )
       }
+      if (error.response.status === 409) {
+        throw new StopBenchmarkRunError(
+          'This run is already stopping and cannot be cancelled again.',
+        )
+      }
       if (error.response.status === 404) {
         throw new StopBenchmarkRunError('Benchmark run was not found.')
       }
