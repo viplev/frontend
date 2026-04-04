@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthSession } from '../../auth/AuthSessionContext'
 import type { AuthFailureDetail } from '../../auth/failure'
 import {
@@ -56,6 +56,8 @@ function ShellGlobalAlert() {
 }
 
 export function AppShell() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { session, logout } = useAuthSession()
   const [isEnvMenuOpen, setIsEnvMenuOpen] = useState(false)
   const [isEnvMenuPinnedOpen, setIsEnvMenuPinnedOpen] = useState(false)
@@ -63,6 +65,13 @@ export function AppShell() {
   const [hasLoadedEnvMenu, setHasLoadedEnvMenu] = useState(false)
   const [envMenuError, setEnvMenuError] = useState<string | null>(null)
   const [envMenuItems, setEnvMenuItems] = useState<Array<SidebarEnvironmentItem>>([])
+  const [createEnvironmentError, setCreateEnvironmentError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (location.pathname === '/environments/new') {
+      setCreateEnvironmentError(null)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isEnvMenuOpen || hasLoadedEnvMenu) {
@@ -70,7 +79,6 @@ export function AppShell() {
     }
 
     const controller = new AbortController()
-    setHasLoadedEnvMenu(true)
     setIsEnvMenuLoading(true)
     setEnvMenuError(null)
     setEnvMenuItems([])
@@ -97,6 +105,7 @@ export function AppShell() {
 
         if (validEnvironments.length === 0) {
           setEnvMenuItems([])
+          setHasLoadedEnvMenu(true)
           setIsEnvMenuLoading(false)
           return
         }
@@ -138,6 +147,7 @@ export function AppShell() {
                   : 'inactive',
           })),
         )
+        setHasLoadedEnvMenu(true)
       } catch (error: unknown) {
         if (controller.signal.aborted) {
           return
@@ -159,6 +169,17 @@ export function AppShell() {
 
     return () => controller.abort()
   }, [hasLoadedEnvMenu, isEnvMenuOpen])
+
+  const handleCreateEnvironmentClick = () => {
+    setCreateEnvironmentError(null)
+
+    if (!session) {
+      setCreateEnvironmentError('Create environment is unavailable right now. Please sign in again.')
+      return
+    }
+
+    navigate('/environments/new')
+  }
 
   return (
     <div className="app-shell">
@@ -277,10 +298,25 @@ export function AppShell() {
               Authenticated as {session?.email ?? 'unknown user'}
             </p>
           </div>
-          <button type="button" className="auth-button shell-logout" onClick={logout}>
-            Logout
-          </button>
+          <div className="shell-topbar-actions">
+            <button
+              type="button"
+              className="auth-button shell-create-environment-cta"
+              onClick={handleCreateEnvironmentClick}
+            >
+              Create environment
+            </button>
+            <button type="button" className="auth-button shell-logout" onClick={logout}>
+              Logout
+            </button>
+          </div>
         </header>
+
+        {createEnvironmentError ? (
+          <p className="auth-notice auth-notice-error shell-topbar-notice" role="alert">
+            {createEnvironmentError}
+          </p>
+        ) : null}
 
         <ShellGlobalAlert />
 

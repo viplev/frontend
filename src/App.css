@@ -308,6 +308,31 @@
   background: #ffffff;
 }
 
+.shell-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.shell-topbar-actions .auth-button {
+  margin-top: 0;
+  min-height: 2.35rem;
+  white-space: nowrap;
+}
+
+.shell-create-environment-cta {
+  background: #1d4ed8;
+}
+
+.shell-create-environment-cta:hover,
+.shell-create-environment-cta:focus-visible {
+  background: #1e40af;
+}
+
+.shell-topbar-notice {
+  margin: 0.75rem 1.25rem 0;
+}
+
 .shell-context-label {
   margin: 0;
   font-size: 0.75rem;
@@ -323,7 +348,7 @@
 }
 
 .shell-logout {
-  margin-top: 0;
+  min-width: 5.5rem;
 }
 
 .shell-alert {
