@@ -626,6 +626,14 @@
   background: #fbbf24;
 }
 
+.benchmark-run-action-reason {
+  margin: 0;
+  width: 100%;
+  text-align: right;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
 .benchmark-action-success {
   border: 1px solid #86d19f;
   background: #ecfbf1;

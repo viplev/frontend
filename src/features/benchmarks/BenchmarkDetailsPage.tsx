@@ -542,6 +542,13 @@ export function BenchmarkDetailsPage() {
                     )
                     const isActive = isActiveRunStatus(run.status)
                     const isCancelable = isCancellableRunStatus(run.status)
+                    const cancelBlockedReason =
+                      isActive && !isCancelable
+                        ? 'This run is already stopping and cannot be cancelled again.'
+                        : undefined
+                    const cancelBlockedReasonId = cancelBlockedReason
+                      ? `benchmark-run-cancel-blocked-${runId ?? index}`
+                      : undefined
                     const startedAt = run.startedAt ?? run.createdAt
 
                     return (
@@ -573,19 +580,25 @@ export function BenchmarkDetailsPage() {
                             </button>
 
                             {isActive ? (
-                              <button
-                                type="button"
-                                className="auth-button benchmark-run-cancel-action"
-                                onClick={() => void handleCancelRun(run)}
-                                disabled={!runId || isRunActionBusy || !isCancelable}
-                                title={
-                                  !isCancelable
-                                    ? 'This run is already stopping.'
-                                    : undefined
-                                }
-                              >
-                                {isRunActionBusy ? 'Cancelling...' : 'Cancel run'}
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  className="auth-button benchmark-run-cancel-action"
+                                  onClick={() => void handleCancelRun(run)}
+                                  disabled={!runId || isRunActionBusy || !isCancelable}
+                                  aria-describedby={cancelBlockedReasonId}
+                                >
+                                  {isRunActionBusy ? 'Cancelling...' : 'Cancel run'}
+                                </button>
+                                {cancelBlockedReasonId ? (
+                                  <p
+                                    id={cancelBlockedReasonId}
+                                    className="auth-text benchmark-run-action-reason"
+                                  >
+                                    {cancelBlockedReason}
+                                  </p>
+                                ) : null}
+                              </>
                             ) : (
                               <button
                                 type="button"
