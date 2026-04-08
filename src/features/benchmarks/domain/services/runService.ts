@@ -22,29 +22,15 @@ async function findEnvironmentRunSummary(
   runId: string,
 ): Promise<EnvironmentRunSummaryDTO | null> {
   const size = 100
-  let page = 0
+  const maxPages = 20
+  const response = await listEnvironmentRunsPageGateway({
+    environmentId,
+    page: 0,
+    size: size * maxPages,
+    sort: 'startedAt,desc',
+  })
 
-  while (page < 20) {
-    const response = await listEnvironmentRunsPageGateway({
-      environmentId,
-      page,
-      size,
-      sort: 'startedAt,desc',
-    })
-
-    const match = (response.runs ?? []).find((run) => run.runId === runId)
-    if (match) {
-      return match
-    }
-
-    const totalPages = response.pagination?.totalPages ?? 0
-    page += 1
-    if (totalPages === 0 || page >= totalPages) {
-      break
-    }
-  }
-
-  return null
+  return (response.runs ?? []).find((run) => run.runId === runId) ?? null
 }
 
 export async function startBenchmark(
