@@ -1,4 +1,4 @@
-export type { BenchmarkMutationInput } from './domain'
+export type { BenchmarkMutationInput } from './contracts'
 export {
   BenchmarkDomainError,
   BenchmarksLoadError,
@@ -12,17 +12,19 @@ export {
   BenchmarkRunDetailsError,
   BenchmarkRunRawError,
   isBenchmarkDomainError,
-} from './domain'
+} from './errors'
 export type {
   BenchmarkDomainErrorKind,
   BenchmarkDomainOperation,
   BenchmarkDomainErrorMetadata,
-} from './domain'
+} from './errors'
 export {
   listBenchmarks,
   createBenchmark,
   getBenchmark,
   updateBenchmark,
+} from './services/benchmarkService'
+export {
   startBenchmark,
   stopBenchmarkRun,
   deleteBenchmarkRun,
@@ -30,5 +32,5 @@ export {
   getBenchmarkRunRaw,
   listBenchmarkRuns,
   listActiveEnvironmentRuns,
-} from './domain'
+} from './services/runService'
 
