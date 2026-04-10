@@ -118,6 +118,20 @@ function formatEndedWithRuntime(run: BenchmarkRunDTO): string {
   return runtime ? `${endedAtLabel} (${runtime})` : endedAtLabel
 }
 
+function getRunDetailsPath(
+  environmentId: string,
+  benchmarkId: string,
+  runId: string,
+  status?: BenchmarkRunDTO['status'],
+): string {
+  const runMonitorPath = `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`
+  if (status === BenchmarkRunDTOStatusEnum.Finished) {
+    return `${runMonitorPath}/results`
+  }
+
+  return runMonitorPath
+}
+
 export function BenchmarkDetailsPage() {
   const { environmentId = '', benchmarkId = '' } = useParams<{
     environmentId: string
@@ -571,7 +585,12 @@ export function BenchmarkDetailsPage() {
                               className="shell-alert-dismiss benchmark-run-action"
                               onClick={() =>
                                 navigate(
-                                  `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`,
+                                  getRunDetailsPath(
+                                    environmentId,
+                                    benchmarkId,
+                                    runId,
+                                    run.status,
+                                  ),
                                 )
                               }
                               disabled={!runId}
