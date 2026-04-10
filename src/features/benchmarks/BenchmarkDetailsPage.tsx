@@ -122,7 +122,7 @@ function getRunDetailsPath(
   environmentId: string,
   benchmarkId: string,
   runId: string,
-  status?: string,
+  status?: BenchmarkRunDTO['status'],
 ): string {
   const runMonitorPath = `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`
   if (status === BenchmarkRunDTOStatusEnum.Finished) {
