@@ -151,9 +151,11 @@ export function BenchmarkRunMonitorPage() {
   const runStatus = runData?.status
   const runStatusVariant = toStatusVariant(runStatus)
   const runStatusText = formatRunStatus(runStatus)
-  const runStatusWithReason = runData?.statusReason?.trim()
-    ? `${runStatusText} (${runData.statusReason.trim()})`
-    : runStatusText
+  const runFailureReason =
+    runStatus === BenchmarkRunDTOStatusEnum.Failed
+      ? runData?.statusReason?.trim() ?? ''
+      : ''
+  const isFailedRun = runStatus === BenchmarkRunDTOStatusEnum.Failed
   const shouldPoll = isActiveStatus(runStatus)
   const canViewResults = canViewResultsStatus(runStatus)
 
@@ -459,7 +461,7 @@ export function BenchmarkRunMonitorPage() {
               <span className="run-monitor-status-symbol" aria-hidden="true">
                 {getStatusSymbol(runStatusVariant)}
               </span>
-              <span>{runStatusWithReason}</span>
+              <span>{runStatusText}</span>
             </p>
           </section>
         </div>
@@ -531,55 +533,65 @@ export function BenchmarkRunMonitorPage() {
           </section>
         </section>
 
-        <section className="run-monitor-metrics">
-          <h2>Live metrics snapshot</h2>
-          <div className="run-monitor-metrics-grid">
-            <article className="run-metric-card">
-              <h3>VUs</h3>
-              <p>Avg: {formatMetric(vusMetrics?.avg)}</p>
-              <p>Min: {formatMetric(vusMetrics?.min)}</p>
-              <p>Max: {formatMetric(vusMetrics?.max)}</p>
-            </article>
+        {isFailedRun ? (
+          <section className="run-monitor-failure-section" role="note" aria-label="Run failure reason">
+            <h2>Run failure reason</h2>
+            <p className="run-monitor-failure-section-message">
+              {runFailureReason ||
+                'This run failed, but no failure reason was provided by the runner.'}
+            </p>
+          </section>
+        ) : (
+          <section className="run-monitor-metrics">
+            <h2>Live metrics snapshot</h2>
+            <div className="run-monitor-metrics-grid">
+              <article className="run-metric-card">
+                <h3>VUs</h3>
+                <p>Avg: {formatMetric(vusMetrics?.avg)}</p>
+                <p>Min: {formatMetric(vusMetrics?.min)}</p>
+                <p>Max: {formatMetric(vusMetrics?.max)}</p>
+              </article>
 
-            <article className="run-metric-card">
-              <h3>HTTP overview</h3>
-              {topHttp.length === 0 ? (
-                <p>No HTTP metrics available yet.</p>
-              ) : (
-                <ul className="run-metric-list">
-                  {topHttp.map((metric) => (
-                    <li key={`${metric.requestGroup ?? ''}|${metric.url ?? ''}`}>
-                      <strong>{metric.requestGroup ?? metric.url ?? 'Request group'}</strong>
-                      <span>
-                        {metric.totalRequests ?? 0} req, {formatRatePercent(metric.errorRate)} err
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
+              <article className="run-metric-card">
+                <h3>HTTP overview</h3>
+                {topHttp.length === 0 ? (
+                  <p>No HTTP metrics available yet.</p>
+                ) : (
+                  <ul className="run-metric-list">
+                    {topHttp.map((metric) => (
+                      <li key={`${metric.requestGroup ?? ''}|${metric.url ?? ''}`}>
+                        <strong>{metric.requestGroup ?? metric.url ?? 'Request group'}</strong>
+                        <span>
+                          {metric.totalRequests ?? 0} req, {formatRatePercent(metric.errorRate)} err
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
 
-            <article className="run-metric-card">
-              <h3>Host resources</h3>
-              {hostMetrics.length === 0 ? (
-                <p>No host metrics available yet.</p>
-              ) : (
-                <ul className="run-metric-list">
-                  {hostMetrics.slice(0, 4).map((host) => (
-                    <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
-                      <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
-                      <span>
-                        CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
-                        {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
-                        {formatBytes(host.resource?.networkInTotalBytes)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-          </div>
-        </section>
+              <article className="run-metric-card">
+                <h3>Host resources</h3>
+                {hostMetrics.length === 0 ? (
+                  <p>No host metrics available yet.</p>
+                ) : (
+                  <ul className="run-metric-list">
+                    {hostMetrics.slice(0, 4).map((host) => (
+                      <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
+                        <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
+                        <span>
+                          CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
+                          {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
+                          {formatBytes(host.resource?.networkInTotalBytes)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </div>
+          </section>
+        )}
 
         {copyMessage ? (
           <p
