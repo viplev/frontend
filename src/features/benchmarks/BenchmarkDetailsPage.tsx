@@ -565,6 +565,10 @@ export function BenchmarkDetailsPage() {
                       ? `benchmark-run-cancel-blocked-${runId ?? index}`
                       : undefined
                     const startedAt = run.startedAt ?? run.createdAt
+                    const runDetailsLabel =
+                      run.status === BenchmarkRunDTOStatusEnum.Finished
+                        ? 'View results summary'
+                        : 'Run monitor'
 
                     return (
                       <tr key={runId || `benchmark-run-${index}`}>
@@ -597,7 +601,7 @@ export function BenchmarkDetailsPage() {
                               }
                               disabled={!runId}
                             >
-                              Run details
+                              {runDetailsLabel}
                             </button>
 
                             {isActive ? (
