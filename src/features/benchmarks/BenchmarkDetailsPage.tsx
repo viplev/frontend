@@ -118,6 +118,10 @@ function formatEndedWithRuntime(run: BenchmarkRunDTO): string {
   return runtime ? `${endedAtLabel} (${runtime})` : endedAtLabel
 }
 
+function isResultsSummaryStatus(status?: BenchmarkRunDTO['status']): boolean {
+  return status === BenchmarkRunDTOStatusEnum.Finished
+}
+
 function getRunDetailsPath(
   environmentId: string,
   benchmarkId: string,
@@ -125,11 +129,15 @@ function getRunDetailsPath(
   status?: BenchmarkRunDTO['status'],
 ): string {
   const runMonitorPath = `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`
-  if (status === BenchmarkRunDTOStatusEnum.Finished) {
+  if (isResultsSummaryStatus(status)) {
     return `${runMonitorPath}/results`
   }
 
   return runMonitorPath
+}
+
+function getRunDetailsLabel(status?: BenchmarkRunDTO['status']): string {
+  return isResultsSummaryStatus(status) ? 'View results summary' : 'Run monitor'
 }
 
 export function BenchmarkDetailsPage() {
@@ -565,6 +573,7 @@ export function BenchmarkDetailsPage() {
                       ? `benchmark-run-cancel-blocked-${runId ?? index}`
                       : undefined
                     const startedAt = run.startedAt ?? run.createdAt
+                    const runDetailsLabel = getRunDetailsLabel(run.status)
 
                     return (
                       <tr key={runId || `benchmark-run-${index}`}>
@@ -597,7 +606,7 @@ export function BenchmarkDetailsPage() {
                               }
                               disabled={!runId}
                             >
-                              Run details
+                              {runDetailsLabel}
                             </button>
 
                             {isActive ? (
