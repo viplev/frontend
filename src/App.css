@@ -1098,6 +1098,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .run-monitor-status {
@@ -1203,6 +1205,10 @@
 .run-monitor-stop {
   background: #f59e0b;
   color: #7c2d12;
+}
+
+.run-monitor-back {
+  margin: 0;
 }
 
 .run-monitor-stop:hover,
@@ -1386,9 +1392,9 @@
 .run-results-top-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.8rem;
 }
 
 .run-results-byline {
@@ -1549,13 +1555,6 @@
   line-height: 1.45;
   overflow: auto;
   max-height: 360px;
-}
-
-.run-results-footer-actions {
-  margin-top: 1rem;
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
 }
 
 @media (max-width: 960px) {

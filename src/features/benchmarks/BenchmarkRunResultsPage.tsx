@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
 import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import { getEnvironmentDetails } from '../environments/service'
@@ -76,6 +76,7 @@ export function BenchmarkRunResultsPage() {
     benchmarkId: string
     runId: string
   }>()
+  const navigate = useNavigate()
 
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
   const [benchmarkName, setBenchmarkName] = useState<string | null>(null)
@@ -196,6 +197,16 @@ export function BenchmarkRunResultsPage() {
     [rawData],
   )
 
+  const handleBackNavigation = () => {
+    const historyState = window.history.state as { idx?: number } | null
+    if (typeof historyState?.idx === 'number' && historyState.idx > 0) {
+      navigate(-1)
+      return
+    }
+
+    navigate(`/environments/${environmentId}/benchmarks/${benchmarkId}`)
+  }
+
   return (
     <article className="shell-page">
       <div className="run-results-top-row">
@@ -205,6 +216,13 @@ export function BenchmarkRunResultsPage() {
             Derived metrics are shown first, with expandable raw payload details below.
           </p>
         </div>
+        <button
+          type="button"
+          className="shell-alert-dismiss"
+          onClick={handleBackNavigation}
+        >
+          Back
+        </button>
       </div>
 
       <AsyncStateView
@@ -420,18 +438,6 @@ export function BenchmarkRunResultsPage() {
           )}
         </section>
       </AsyncStateView>
-
-      <div className="run-results-footer-actions">
-        <Link
-          className="shell-alert-dismiss"
-          to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`}
-        >
-          Back to run monitor
-        </Link>
-        <Link className="shell-alert-dismiss" to={`/environments/${environmentId}`}>
-          Back to environment
-        </Link>
-      </div>
     </article>
   )
 }
