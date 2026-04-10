@@ -490,7 +490,7 @@ export function EnvironmentDetailsPage() {
                               )}
                                 <button
                                   type="button"
-                                  className="shell-alert-dismiss benchmark-table-action-secondary"
+                                  className="shell-alert-dismiss benchmark-table-action-edit"
                                   onClick={() =>
                                     navigate(
                                       `/environments/${environmentId}/benchmarks/${benchmarkId}/edit`,
