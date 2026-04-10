@@ -469,7 +469,7 @@
   align-items: center;
 }
 
-.benchmark-table-action-secondary {
+.benchmark-table-action-details {
   margin: 0;
   --btn-fg: var(--btn-primary-fg);
   --btn-bg: var(--btn-primary-bg);

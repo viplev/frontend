@@ -448,12 +448,12 @@ export function EnvironmentDetailsPage() {
                           </td>
                           <td>
                              <div className="benchmark-table-actions">
-                               <button
-                                 type="button"
-                                 className="shell-alert-dismiss benchmark-table-action-secondary"
-                                 onClick={() =>
-                                   navigate(
-                                     `/environments/${environmentId}/benchmarks/${benchmarkId}`,
+                                <button
+                                  type="button"
+                                  className="shell-alert-dismiss benchmark-table-action-details"
+                                  onClick={() =>
+                                    navigate(
+                                      `/environments/${environmentId}/benchmarks/${benchmarkId}`,
                                    )
                                  }
                                  disabled={!benchmarkId}
