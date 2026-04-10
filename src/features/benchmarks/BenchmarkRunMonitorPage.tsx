@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import {
   BenchmarkRunDetailsError,
@@ -129,6 +129,7 @@ export function BenchmarkRunMonitorPage() {
     benchmarkId: string
     runId: string
   }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
   const [benchmarkName, setBenchmarkName] = useState<string | null>(null)
@@ -393,9 +394,9 @@ export function BenchmarkRunMonitorPage() {
   }
 
   const handleBackNavigation = () => {
-    const historyState = window.history.state as { idx?: number } | null
-    if (typeof historyState?.idx === 'number' && historyState.idx > 0) {
-      navigate(-1)
+    const backTarget = (location.state as { from?: string } | null)?.from
+    if (typeof backTarget === 'string' && backTarget.startsWith('/')) {
+      navigate(backTarget)
       return
     }
 
@@ -626,6 +627,7 @@ export function BenchmarkRunMonitorPage() {
         <Link
           className="shell-alert-dismiss"
           to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}/results`}
+          state={{ from: location.pathname }}
         >
           View results summary
         </Link>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
 import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import { getEnvironmentDetails } from '../environments/service'
@@ -76,6 +76,7 @@ export function BenchmarkRunResultsPage() {
     benchmarkId: string
     runId: string
   }>()
+  const location = useLocation()
   const navigate = useNavigate()
 
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
@@ -198,13 +199,17 @@ export function BenchmarkRunResultsPage() {
   )
 
   const handleBackNavigation = () => {
-    const historyState = window.history.state as { idx?: number } | null
-    if (typeof historyState?.idx === 'number' && historyState.idx > 0) {
-      navigate(-1)
+    const backTarget = (location.state as { from?: string } | null)?.from
+    if (typeof backTarget === 'string' && backTarget.startsWith('/')) {
+      navigate(backTarget)
       return
     }
 
-    navigate(`/environments/${environmentId}/benchmarks/${benchmarkId}`)
+    const fallbackPath =
+      environmentId.trim() && benchmarkId.trim()
+        ? `/environments/${environmentId}/benchmarks/${benchmarkId}`
+        : '/environments'
+    navigate(fallbackPath)
   }
 
   return (
