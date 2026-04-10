@@ -1,14 +1,7 @@
+import { formatReadableTimestamp } from '../dateTime'
+
 export function formatTimestamp(value?: Date | string): string {
-  if (!value) {
-    return 'n/a'
-  }
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return 'n/a'
-  }
-
-  return parsed.toLocaleString()
+  return formatReadableTimestamp(value) ?? 'n/a'
 }
 
 export function formatRunStatus(status?: string): string {

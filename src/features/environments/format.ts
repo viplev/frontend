@@ -1,7 +1,5 @@
-export function formatTimestamp(value?: Date): string {
-  if (!value) {
-    return 'Never'
-  }
+import { formatReadableTimestamp } from '../dateTime'
 
-  return new Date(value).toLocaleString()
+export function formatTimestamp(value?: Date | string): string {
+  return formatReadableTimestamp(value) ?? 'Never'
 }
