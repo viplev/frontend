@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
@@ -137,6 +137,7 @@ export function BenchmarkDetailsPage() {
     environmentId: string
     benchmarkId: string
   }>()
+  const location = useLocation()
   const navigate = useNavigate()
 
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
@@ -591,6 +592,7 @@ export function BenchmarkDetailsPage() {
                                     runId,
                                     run.status,
                                   ),
+                                  { state: { from: location.pathname } },
                                 )
                               }
                               disabled={!runId}

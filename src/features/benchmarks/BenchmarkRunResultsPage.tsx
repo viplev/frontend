@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
 import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import { getEnvironmentDetails } from '../environments/service'
@@ -76,6 +76,8 @@ export function BenchmarkRunResultsPage() {
     benchmarkId: string
     runId: string
   }>()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
   const [benchmarkName, setBenchmarkName] = useState<string | null>(null)
@@ -196,6 +198,20 @@ export function BenchmarkRunResultsPage() {
     [rawData],
   )
 
+  const handleBackNavigation = () => {
+    const backTarget = (location.state as { from?: string } | null)?.from
+    if (typeof backTarget === 'string' && backTarget.startsWith('/')) {
+      navigate(backTarget)
+      return
+    }
+
+    const fallbackPath =
+      environmentId.trim() && benchmarkId.trim()
+        ? `/environments/${environmentId}/benchmarks/${benchmarkId}`
+        : '/environments'
+    navigate(fallbackPath)
+  }
+
   return (
     <article className="shell-page">
       <div className="run-results-top-row">
@@ -205,6 +221,13 @@ export function BenchmarkRunResultsPage() {
             Derived metrics are shown first, with expandable raw payload details below.
           </p>
         </div>
+        <button
+          type="button"
+          className="shell-alert-dismiss"
+          onClick={handleBackNavigation}
+        >
+          Back
+        </button>
       </div>
 
       <AsyncStateView
@@ -420,18 +443,6 @@ export function BenchmarkRunResultsPage() {
           )}
         </section>
       </AsyncStateView>
-
-      <div className="run-results-footer-actions">
-        <Link
-          className="shell-alert-dismiss"
-          to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`}
-        >
-          Back to run monitor
-        </Link>
-        <Link className="shell-alert-dismiss" to={`/environments/${environmentId}`}>
-          Back to environment
-        </Link>
-      </div>
     </article>
   )
 }

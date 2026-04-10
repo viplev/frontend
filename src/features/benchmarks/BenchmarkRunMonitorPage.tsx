@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import {
   BenchmarkRunDetailsError,
@@ -129,6 +129,8 @@ export function BenchmarkRunMonitorPage() {
     benchmarkId: string
     runId: string
   }>()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [environmentName, setEnvironmentName] = useState<string | null>(null)
   const [benchmarkName, setBenchmarkName] = useState<string | null>(null)
   const [runData, setRunData] = useState<BenchmarkRunDTO | null>(null)
@@ -391,6 +393,16 @@ export function BenchmarkRunMonitorPage() {
     void loadRunDetails('initial')
   }
 
+  const handleBackNavigation = () => {
+    const backTarget = (location.state as { from?: string } | null)?.from
+    if (typeof backTarget === 'string' && backTarget.startsWith('/')) {
+      navigate(backTarget)
+      return
+    }
+
+    navigate('/environments')
+  }
+
   const isLoading = isLoadingNames || isRunLoading
   const endedWithRuntime = runData?.finishedAt
     ? `${formatTimestamp(runData.finishedAt)}${
@@ -415,6 +427,13 @@ export function BenchmarkRunMonitorPage() {
         </div>
         <div className="run-monitor-header-controls">
           <div className="run-monitor-header-actions">
+            <button
+              type="button"
+              className="shell-alert-dismiss run-monitor-back"
+              onClick={handleBackNavigation}
+            >
+              Back
+            </button>
             {isStoppableStatus(runStatus) ? (
               <button
                 type="button"
@@ -604,14 +623,11 @@ export function BenchmarkRunMonitorPage() {
           </p>
         ) : null}
       </AsyncStateView>
-
-      <Link className="shell-alert-dismiss" to={`/environments/${environmentId}`}>
-        Back to environment
-      </Link>
       {canViewResults ? (
         <Link
           className="shell-alert-dismiss"
           to={`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}/results`}
+          state={{ from: location.pathname }}
         >
           View results summary
         </Link>

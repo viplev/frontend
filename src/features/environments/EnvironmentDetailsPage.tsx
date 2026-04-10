@@ -302,7 +302,10 @@ export function EnvironmentDetailsPage() {
           },
         }))
 
-        navigate(`/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`)
+        navigate(
+          `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${runId}`,
+          { state: { from: location.pathname } },
+        )
       } catch (nextError: unknown) {
         if (nextError instanceof StartBenchmarkError) {
           setBenchmarkActionError(nextError.message)
@@ -313,7 +316,7 @@ export function EnvironmentDetailsPage() {
         setStartInFlightByBenchmarkId((current) => ({ ...current, [benchmarkId]: false }))
       }
     },
-    [environmentId, navigate],
+    [environmentId, location.pathname, navigate],
   )
 
   if (notFound) {
@@ -462,11 +465,12 @@ export function EnvironmentDetailsPage() {
                                    type="button"
                                    className="auth-button benchmark-go-to-run-action"
                                   onClick={() =>
-                                    navigate(
+                                   navigate(
                                       `/environments/${environmentId}/benchmarks/${benchmarkId}/runs/${activeRunId}`,
+                                      { state: { from: location.pathname } },
                                     )
-                                  }
-                                >
+                                   }
+                                 >
                                   Go to active run
                                 </button>
                               ) : (
