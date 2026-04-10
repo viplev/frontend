@@ -1,24 +1,7 @@
-const TIMESTAMP_FORMATTER = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
+import { formatReadableTimestamp } from '../dateTime'
 
 export function formatTimestamp(value?: Date | string): string {
-  if (!value) {
-    return 'n/a'
-  }
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return 'n/a'
-  }
-
-  return TIMESTAMP_FORMATTER.format(parsed)
+  return formatReadableTimestamp(value) ?? 'n/a'
 }
 
 export function formatRunStatus(status?: string): string {
