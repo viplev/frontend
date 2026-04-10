@@ -151,11 +151,9 @@ export function BenchmarkRunMonitorPage() {
   const runStatus = runData?.status
   const runStatusVariant = toStatusVariant(runStatus)
   const runStatusText = formatRunStatus(runStatus)
-  const runFailureReason =
-    runStatus === BenchmarkRunDTOStatusEnum.Failed
-      ? runData?.statusReason?.trim() ?? ''
-      : ''
   const isFailedRun = runStatus === BenchmarkRunDTOStatusEnum.Failed
+  const runFailureReason =
+    isFailedRun ? runData?.statusReason?.trim() ?? '' : ''
   const shouldPoll = isActiveStatus(runStatus)
   const canViewResults = canViewResultsStatus(runStatus)
 
