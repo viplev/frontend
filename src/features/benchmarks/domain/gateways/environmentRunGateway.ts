@@ -80,14 +80,22 @@ export async function findEnvironmentRunSummaryGateway(
       signal,
     })
 
-    const match = (response.runs ?? []).find((run) => run.runId === runId)
+    const runs = response.runs ?? []
+    const match = runs.find((run) => run.runId === runId)
     if (match) {
       return match
     }
 
-    const totalPages = response.pagination?.totalPages ?? 0
+    const totalPages = response.pagination?.totalPages
     page += 1
-    if (totalPages === 0 || page >= totalPages) {
+    if (totalPages != null) {
+      if (page >= totalPages) {
+        break
+      }
+      continue
+    }
+
+    if (runs.length < FALLBACK_RUN_LOOKUP_PAGE_SIZE) {
       break
     }
   }
