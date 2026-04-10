@@ -13,25 +13,9 @@ import {
   stopBenchmarkRunGateway,
 } from '../gateways/benchmarkRunGateway'
 import {
+  findEnvironmentRunSummaryGateway,
   listActiveEnvironmentRunsGateway,
-  listEnvironmentRunsPageGateway,
 } from '../gateways/environmentRunGateway'
-
-async function findEnvironmentRunSummary(
-  environmentId: string,
-  runId: string,
-): Promise<EnvironmentRunSummaryDTO | null> {
-  const size = 100
-  const maxPages = 20
-  const response = await listEnvironmentRunsPageGateway({
-    environmentId,
-    page: 0,
-    size: size * maxPages,
-    sort: 'startedAt,desc',
-  })
-
-  return (response.runs ?? []).find((run) => run.runId === runId) ?? null
-}
 
 export async function startBenchmark(
   environmentId: string,
@@ -70,7 +54,11 @@ export async function getBenchmarkRunDetails(
     }
 
     try {
-      const summary = await findEnvironmentRunSummary(environmentId, runId)
+      const summary = await findEnvironmentRunSummaryGateway(
+        environmentId,
+        runId,
+        signal,
+      )
       if (summary) {
         return {
           run: {
@@ -81,8 +69,10 @@ export async function getBenchmarkRunDetails(
           },
         }
       }
-    } catch {
-      // Keep original API error handling below if fallback lookup also fails.
+    } catch (lookupError: unknown) {
+      if (!(lookupError instanceof BenchmarkRunsLoadError)) {
+        throw lookupError
+      }
     }
 
     if (error instanceof BenchmarkRunDetailsError) {
