@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -60,7 +61,7 @@ export function MetricK6VusDTOFromJSONTyped(json: any, ignoreDiscriminator: bool
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'collectedAt': (new Date(json['collectedAt'])),
+        'collectedAt': (parseApiDateTime(json['collectedAt'])),
         'vus': json['vus'],
     };
 }

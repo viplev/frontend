@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -100,9 +101,9 @@ export function BenchmarkRunDTOFromJSONTyped(json: any, ignoreDiscriminator: boo
         'startedBy': json['startedBy'] == null ? undefined : json['startedBy'],
         'status': json['status'] == null ? undefined : json['status'],
         'statusReason': json['statusReason'] == null ? undefined : json['statusReason'],
-        'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
-        'finishedAt': json['finishedAt'] == null ? undefined : (new Date(json['finishedAt'])),
-        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
+        'startedAt': json['startedAt'] == null ? undefined : (parseApiDateTime(json['startedAt'])),
+        'finishedAt': json['finishedAt'] == null ? undefined : (parseApiDateTime(json['finishedAt'])),
+        'createdAt': json['createdAt'] == null ? undefined : (parseApiDateTime(json['createdAt'])),
     };
 }
 

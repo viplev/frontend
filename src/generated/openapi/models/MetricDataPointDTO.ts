@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -88,7 +89,7 @@ export function MetricDataPointDTOFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'collectedAt': (new Date(json['collectedAt'])),
+        'collectedAt': (parseApiDateTime(json['collectedAt'])),
         'cpuPercentage': json['cpuPercentage'] == null ? undefined : json['cpuPercentage'],
         'memoryUsageBytes': json['memoryUsageBytes'] == null ? undefined : json['memoryUsageBytes'],
         'memoryLimitBytes': json['memoryLimitBytes'] == null ? undefined : json['memoryLimitBytes'],

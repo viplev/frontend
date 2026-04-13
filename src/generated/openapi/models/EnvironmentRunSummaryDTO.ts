@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * Summary of a single run within an environment
  * @export
@@ -87,8 +88,8 @@ export function EnvironmentRunSummaryDTOFromJSONTyped(json: any, ignoreDiscrimin
         'benchmarkId': json['benchmarkId'] == null ? undefined : json['benchmarkId'],
         'runId': json['runId'] == null ? undefined : json['runId'],
         'status': json['status'] == null ? undefined : json['status'],
-        'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
-        'finishedAt': json['finishedAt'] == null ? undefined : (new Date(json['finishedAt'])),
+        'startedAt': json['startedAt'] == null ? undefined : (parseApiDateTime(json['startedAt'])),
+        'finishedAt': json['finishedAt'] == null ? undefined : (parseApiDateTime(json['finishedAt'])),
     };
 }
 

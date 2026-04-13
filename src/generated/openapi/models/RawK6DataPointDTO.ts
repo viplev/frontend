@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * A single K6 data point at a given timestamp
  * @export
@@ -63,7 +64,7 @@ export function RawK6DataPointDTOFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'timestamp': json['timestamp'] == null ? undefined : (new Date(json['timestamp'])),
+        'timestamp': json['timestamp'] == null ? undefined : (parseApiDateTime(json['timestamp'])),
         'httpResponseTimeMs': json['httpResponseTimeMs'] == null ? undefined : json['httpResponseTimeMs'],
         'httpWaitingMs': json['httpWaitingMs'] == null ? undefined : json['httpWaitingMs'],
         'vus': json['vus'] == null ? undefined : json['vus'],
