@@ -366,13 +366,26 @@ export function BenchmarkRunResultsPage() {
     () => applyK6SlidingAverage(baseK6ChartPoints, smoothingWindowSize),
     [baseK6ChartPoints, smoothingWindowSize],
   )
+  const maxBrushIndex = Math.max(k6ChartPoints.length - 1, 0)
+  const brushStartIndex = Math.min(Math.max(brushRange?.startIndex ?? 0, 0), maxBrushIndex)
+  const brushEndIndex = Math.min(
+    Math.max(brushRange?.endIndex ?? maxBrushIndex, brushStartIndex),
+    maxBrushIndex,
+  )
+  const visibleK6ChartPoints = useMemo(() => {
+    if (k6ChartPoints.length === 0) {
+      return []
+    }
+
+    return k6ChartPoints.slice(brushStartIndex, brushEndIndex + 1)
+  }, [brushEndIndex, brushStartIndex, k6ChartPoints])
   const msAxisDomain = useMemo(
-    () => resolveYAxisDomain(k6ChartPoints, K6_MS_METRICS, axisScaleMode),
-    [axisScaleMode, k6ChartPoints],
+    () => resolveYAxisDomain(visibleK6ChartPoints, K6_MS_METRICS, axisScaleMode),
+    [axisScaleMode, visibleK6ChartPoints],
   )
   const vusAxisDomain = useMemo(
-    () => resolveYAxisDomain(k6ChartPoints, K6_VUS_METRICS, axisScaleMode),
-    [axisScaleMode, k6ChartPoints],
+    () => resolveYAxisDomain(visibleK6ChartPoints, K6_VUS_METRICS, axisScaleMode),
+    [axisScaleMode, visibleK6ChartPoints],
   )
 
   useEffect(() => {
@@ -385,10 +398,8 @@ export function BenchmarkRunResultsPage() {
       startIndex: 0,
       endIndex: k6ChartPoints.length - 1,
     })
-  }, [k6ChartPoints.length])
+  }, [baseK6ChartPoints, k6ChartPoints.length, runId])
 
-  const brushStartIndex = brushRange?.startIndex ?? 0
-  const brushEndIndex = brushRange?.endIndex ?? Math.max(k6ChartPoints.length - 1, 0)
   const showPointsOnly = chartRenderMode === 'points'
   const isZoomed =
     k6ChartPoints.length > 1 &&
@@ -671,7 +682,7 @@ export function BenchmarkRunResultsPage() {
               </div>
 
               <div className="run-results-chart-container">
-                <ResponsiveContainer width="100%" height={360}>
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={k6ChartPoints}
                     margin={{ top: 12, right: 8, left: 0, bottom: 4 }}

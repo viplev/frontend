@@ -76,22 +76,28 @@ export function resolveYAxisDomain(
     return AUTO_DOMAIN
   }
 
-  const values: Array<number> = []
+  let min = Number.POSITIVE_INFINITY
+  let max = Number.NEGATIVE_INFINITY
+  let hasValue = false
+
   for (const point of points) {
     for (const metric of metrics) {
       const value = point[metric]
       if (value != null && !Number.isNaN(value)) {
-        values.push(value)
+        if (value < min) {
+          min = value
+        }
+        if (value > max) {
+          max = value
+        }
+        hasValue = true
       }
     }
   }
 
-  if (values.length === 0) {
+  if (!hasValue) {
     return AUTO_DOMAIN
   }
-
-  const min = Math.min(...values)
-  const max = Math.max(...values)
 
   if (mode === 'from-zero') {
     const paddedMax = max <= 0 ? 1 : max + Math.max(max * 0.05, 1)
