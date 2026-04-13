@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * A single resource metric data point at a given timestamp, used by both host and service time-series
  * @export
@@ -87,7 +88,7 @@ export function RawResourceDataPointDTOFromJSONTyped(json: any, ignoreDiscrimina
     }
     return {
         
-        'timestamp': json['timestamp'] == null ? undefined : (new Date(json['timestamp'])),
+        'timestamp': json['timestamp'] == null ? undefined : (parseApiDateTime(json['timestamp'])),
         'cpuPercentage': json['cpuPercentage'] == null ? undefined : json['cpuPercentage'],
         'memoryUsageBytes': json['memoryUsageBytes'] == null ? undefined : json['memoryUsageBytes'],
         'memoryLimitBytes': json['memoryLimitBytes'] == null ? undefined : json['memoryLimitBytes'],

@@ -6,6 +6,7 @@ const TIMESTAMP_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
   second: '2-digit',
   hour12: false,
+  timeZoneName: 'short',
 })
 
 export function formatReadableTimestamp(value?: Date | string): string | null {

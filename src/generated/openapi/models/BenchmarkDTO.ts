@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -80,8 +81,8 @@ export function BenchmarkDTOFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'name': json['name'],
         'description': json['description'] == null ? undefined : json['description'],
         'k6Instructions': json['k6Instructions'] == null ? undefined : json['k6Instructions'],
-        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
-        'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
+        'createdAt': json['createdAt'] == null ? undefined : (parseApiDateTime(json['createdAt'])),
+        'updatedAt': json['updatedAt'] == null ? undefined : (parseApiDateTime(json['updatedAt'])),
     };
 }
 

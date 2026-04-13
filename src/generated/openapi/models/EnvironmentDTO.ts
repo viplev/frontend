@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -112,9 +113,9 @@ export function EnvironmentDTOFromJSONTyped(json: any, ignoreDiscriminator: bool
         'type': json['type'],
         'token': json['token'] == null ? undefined : json['token'],
         'agentCommand': json['agentCommand'] == null ? undefined : json['agentCommand'],
-        'agentLastSeenAt': json['agentLastSeenAt'] == null ? undefined : (new Date(json['agentLastSeenAt'])),
-        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
-        'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
+        'agentLastSeenAt': json['agentLastSeenAt'] == null ? undefined : (parseApiDateTime(json['agentLastSeenAt'])),
+        'createdAt': json['createdAt'] == null ? undefined : (parseApiDateTime(json['createdAt'])),
+        'updatedAt': json['updatedAt'] == null ? undefined : (parseApiDateTime(json['updatedAt'])),
     };
 }
 

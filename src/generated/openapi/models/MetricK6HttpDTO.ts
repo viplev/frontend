@@ -14,6 +14,7 @@
  */
 
 import { mapValues } from '../runtime';
+import { parseApiDateTime } from './dateTimeParser';
 /**
  * 
  * @export
@@ -129,7 +130,7 @@ export function MetricK6HttpDTOFromJSONTyped(json: any, ignoreDiscriminator: boo
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'collectedAt': (new Date(json['collectedAt'])),
+        'collectedAt': (parseApiDateTime(json['collectedAt'])),
         'url': json['url'],
         'httpMethod': json['httpMethod'],
         'requestGroup': json['requestGroup'] == null ? undefined : json['requestGroup'],
