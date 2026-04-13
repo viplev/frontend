@@ -1781,3 +1781,135 @@
     transform: rotate(360deg);
   }
 }
+
+/* ── Run comparison page ───────────────────────── */
+
+.run-comparison-breadcrumb {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.run-comparison-breadcrumb a {
+  color: var(--btn-primary-bg, #2563eb);
+  text-decoration: none;
+}
+
+.run-comparison-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.run-comparison-metadata {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.run-comparison-run-card {
+  border: 1px solid #d4e1f3;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  background: #f9fbff;
+}
+
+.run-comparison-run-a {
+  border-left: 4px solid #2563eb;
+}
+
+.run-comparison-run-b {
+  border-left: 4px solid #9333ea;
+}
+
+.run-comparison-run-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.run-comparison-run-id {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.run-comparison-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.run-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.run-comparison-table th,
+.run-comparison-table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.run-comparison-table th {
+  background: #f3f8ff;
+  font-size: 0.86rem;
+}
+
+.run-comparison-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.run-comparison-col-a {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.run-comparison-col-b {
+  color: #9333ea;
+  font-weight: 500;
+}
+
+.run-comparison-delta-improvement {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.run-comparison-delta-regression {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.run-comparison-http-group {
+  margin-bottom: 1.5rem;
+}
+
+.run-comparison-http-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.run-comparison-hosts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.run-comparison-host-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.run-comparison-vus-grid {
+  max-width: 640px;
+}
+
+@media (max-width: 768px) {
+  .run-comparison-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .run-comparison-hosts {
+    grid-template-columns: 1fr;
+  }
+}
