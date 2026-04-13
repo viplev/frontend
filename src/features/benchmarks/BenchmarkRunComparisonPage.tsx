@@ -194,6 +194,7 @@ export function BenchmarkRunComparisonPage() {
   const [smoothingLevel, setSmoothingLevel] = useState(0)
   const [visibleSeries, setVisibleSeries] = useState<ComparisonSeriesVisibility>(DEFAULT_SERIES_VISIBILITY)
   const [brushRange, setBrushRange] = useState<BrushRange | null>(null)
+  const [selectedPercentiles, setSelectedPercentiles] = useState<Set<string> | null>(null)
 
   const environmentLabel = (environmentName ?? environmentId).trim() || 'n/a'
   const benchmarkLabel = (benchmarkName ?? benchmarkId).trim() || 'n/a'
@@ -260,6 +261,34 @@ export function BenchmarkRunComparisonPage() {
 
   const matchedHttpGroups = useMemo(() => matchHttpGroups(httpA, httpB), [httpA, httpB])
   const percentileKeys = useMemo(() => collectPercentileKeys(httpA, httpB), [httpA, httpB])
+
+  // Default to all percentiles selected once data loads
+  const activePercentiles = useMemo(
+    () => selectedPercentiles ?? new Set(percentileKeys),
+    [selectedPercentiles, percentileKeys],
+  )
+  const visiblePercentileKeys = useMemo(
+    () => percentileKeys.filter((k) => activePercentiles.has(k)),
+    [percentileKeys, activePercentiles],
+  )
+
+  function togglePercentile(key: string) {
+    const next = new Set(activePercentiles)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    setSelectedPercentiles(next)
+  }
+
+  function toggleAllPercentiles() {
+    if (activePercentiles.size === percentileKeys.length) {
+      setSelectedPercentiles(new Set())
+    } else {
+      setSelectedPercentiles(new Set(percentileKeys))
+    }
+  }
 
   const baseChartPoints = useMemo(
     () => mergeK6ChartPointsByElapsed(comparisonData?.rawA ?? null, comparisonData?.rawB ?? null),
@@ -602,6 +631,28 @@ export function BenchmarkRunComparisonPage() {
         {/* HTTP statistics comparison */}
         <section className="run-results-section">
           <h2>HTTP comparison</h2>
+          {percentileKeys.length > 0 && (
+            <div className="run-comparison-percentile-selector">
+              <span className="run-comparison-percentile-label">Percentiles:</span>
+              <button
+                type="button"
+                className={`run-comparison-percentile-pill ${activePercentiles.size === percentileKeys.length ? 'active' : ''}`}
+                onClick={toggleAllPercentiles}
+              >
+                All
+              </button>
+              {percentileKeys.map((pKey) => (
+                <button
+                  key={pKey}
+                  type="button"
+                  className={`run-comparison-percentile-pill ${activePercentiles.has(pKey) ? 'active' : ''}`}
+                  onClick={() => togglePercentile(pKey)}
+                >
+                  {pKey}
+                </button>
+              ))}
+            </div>
+          )}
           {matchedHttpGroups.length === 0 ? (
             <p className="run-results-placeholder">
               No HTTP metrics available for comparison.
@@ -675,7 +726,7 @@ export function BenchmarkRunComparisonPage() {
                         <td className="run-comparison-col-b">{formatMetric(b?.duration?.median, ' ms')}</td>
                         <td className={deltaClass(a?.duration?.median, b?.duration?.median)}>{formatDelta(a?.duration?.median, b?.duration?.median, 'ms')}</td>
                       </tr>
-                      {percentileKeys.map((pKey) => (
+                      {visiblePercentileKeys.map((pKey) => (
                         <tr key={pKey}>
                           <td>{pKey} duration</td>
                           <td className="run-comparison-col-a">{formatMetric(a?.duration?.percentiles?.[pKey], ' ms')}</td>

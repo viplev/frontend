@@ -1904,6 +1904,51 @@
   max-width: 640px;
 }
 
+.run-comparison-percentile-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.run-comparison-percentile-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  margin-right: 0.3rem;
+}
+
+.run-comparison-percentile-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.run-comparison-percentile-pill:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.run-comparison-percentile-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.run-comparison-percentile-pill.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
 @media (max-width: 768px) {
   .run-comparison-metadata {
     grid-template-columns: 1fr;
