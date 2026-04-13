@@ -152,22 +152,20 @@ function matchHttpGroups(
   return Array.from(map.entries()).map(([groupName, pair]) => ({ groupName, ...pair }))
 }
 
-const RUN_A_COLOR = '#2563eb'
-const RUN_B_COLOR = '#9333ea'
-
 const SERIES_CONFIG: Array<{
   dataKey: ComparisonMetricKey
   name: string
   yAxisId: string
   color: string
-  dashed: boolean
+  dashPattern?: string
+  width: number
 }> = [
-  { dataKey: 'httpResponseTimeMs_A', name: 'HTTP response (A)', yAxisId: 'ms', color: RUN_A_COLOR, dashed: false },
-  { dataKey: 'httpResponseTimeMs_B', name: 'HTTP response (B)', yAxisId: 'ms', color: RUN_B_COLOR, dashed: true },
-  { dataKey: 'httpWaitingMs_A', name: 'HTTP waiting (A)', yAxisId: 'ms', color: '#1d4ed8', dashed: false },
-  { dataKey: 'httpWaitingMs_B', name: 'HTTP waiting (B)', yAxisId: 'ms', color: '#7c3aed', dashed: true },
-  { dataKey: 'vus_A', name: 'VUs (A)', yAxisId: 'vus', color: '#16a34a', dashed: false },
-  { dataKey: 'vus_B', name: 'VUs (B)', yAxisId: 'vus', color: '#15803d', dashed: true },
+  { dataKey: 'httpResponseTimeMs_A', name: 'HTTP response (A)', yAxisId: 'ms', color: '#2563eb', width: 2 },
+  { dataKey: 'httpResponseTimeMs_B', name: 'HTTP response (B)', yAxisId: 'ms', color: '#dc2626', dashPattern: '10 4', width: 2.5 },
+  { dataKey: 'httpWaitingMs_A', name: 'HTTP waiting (A)', yAxisId: 'ms', color: '#60a5fa', width: 2 },
+  { dataKey: 'httpWaitingMs_B', name: 'HTTP waiting (B)', yAxisId: 'ms', color: '#f97316', dashPattern: '10 4', width: 2.5 },
+  { dataKey: 'vus_A', name: 'VUs (A)', yAxisId: 'vus', color: '#16a34a', width: 2 },
+  { dataKey: 'vus_B', name: 'VUs (B)', yAxisId: 'vus', color: '#a855f7', dashPattern: '10 4', width: 2.5 },
 ]
 
 export function BenchmarkRunComparisonPage() {
@@ -569,8 +567,8 @@ export function BenchmarkRunComparisonPage() {
                         name={series.name}
                         hide={!visibleSeries[series.dataKey]}
                         stroke={series.color}
-                        strokeWidth={showPointsOnly ? 0.0001 : 2}
-                        strokeDasharray={series.dashed ? '6 3' : undefined}
+                        strokeWidth={showPointsOnly ? 0.0001 : series.width}
+                        strokeDasharray={series.dashPattern}
                         dot={
                           showPointsOnly
                             ? { r: 3.5, fill: series.color, stroke: series.color, strokeWidth: 1 }
