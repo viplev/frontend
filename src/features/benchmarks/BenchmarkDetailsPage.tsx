@@ -165,6 +165,21 @@ export function BenchmarkDetailsPage() {
   >({})
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionNotice, setActionNotice] = useState<string | null>(null)
+  const [selectedRunIds, setSelectedRunIds] = useState<Array<string>>([])
+
+  const toggleRunSelection = (runId: string) => {
+    setSelectedRunIds((current) => {
+      if (current.includes(runId)) {
+        return current.filter((id) => id !== runId)
+      }
+      if (current.length >= 2) {
+        return current
+      }
+      return [...current, runId]
+    })
+  }
+
+  const canCompare = selectedRunIds.length === 2
 
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -551,6 +566,23 @@ export function BenchmarkDetailsPage() {
               <table className="benchmark-details-runs-table">
                 <thead>
                   <tr>
+                    <th className="benchmark-details-compare-col">
+                      {canCompare ? (
+                        <button
+                          type="button"
+                          className="benchmark-compare-header-button"
+                          onClick={() =>
+                            navigate(
+                              `/environments/${environmentId}/benchmarks/${benchmarkId}/compare/${selectedRunIds[0]}/${selectedRunIds[1]}`,
+                            )
+                          }
+                        >
+                          Compare
+                        </button>
+                      ) : (
+                        'Compare'
+                      )}
+                    </th>
                     <th>Run start</th>
                     <th>Run end / total</th>
                     <th>Status</th>
@@ -574,9 +606,26 @@ export function BenchmarkDetailsPage() {
                       : undefined
                     const startedAt = run.startedAt ?? run.createdAt
                     const runDetailsLabel = getRunDetailsLabel(run.status)
+                    const isFinished = isResultsSummaryStatus(run.status)
+                    const isSelected = Boolean(runId && selectedRunIds.includes(runId))
 
                     return (
                       <tr key={runId || `benchmark-run-${index}`}>
+                        <td className="benchmark-details-compare-col">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={!runId || !isFinished || (canCompare && !isSelected)}
+                            title={
+                              !isFinished
+                                ? 'Only finished runs can be compared'
+                                : canCompare && !isSelected
+                                  ? 'Only two runs can be compared at a time — deselect one first'
+                                  : undefined
+                            }
+                            onChange={() => { if (runId) toggleRunSelection(runId) }}
+                          />
+                        </td>
                         <td>{formatTimestamp(startedAt)}</td>
                         <td>{formatEndedWithRuntime(run)}</td>
                         <td>

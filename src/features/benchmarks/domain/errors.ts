@@ -143,3 +143,12 @@ export class BenchmarkRunRawError extends BenchmarkDomainError {
   }
 }
 
+export class BenchmarkRunComparisonError extends BenchmarkDomainError {
+  constructor(message: string, metadata: BenchmarkDomainErrorMetadata = {}) {
+    super('BenchmarkRunComparisonError', message, {
+      operation: 'get-run-details',
+      ...metadata,
+    })
+  }
+}
+

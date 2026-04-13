@@ -12,6 +12,7 @@ import { BenchmarkFormPage } from './features/benchmarks/BenchmarkFormPage'
 import { BenchmarkRunMonitorPage } from './features/benchmarks/BenchmarkRunMonitorPage'
 import { BenchmarkRunResultsPage } from './features/benchmarks/BenchmarkRunResultsPage'
 import { BenchmarkDetailsPage } from './features/benchmarks/BenchmarkDetailsPage'
+import { BenchmarkRunComparisonPage } from './features/benchmarks/BenchmarkRunComparisonPage'
 import './App.css'
 
 function App() {
@@ -40,6 +41,10 @@ function App() {
           <Route
             path="/environments/:environmentId/benchmarks/:benchmarkId"
             element={<BenchmarkDetailsPage />}
+          />
+          <Route
+            path="/environments/:environmentId/benchmarks/:benchmarkId/compare/:runIdA/:runIdB"
+            element={<BenchmarkRunComparisonPage />}
           />
           <Route
             path="/environments/:environmentId/benchmarks/:benchmarkId/runs/:runId"

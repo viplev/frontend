@@ -3,7 +3,7 @@ import type { BenchmarkRunDTO } from '../../../../generated/openapi/models/Bench
 import type { BenchmarkRunRawDTO } from '../../../../generated/openapi/models/BenchmarkRunRawDTO'
 import type { BenchmarkStatusDTO } from '../../../../generated/openapi/models/BenchmarkStatusDTO'
 import type { EnvironmentRunSummaryDTO } from '../../../../generated/openapi/models/EnvironmentRunSummaryDTO'
-import { BenchmarkRunDetailsError, BenchmarkRunsLoadError } from '../errors'
+import { BenchmarkRunDetailsError, BenchmarkRunComparisonError, BenchmarkRunsLoadError } from '../errors'
 import {
   deleteBenchmarkRunGateway,
   getBenchmarkRunDetailsGateway,
@@ -122,6 +122,44 @@ export async function listActiveEnvironmentRuns(
       {
         kind: 'network',
         operation: 'list-environment-runs',
+        cause: error,
+      },
+    )
+  }
+}
+
+export interface ComparisonRunData {
+  derivedA: BenchmarkRunDerivedDTO
+  derivedB: BenchmarkRunDerivedDTO
+  rawA: BenchmarkRunRawDTO | null
+  rawB: BenchmarkRunRawDTO | null
+}
+
+export async function getComparisonData(
+  environmentId: string,
+  benchmarkId: string,
+  runIdA: string,
+  runIdB: string,
+  signal?: AbortSignal,
+): Promise<ComparisonRunData> {
+  try {
+    const [derivedA, derivedB, rawA, rawB] = await Promise.all([
+      getBenchmarkRunDetails(environmentId, benchmarkId, runIdA, signal),
+      getBenchmarkRunDetails(environmentId, benchmarkId, runIdB, signal),
+      getBenchmarkRunRaw(environmentId, benchmarkId, runIdA, signal).catch(() => null),
+      getBenchmarkRunRaw(environmentId, benchmarkId, runIdB, signal).catch(() => null),
+    ])
+
+    return { derivedA, derivedB, rawA, rawB }
+  } catch (error: unknown) {
+    if (error instanceof BenchmarkRunDetailsError) {
+      throw error
+    }
+
+    throw new BenchmarkRunComparisonError(
+      'Failed to load comparison data. Please try again.',
+      {
+        kind: 'network',
         cause: error,
       },
     )
