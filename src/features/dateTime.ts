@@ -6,6 +6,7 @@ const TIMESTAMP_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
   second: '2-digit',
   hour12: false,
+  timeZone: 'UTC',
 })
 
 export function formatReadableTimestamp(value?: Date | string): string | null {
@@ -18,5 +19,5 @@ export function formatReadableTimestamp(value?: Date | string): string | null {
     return null
   }
 
-  return TIMESTAMP_FORMATTER.format(parsed)
+  return `${TIMESTAMP_FORMATTER.format(parsed)} UTC`
 }
