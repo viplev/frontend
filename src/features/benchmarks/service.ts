@@ -11,6 +11,7 @@ export {
   DeleteBenchmarkRunError,
   BenchmarkRunDetailsError,
   BenchmarkRunRawError,
+  BenchmarkRunComparisonError,
   isBenchmarkDomainError,
 } from './domain'
 export type {
@@ -30,5 +31,7 @@ export {
   getBenchmarkRunRaw,
   listBenchmarkRuns,
   listActiveEnvironmentRuns,
+  getComparisonData,
 } from './domain'
+export type { ComparisonRunData } from './domain'
 

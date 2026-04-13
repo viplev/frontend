@@ -4,6 +4,31 @@ export function formatTimestamp(value?: Date | string): string {
   return formatReadableTimestamp(value) ?? 'n/a'
 }
 
+export function formatDelta(
+  a: number | undefined | null,
+  b: number | undefined | null,
+  unit = '',
+): string {
+  if (a == null || b == null || Number.isNaN(a) || Number.isNaN(b)) {
+    return 'n/a'
+  }
+
+  const diff = b - a
+  const sign = diff >= 0 ? '+' : '−'
+  const absDiff = Math.abs(diff)
+
+  let percentPart = ''
+  if (a !== 0) {
+    const percent = Math.abs((diff / a) * 100)
+    const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : ''
+    percentPart = arrow ? ` (${arrow} ${percent.toFixed(1)}%)` : ' (0.0%)'
+  } else {
+    percentPart = ' (n/a)'
+  }
+
+  return `${sign}${absDiff.toFixed(2)}${unit ? ` ${unit}` : ''}${percentPart}`
+}
+
 export function formatRunStatus(status?: string): string {
   if (!status) {
     return 'Unknown'

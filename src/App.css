@@ -679,6 +679,44 @@
   border-bottom: 0;
 }
 
+.benchmark-details-compare-col {
+  width: 1px;
+  white-space: nowrap;
+  text-align: center !important;
+  padding-left: 0.4rem !important;
+  padding-right: 0.4rem !important;
+}
+
+.benchmark-details-compare-col input[type='checkbox'] {
+  width: 1.35rem;
+  height: 1.35rem;
+  cursor: pointer;
+  accent-color: var(--btn-primary-bg, #2563eb);
+}
+
+.benchmark-details-compare-col input[type='checkbox']:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.benchmark-compare-header-button {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--btn-primary-bg, #2563eb);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.benchmark-compare-header-button:hover {
+  background: var(--btn-primary-hover, #1d4ed8);
+}
+
 .benchmark-details-run-actions {
   display: flex;
   gap: 0.5rem;
@@ -1746,5 +1784,182 @@
 @keyframes async-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ── Run comparison page ───────────────────────── */
+
+.run-comparison-breadcrumb {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.run-comparison-breadcrumb a {
+  color: var(--btn-primary-bg, #2563eb);
+  text-decoration: none;
+}
+
+.run-comparison-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.run-comparison-metadata {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.run-comparison-run-card {
+  border: 1px solid #d4e1f3;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  background: #f9fbff;
+}
+
+.run-comparison-run-a {
+  border-left: 4px solid #2563eb;
+}
+
+.run-comparison-run-b {
+  border-left: 4px solid #9333ea;
+}
+
+.run-comparison-run-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.run-comparison-run-id {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.run-comparison-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.run-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.run-comparison-table th,
+.run-comparison-table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.run-comparison-table th {
+  background: #f3f8ff;
+  font-size: 0.86rem;
+}
+
+.run-comparison-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.run-comparison-col-a {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.run-comparison-col-b {
+  color: #9333ea;
+  font-weight: 500;
+}
+
+.run-comparison-delta-improvement {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.run-comparison-delta-regression {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.run-comparison-http-group {
+  margin-bottom: 1.5rem;
+}
+
+.run-comparison-http-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.run-comparison-hosts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.run-comparison-host-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.run-comparison-vus-grid {
+  max-width: 640px;
+}
+
+.run-comparison-percentile-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.run-comparison-percentile-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  margin-right: 0.3rem;
+}
+
+.run-comparison-percentile-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.run-comparison-percentile-pill:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.run-comparison-percentile-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.run-comparison-percentile-pill.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+@media (max-width: 768px) {
+  .run-comparison-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .run-comparison-hosts {
+    grid-template-columns: 1fr;
   }
 }
