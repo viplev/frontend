@@ -22,6 +22,8 @@ export function formatDelta(
     const percent = Math.abs((diff / a) * 100)
     const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : ''
     percentPart = arrow ? ` (${arrow} ${percent.toFixed(1)}%)` : ' (0.0%)'
+  } else {
+    percentPart = ' (n/a)'
   }
 
   return `${sign}${absDiff.toFixed(2)}${unit ? ` ${unit}` : ''}${percentPart}`

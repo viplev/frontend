@@ -167,6 +167,10 @@ export function BenchmarkDetailsPage() {
   const [actionNotice, setActionNotice] = useState<string | null>(null)
   const [selectedRunIds, setSelectedRunIds] = useState<Array<string>>([])
 
+  // Clear run selections when navigating to a different benchmark
+  useEffect(() => {
+    setSelectedRunIds([])
+  }, [environmentId, benchmarkId])
   const toggleRunSelection = (runId: string) => {
     setSelectedRunIds((current) => {
       if (current.includes(runId)) {
@@ -611,18 +615,20 @@ export function BenchmarkDetailsPage() {
 
                     return (
                       <tr key={runId || `benchmark-run-${index}`}>
-                        <td className="benchmark-details-compare-col">
+                        <td
+                          className="benchmark-details-compare-col"
+                          title={
+                            !isFinished
+                              ? 'Only finished runs can be compared'
+                              : canCompare && !isSelected
+                                ? 'Only two runs can be compared at a time — deselect one first'
+                                : undefined
+                          }
+                        >
                           <input
                             type="checkbox"
                             checked={isSelected}
                             disabled={!runId || !isFinished || (canCompare && !isSelected)}
-                            title={
-                              !isFinished
-                                ? 'Only finished runs can be compared'
-                                : canCompare && !isSelected
-                                  ? 'Only two runs can be compared at a time — deselect one first'
-                                  : undefined
-                            }
                             onChange={() => { if (runId) toggleRunSelection(runId) }}
                           />
                         </td>

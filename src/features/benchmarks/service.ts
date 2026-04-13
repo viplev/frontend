@@ -33,5 +33,5 @@ export {
   listActiveEnvironmentRuns,
   getComparisonData,
 } from './domain'
-export type { ComparisonRunData } from './domain/services/runService'
+export type { ComparisonRunData } from './domain'
 

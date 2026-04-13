@@ -16,6 +16,7 @@ export type BenchmarkDomainOperation =
   | 'delete-run'
   | 'get-run-details'
   | 'get-run-raw'
+  | 'get-run-comparison'
   | 'list-runs'
   | 'list-environment-runs'
   | 'unknown'
@@ -146,7 +147,7 @@ export class BenchmarkRunRawError extends BenchmarkDomainError {
 export class BenchmarkRunComparisonError extends BenchmarkDomainError {
   constructor(message: string, metadata: BenchmarkDomainErrorMetadata = {}) {
     super('BenchmarkRunComparisonError', message, {
-      operation: 'get-run-details',
+      operation: 'get-run-comparison',
       ...metadata,
     })
   }

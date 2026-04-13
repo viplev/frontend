@@ -120,36 +120,42 @@ function collectPercentileKeys(
         keys.add(key)
       }
     }
-    if (metric.waiting?.percentiles) {
-      for (const key of Object.keys(metric.waiting.percentiles)) {
-        keys.add(key)
-      }
-    }
   }
   return Array.from(keys).sort()
+}
+
+function getHttpGroupMatchKey(metric: DerivedHttpSummaryDTO): string {
+  return `${metric.requestGroup ?? ''}|${metric.url ?? ''}`
+}
+
+function getHttpGroupDisplayName(metric: DerivedHttpSummaryDTO): string {
+  return metric.requestGroup ?? metric.url ?? 'default'
 }
 
 function matchHttpGroups(
   httpA: Array<DerivedHttpSummaryDTO>,
   httpB: Array<DerivedHttpSummaryDTO>,
 ): Array<{ groupName: string; a: DerivedHttpSummaryDTO | null; b: DerivedHttpSummaryDTO | null }> {
-  const map = new Map<string, { a: DerivedHttpSummaryDTO | null; b: DerivedHttpSummaryDTO | null }>()
+  const map = new Map<
+    string,
+    { groupName: string; a: DerivedHttpSummaryDTO | null; b: DerivedHttpSummaryDTO | null }
+  >()
 
   for (const metric of httpA) {
-    const key = metric.requestGroup ?? metric.url ?? 'default'
-    map.set(key, { a: metric, b: null })
+    const key = getHttpGroupMatchKey(metric)
+    map.set(key, { groupName: getHttpGroupDisplayName(metric), a: metric, b: null })
   }
   for (const metric of httpB) {
-    const key = metric.requestGroup ?? metric.url ?? 'default'
+    const key = getHttpGroupMatchKey(metric)
     const existing = map.get(key)
     if (existing) {
       existing.b = metric
     } else {
-      map.set(key, { a: null, b: metric })
+      map.set(key, { groupName: getHttpGroupDisplayName(metric), a: null, b: metric })
     }
   }
 
-  return Array.from(map.entries()).map(([groupName, pair]) => ({ groupName, ...pair }))
+  return Array.from(map.values())
 }
 
 const SERIES_CONFIG: Array<{
@@ -203,6 +209,12 @@ export function BenchmarkRunComparisonPage() {
   useEffect(() => {
     if (!environmentId.trim() || !benchmarkId.trim() || !runIdA.trim() || !runIdB.trim()) {
       setFatalError('Missing required route parameters.')
+      setIsLoading(false)
+      return
+    }
+
+    if (runIdA.trim() === runIdB.trim()) {
+      setFatalError('Please select two different benchmark runs to compare.')
       setIsLoading(false)
       return
     }
@@ -676,13 +688,13 @@ export function BenchmarkRunComparisonPage() {
                         <td>Total requests</td>
                         <td className="run-comparison-col-a">{a?.totalRequests ?? 'n/a'}</td>
                         <td className="run-comparison-col-b">{b?.totalRequests ?? 'n/a'}</td>
-                        <td className={deltaClass(a?.totalRequests, b?.totalRequests)}>{formatDelta(a?.totalRequests, b?.totalRequests)}</td>
+                        <td className={deltaClass(a?.totalRequests, b?.totalRequests, true)}>{formatDelta(a?.totalRequests, b?.totalRequests)}</td>
                       </tr>
                       <tr>
                         <td>Requests/s</td>
                         <td className="run-comparison-col-a">{formatMetric(a?.requestsPerSecond)}</td>
                         <td className="run-comparison-col-b">{formatMetric(b?.requestsPerSecond)}</td>
-                        <td className={deltaClass(a?.requestsPerSecond, b?.requestsPerSecond)}>{formatDelta(a?.requestsPerSecond, b?.requestsPerSecond)}</td>
+                        <td className={deltaClass(a?.requestsPerSecond, b?.requestsPerSecond, true)}>{formatDelta(a?.requestsPerSecond, b?.requestsPerSecond)}</td>
                       </tr>
                       <tr>
                         <td>Error rate</td>
@@ -793,10 +805,16 @@ export function BenchmarkRunComparisonPage() {
   )
 }
 
-function deltaClass(a: number | undefined | null, b: number | undefined | null): string {
+function deltaClass(
+  a: number | undefined | null,
+  b: number | undefined | null,
+  higherIsBetter = false,
+): string {
   if (a == null || b == null || Number.isNaN(a) || Number.isNaN(b)) return ''
   const diff = b - a
-  if (diff > 0) return 'run-comparison-delta-regression'
-  if (diff < 0) return 'run-comparison-delta-improvement'
-  return ''
+  if (diff === 0) return ''
+  const isImprovement = higherIsBetter ? diff > 0 : diff < 0
+  return isImprovement
+    ? 'run-comparison-delta-improvement'
+    : 'run-comparison-delta-regression'
 }

@@ -35,4 +35,5 @@ export {
   listActiveEnvironmentRuns,
   getComparisonData,
 } from './services/runService'
+export type { ComparisonRunData } from './services/runService'
 
