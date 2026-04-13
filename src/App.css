@@ -1531,6 +1531,98 @@
   color: #3d4b5c;
 }
 
+.run-results-chart-shell {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0.7rem 0.75rem;
+}
+
+.run-results-chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.run-results-axis-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.run-results-axis-mode-button {
+  margin-top: 0;
+  min-height: 34px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.run-results-axis-mode-button.is-selected {
+  --btn-fg: var(--btn-primary-fg);
+  --btn-bg: var(--btn-primary-bg);
+  --btn-bg-hover: var(--btn-primary-hover);
+  --btn-bg-active: var(--btn-primary-active);
+}
+
+.run-results-smoothing-slider-group {
+  min-width: 210px;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.run-results-smoothing-slider-label {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #1f3347;
+}
+
+.run-results-smoothing-slider-input {
+  width: 100%;
+  margin: 0;
+}
+
+.run-results-smoothing-slider-marks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  color: #5f748a;
+}
+
+.run-results-smoothing-slider-marks span {
+  text-align: center;
+}
+
+.run-results-smoothing-slider-marks span:first-child {
+  justify-self: start;
+}
+
+.run-results-smoothing-slider-marks span:nth-child(2) {
+  justify-self: center;
+}
+
+.run-results-smoothing-slider-marks span:last-child {
+  justify-self: end;
+}
+
+.run-results-chart-reset {
+  margin-top: 0;
+  min-height: 34px;
+  padding: 0.45rem 0.7rem;
+}
+
+.run-results-chart-container {
+  height: 360px;
+  border: 1px solid #d9e2ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.45rem 0.35rem 0.1rem;
+}
+
 .run-results-table-wrap {
   overflow-x: auto;
   border: 1px solid #d9e2ef;
@@ -1633,6 +1725,10 @@
 @media (max-width: 960px) {
   .run-results-cards {
     grid-template-columns: 1fr;
+  }
+
+  .run-results-chart-container {
+    height: 320px;
   }
 }
 
