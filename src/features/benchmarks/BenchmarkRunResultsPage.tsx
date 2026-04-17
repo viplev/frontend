@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   Brush,
@@ -296,6 +296,23 @@ function ResourceChart({
   ) => [string, string]
   showPointsOnly: boolean
 }){
+  const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set())
+
+  const handleLegendClick = useCallback((entry: unknown) => {
+    if (!entry || typeof entry !== 'object' || !('dataKey' in entry)) return
+    const dataKey = (entry as { dataKey?: string }).dataKey
+    if (typeof dataKey !== 'string') return
+    setHiddenLines((current) => {
+      const next = new Set(current)
+      if (next.has(dataKey)) {
+        next.delete(dataKey)
+      } else {
+        next.add(dataKey)
+      }
+      return next
+    })
+  }, [])
+
   if (data.length === 0) {
     return (
       <div className="run-results-resource-chart-wrap">
@@ -331,7 +348,7 @@ function ResourceChart({
             labelFormatter={formatChartTooltipLabel}
             isAnimationActive={false}
           />
-          <Legend />
+          <Legend onClick={handleLegendClick} />
           {lines.map((line) => (
             <Line
               key={line.dataKey}
@@ -348,6 +365,7 @@ function ResourceChart({
               }
               activeDot={{ r: 4, fill: line.color, stroke: line.color }}
               connectNulls
+              hide={hiddenLines.has(line.dataKey)}
             />
           ))}
         </LineChart>
@@ -615,10 +633,11 @@ export function BenchmarkRunResultsPage() {
       return
     }
     const initial: Record<string, Set<string>> = {}
-    for (const host of hosts) {
-      const hostKey = host.hostId ?? host.hostName ?? ''
+    for (let i = 0; i < hosts.length; i++) {
+      const host = hosts[i]
+      const hostKey = host.hostId ?? host.hostName ?? `host-${i}`
       initial[hostKey] = new Set(
-        (host.services ?? []).map((s) => s.serviceId ?? s.serviceName ?? ''),
+        (host.services ?? []).map((s, j) => s.serviceId ?? s.serviceName ?? `service-${j}`),
       )
     }
     setSelectedServiceKeysByHost(initial)
@@ -629,8 +648,8 @@ export function BenchmarkRunResultsPage() {
 
   const processedHosts = useMemo(() => {
     const hosts = rawData?.timeSeries?.hosts ?? []
-    return hosts.map((host) => {
-      const hostKey = host.hostId ?? host.hostName ?? ''
+    return hosts.map((host, hostIndex) => {
+      const hostKey = host.hostId ?? host.hostName ?? `host-${hostIndex}`
       const hostLabel = host.hostName ?? host.hostId ?? 'Host'
 
       const rawMachinePoints = normalizeResourceDataPoints(host.dataPoints ?? [])
@@ -642,8 +661,42 @@ export function BenchmarkRunResultsPage() {
         (p) => p.memoryLimitBytes != null && p.memoryLimitBytes > 0,
       )
 
-      const allServices = (host.services ?? []).map((s) => ({
-        key: s.serviceId ?? s.serviceName ?? '',
+      const visibleMachinePoints = brushTimeRange
+        ? machinePoints.filter(
+            (p) => p.timestampMs >= brushTimeRange[0] && p.timestampMs <= brushTimeRange[1],
+          )
+        : machinePoints
+
+      const machineCpuDomain = resolveResourceYAxisDomain(
+        visibleMachinePoints, ['cpuPercentage'], resourceAxisScaleMode,
+      )
+      const machineMemoryMetrics: ResourceMetricKey[] = hasMemoryLimit
+        ? ['memoryUsageBytes', 'memoryLimitBytes']
+        : ['memoryUsageBytes']
+      const machineMemoryDomain = resolveResourceYAxisDomain(
+        visibleMachinePoints, machineMemoryMetrics, resourceAxisScaleMode,
+      )
+      const machineNetworkDomain = resolveResourceYAxisDomain(
+        visibleMachinePoints, ['networkInBytes', 'networkOutBytes'], resourceAxisScaleMode,
+      )
+      const machineBlockDomain = resolveResourceYAxisDomain(
+        visibleMachinePoints, ['blockInBytes', 'blockOutBytes'], resourceAxisScaleMode,
+      )
+
+      const machineMemoryLines: ResourceLineConfig[] = [
+        { dataKey: 'memoryUsageBytes', name: 'Usage', color: '#8b5cf6' },
+      ]
+      if (hasMemoryLimit) {
+        machineMemoryLines.push({
+          dataKey: 'memoryLimitBytes',
+          name: 'Limit',
+          color: '#94a3b8',
+          strokeDasharray: '5 3',
+        })
+      }
+
+      const allServices = (host.services ?? []).map((s, serviceIndex) => ({
+        key: s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`,
         label: s.serviceName ?? s.serviceId ?? 'Service',
         dataPoints: s.dataPoints ?? [],
       }))
@@ -663,6 +716,81 @@ export function BenchmarkRunResultsPage() {
         }
       }
 
+      const containerCpu = buildChart(['cpuPercentage'])
+      const containerMemory = buildChart(['memoryUsageBytes'])
+      const containerNetwork = buildChart(['networkInBytes', 'networkOutBytes'])
+      const containerBlock = buildChart(['blockInBytes', 'blockOutBytes'])
+
+      const filterContainerData = <T extends { timestampMs: number | string }>(
+        points: T[],
+      ): T[] => {
+        if (!brushTimeRange) return points
+        return points.filter(
+          (p) =>
+            (p.timestampMs as number) >= brushTimeRange[0] &&
+            (p.timestampMs as number) <= brushTimeRange[1],
+        )
+      }
+
+      const visibleContainerCpuData = filterContainerData(containerCpu.data)
+      const visibleContainerMemoryData = filterContainerData(containerMemory.data)
+      const visibleContainerNetworkData = filterContainerData(containerNetwork.data)
+      const visibleContainerBlockData = filterContainerData(containerBlock.data)
+
+      const containerCpuDomain = resolveMultiSeriesYAxisDomain(
+        visibleContainerCpuData, containerCpu.dataKeys, resourceAxisScaleMode,
+      )
+      const containerMemoryDomain = resolveMultiSeriesYAxisDomain(
+        visibleContainerMemoryData, containerMemory.dataKeys, resourceAxisScaleMode,
+      )
+      const containerNetworkDomain = resolveMultiSeriesYAxisDomain(
+        visibleContainerNetworkData, containerNetwork.dataKeys, resourceAxisScaleMode,
+      )
+      const containerBlockDomain = resolveMultiSeriesYAxisDomain(
+        visibleContainerBlockData, containerBlock.dataKeys, resourceAxisScaleMode,
+      )
+
+      const containerCpuLines: ResourceLineConfig[] = selectedEntities.map(
+        (s, i) => ({
+          dataKey: `${s.key}_cpuPercentage`,
+          name: s.label,
+          color: RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length],
+        }),
+      )
+      const containerMemoryLines: ResourceLineConfig[] = selectedEntities.map(
+        (s, i) => ({
+          dataKey: `${s.key}_memoryUsageBytes`,
+          name: s.label,
+          color: RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length],
+        }),
+      )
+      const containerNetworkLines: ResourceLineConfig[] =
+        selectedEntities.flatMap((s, i) => {
+          const color = RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length]
+          return [
+            { dataKey: `${s.key}_networkInBytes`, name: `${s.label} (in)`, color },
+            {
+              dataKey: `${s.key}_networkOutBytes`,
+              name: `${s.label} (out)`,
+              color,
+              strokeDasharray: '5 3',
+            },
+          ]
+        })
+      const containerBlockLines: ResourceLineConfig[] =
+        selectedEntities.flatMap((s, i) => {
+          const color = RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length]
+          return [
+            { dataKey: `${s.key}_blockInBytes`, name: `${s.label} (in)`, color },
+            {
+              dataKey: `${s.key}_blockOutBytes`,
+              name: `${s.label} (out)`,
+              color,
+              strokeDasharray: '5 3',
+            },
+          ]
+        })
+
       const derivedSummary = (derivedData?.hosts ?? []).find(
         (h) => (h.hostId ?? h.hostName) === hostKey,
       )
@@ -671,16 +799,29 @@ export function BenchmarkRunResultsPage() {
         key: hostKey,
         label: hostLabel,
         derivedSummary,
-        machinePoints,
+        visibleMachinePoints,
         hasMemoryLimit,
         allServices: allServices.map((s) => ({ key: s.key, label: s.label })),
-        containerCpu: buildChart(['cpuPercentage']),
-        containerMemory: buildChart(['memoryUsageBytes']),
-        containerNetwork: buildChart(['networkInBytes', 'networkOutBytes']),
-        containerBlock: buildChart(['blockInBytes', 'blockOutBytes']),
+        machineCpuDomain,
+        machineMemoryDomain,
+        machineMemoryLines,
+        machineNetworkDomain,
+        machineBlockDomain,
+        visibleContainerCpuData,
+        visibleContainerMemoryData,
+        visibleContainerNetworkData,
+        visibleContainerBlockData,
+        containerCpuDomain,
+        containerCpuLines,
+        containerMemoryDomain,
+        containerMemoryLines,
+        containerNetworkDomain,
+        containerNetworkLines,
+        containerBlockDomain,
+        containerBlockLines,
       }
     })
-  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize])
+  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize, brushTimeRange, resourceAxisScaleMode])
 
   const handleToggleService = (hostKey: string, serviceKey: string) => {
     setSelectedServiceKeysByHost((current) => {
@@ -1140,113 +1281,6 @@ export function BenchmarkRunResultsPage() {
                 const selectedKeys = selectedServiceKeysByHost[host.key] ?? new Set<string>()
                 const resourceShowPointsOnly = resourceChartRenderMode === 'points'
 
-                const visibleMachinePoints = brushTimeRange
-                  ? host.machinePoints.filter(
-                      (p) => p.timestampMs >= brushTimeRange[0] && p.timestampMs <= brushTimeRange[1],
-                    )
-                  : host.machinePoints
-
-                const machineCpuDomain = resolveResourceYAxisDomain(
-                  visibleMachinePoints, ['cpuPercentage'], resourceAxisScaleMode,
-                )
-                const machineMemoryMetrics: ResourceMetricKey[] = host.hasMemoryLimit
-                  ? ['memoryUsageBytes', 'memoryLimitBytes']
-                  : ['memoryUsageBytes']
-                const machineMemoryDomain = resolveResourceYAxisDomain(
-                  visibleMachinePoints, machineMemoryMetrics, resourceAxisScaleMode,
-                )
-                const machineNetworkDomain = resolveResourceYAxisDomain(
-                  visibleMachinePoints, ['networkInBytes', 'networkOutBytes'], resourceAxisScaleMode,
-                )
-                const machineBlockDomain = resolveResourceYAxisDomain(
-                  visibleMachinePoints, ['blockInBytes', 'blockOutBytes'], resourceAxisScaleMode,
-                )
-
-                const machineMemoryLines: ResourceLineConfig[] = [
-                  { dataKey: 'memoryUsageBytes', name: 'Usage', color: '#8b5cf6' },
-                ]
-                if (host.hasMemoryLimit) {
-                  machineMemoryLines.push({
-                    dataKey: 'memoryLimitBytes',
-                    name: 'Limit',
-                    color: '#94a3b8',
-                    strokeDasharray: '5 3',
-                  })
-                }
-
-                const selectedServiceEntities = host.allServices.filter((s) =>
-                  selectedKeys.has(s.key),
-                )
-                const containerCpuLines: ResourceLineConfig[] = selectedServiceEntities.map(
-                  (s, i) => ({
-                    dataKey: `${s.key}_cpuPercentage`,
-                    name: s.label,
-                    color: RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length],
-                  }),
-                )
-                const containerMemoryLines: ResourceLineConfig[] = selectedServiceEntities.map(
-                  (s, i) => ({
-                    dataKey: `${s.key}_memoryUsageBytes`,
-                    name: s.label,
-                    color: RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length],
-                  }),
-                )
-                const containerNetworkLines: ResourceLineConfig[] =
-                  selectedServiceEntities.flatMap((s, i) => {
-                    const color = RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length]
-                    return [
-                      { dataKey: `${s.key}_networkInBytes`, name: `${s.label} (in)`, color },
-                      {
-                        dataKey: `${s.key}_networkOutBytes`,
-                        name: `${s.label} (out)`,
-                        color,
-                        strokeDasharray: '5 3',
-                      },
-                    ]
-                  })
-                const containerBlockLines: ResourceLineConfig[] =
-                  selectedServiceEntities.flatMap((s, i) => {
-                    const color = RESOURCE_SERIES_COLORS[i % RESOURCE_SERIES_COLORS.length]
-                    return [
-                      { dataKey: `${s.key}_blockInBytes`, name: `${s.label} (in)`, color },
-                      {
-                        dataKey: `${s.key}_blockOutBytes`,
-                        name: `${s.label} (out)`,
-                        color,
-                        strokeDasharray: '5 3',
-                      },
-                    ]
-                  })
-
-                const filterContainerData = <T extends { timestampMs: number | string }>(
-                  points: T[],
-                ): T[] => {
-                  if (!brushTimeRange) return points
-                  return points.filter(
-                    (p) =>
-                      (p.timestampMs as number) >= brushTimeRange[0] &&
-                      (p.timestampMs as number) <= brushTimeRange[1],
-                  )
-                }
-
-                const visibleContainerCpuData = filterContainerData(host.containerCpu.data)
-                const visibleContainerMemoryData = filterContainerData(host.containerMemory.data)
-                const visibleContainerNetworkData = filterContainerData(host.containerNetwork.data)
-                const visibleContainerBlockData = filterContainerData(host.containerBlock.data)
-
-                const containerCpuDomain = resolveMultiSeriesYAxisDomain(
-                  visibleContainerCpuData, host.containerCpu.dataKeys, resourceAxisScaleMode,
-                )
-                const containerMemoryDomain = resolveMultiSeriesYAxisDomain(
-                  visibleContainerMemoryData, host.containerMemory.dataKeys, resourceAxisScaleMode,
-                )
-                const containerNetworkDomain = resolveMultiSeriesYAxisDomain(
-                  visibleContainerNetworkData, host.containerNetwork.dataKeys, resourceAxisScaleMode,
-                )
-                const containerBlockDomain = resolveMultiSeriesYAxisDomain(
-                  visibleContainerBlockData, host.containerBlock.dataKeys, resourceAxisScaleMode,
-                )
-
                 const derivedCpu = host.derivedSummary?.resource?.cpu
                 const derivedMemory = host.derivedSummary?.resource?.memory
 
@@ -1269,44 +1303,44 @@ export function BenchmarkRunResultsPage() {
                       <div className="run-results-resource-grid">
                         <ResourceChart
                           title="CPU %"
-                          data={visibleMachinePoints}
+                          data={host.visibleMachinePoints}
                           lines={[
                             { dataKey: 'cpuPercentage', name: 'CPU %', color: '#2563eb' },
                           ]}
-                          yAxisDomain={machineCpuDomain}
+                          yAxisDomain={host.machineCpuDomain}
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
                           tooltipFormatter={cpuTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                         />
                         <ResourceChart
                           title="Memory"
-                          data={visibleMachinePoints}
-                          lines={machineMemoryLines}
-                          yAxisDomain={machineMemoryDomain}
+                          data={host.visibleMachinePoints}
+                          lines={host.machineMemoryLines}
+                          yAxisDomain={host.machineMemoryDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                         />
                         <ResourceChart
                           title="Network I/O"
-                          data={visibleMachinePoints}
+                          data={host.visibleMachinePoints}
                           lines={[
                             { dataKey: 'networkInBytes', name: 'In', color: '#16a34a' },
                             { dataKey: 'networkOutBytes', name: 'Out', color: '#f97316' },
                           ]}
-                          yAxisDomain={machineNetworkDomain}
+                          yAxisDomain={host.machineNetworkDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                         />
                         <ResourceChart
                           title="Block I/O"
-                          data={visibleMachinePoints}
+                          data={host.visibleMachinePoints}
                           lines={[
                             { dataKey: 'blockInBytes', name: 'In', color: '#06b6d4' },
                             { dataKey: 'blockOutBytes', name: 'Out', color: '#d97706' },
                           ]}
-                          yAxisDomain={machineBlockDomain}
+                          yAxisDomain={host.machineBlockDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
@@ -1346,6 +1380,7 @@ export function BenchmarkRunResultsPage() {
                               <button
                                 key={service.key}
                                 type="button"
+                                aria-pressed={selectedKeys.has(service.key)}
                                 className={`shell-alert-dismiss run-results-service-pill${
                                   selectedKeys.has(service.key) ? ' is-selected' : ''
                                 }`}
@@ -1361,36 +1396,36 @@ export function BenchmarkRunResultsPage() {
                             <div className="run-results-resource-grid">
                               <ResourceChart
                                 title="CPU %"
-                                data={visibleContainerCpuData}
-                                lines={containerCpuLines}
-                                yAxisDomain={containerCpuDomain}
+                                data={host.visibleContainerCpuData}
+                                lines={host.containerCpuLines}
+                                yAxisDomain={host.containerCpuDomain}
                                 yAxisFormatter={(v) => `${Math.round(v)}%`}
                                 tooltipFormatter={cpuTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
                               />
                               <ResourceChart
                                 title="Memory"
-                                data={visibleContainerMemoryData}
-                                lines={containerMemoryLines}
-                                yAxisDomain={containerMemoryDomain}
+                                data={host.visibleContainerMemoryData}
+                                lines={host.containerMemoryLines}
+                                yAxisDomain={host.containerMemoryDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
                               />
                               <ResourceChart
                                 title="Network I/O"
-                                data={visibleContainerNetworkData}
-                                lines={containerNetworkLines}
-                                yAxisDomain={containerNetworkDomain}
+                                data={host.visibleContainerNetworkData}
+                                lines={host.containerNetworkLines}
+                                yAxisDomain={host.containerNetworkDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
                               />
                               <ResourceChart
                                 title="Block I/O"
-                                data={visibleContainerBlockData}
-                                lines={containerBlockLines}
-                                yAxisDomain={containerBlockDomain}
+                                data={host.visibleContainerBlockData}
+                                lines={host.containerBlockLines}
+                                yAxisDomain={host.containerBlockDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}

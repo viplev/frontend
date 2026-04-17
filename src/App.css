@@ -1694,6 +1694,32 @@
   border-bottom: 0;
 }
 
+.run-results-host-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.run-results-host-list li {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0.65rem 0.75rem;
+}
+
+.run-results-host-list h3,
+.run-results-host-list h4 {
+  margin: 0 0 0.35rem;
+  color: #17324a;
+}
+
+.run-results-host-list p {
+  margin: 0.2rem 0;
+  color: #2f475f;
+}
+
 .run-results-host-card {
   border: 1px solid #d6e2f1;
   border-radius: 10px;

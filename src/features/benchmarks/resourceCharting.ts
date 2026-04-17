@@ -63,10 +63,12 @@ function toNumericValue(value: number | null | undefined): number | null {
 function withTightPadding(min: number, max: number): AxisDomain {
   if (min === max) {
     const padding = Math.max(Math.abs(min) * 0.1, 1)
-    return [min - padding, max + padding]
+    const paddedMin = min - padding
+    return [min >= 0 ? Math.max(0, paddedMin) : paddedMin, max + padding]
   }
   const padding = Math.max((max - min) * 0.08, 1)
-  return [min - padding, max + padding]
+  const paddedMin = min - padding
+  return [min >= 0 ? Math.max(0, paddedMin) : paddedMin, max + padding]
 }
 
 function computeDomain(
