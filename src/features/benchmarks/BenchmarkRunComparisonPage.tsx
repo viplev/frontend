@@ -203,24 +203,8 @@ interface ResourceCompLineConfig {
   dashPattern?: string
 }
 
-function makeCompResourceTooltipFormatter(isByteMetric: boolean) {
-  return (
-    value: number | string | ReadonlyArray<number | string> | null | undefined,
-    name: number | string | undefined,
-  ): [string, string] => {
-    const label = typeof name === 'undefined' ? 'Value' : String(name)
-    const normalizedValue = Array.isArray(value) ? value[0] : value
-    if (typeof normalizedValue !== 'number' || Number.isNaN(normalizedValue)) {
-      return ['n/a', label]
-    }
-    return isByteMetric
-      ? [formatBytes(normalizedValue), label]
-      : [`${normalizedValue.toFixed(1)}%`, label]
-  }
-}
-
-const compCpuTooltipFormatter = makeCompResourceTooltipFormatter(false)
-const compByteTooltipFormatter = makeCompResourceTooltipFormatter(true)
+const compCpuValueFormatter = (v: number) => `${v.toFixed(1)}%`
+const compByteValueFormatter = (v: number) => formatBytes(v)
 
 // ---------------------------------------------------------------------------
 // Chart summary stat helpers
@@ -339,7 +323,7 @@ function ResourceComparisonChart({
   lines,
   yAxisDomain,
   yAxisFormatter,
-  tooltipFormatter,
+  valueFormatter,
   showPointsOnly,
   summaryContent,
 }: {
@@ -348,10 +332,7 @@ function ResourceComparisonChart({
   lines: ResourceCompLineConfig[]
   yAxisDomain: AxisDomain
   yAxisFormatter: (value: number) => string
-  tooltipFormatter: (
-    value: number | string | ReadonlyArray<number | string> | null | undefined,
-    name: number | string | undefined,
-  ) => [string, string]
+  valueFormatter: (value: number) => string
   showPointsOnly: boolean
   summaryContent?: React.ReactNode
 }) {
@@ -371,6 +352,46 @@ function ResourceComparisonChart({
       return next
     })
   }, [])
+
+  const renderTooltip = useCallback(
+    (props: Record<string, unknown>) => {
+      const { active, label, payload } = props as {
+        active?: boolean
+        label?: number | string
+        payload?: Array<{
+          dataKey?: string
+          name?: string
+          value?: number | null
+          color?: string
+        }>
+      }
+      if (!active || !payload || payload.length === 0) return null
+      return (
+        <div className="run-comparison-tooltip">
+          <div className="run-comparison-tooltip-label">
+            {formatElapsedTooltipLabel(label)}
+          </div>
+          {payload
+            .filter((p) => !hiddenLines.has(p.dataKey ?? ''))
+            .map((p) => (
+              <div key={p.dataKey} className="run-comparison-tooltip-row">
+                <span
+                  className="run-comparison-tooltip-swatch"
+                  style={{ background: p.color }}
+                />
+                <span className="run-comparison-tooltip-name">{p.name}</span>
+                <span className="run-comparison-tooltip-value">
+                  {typeof p.value === 'number' && !Number.isNaN(p.value)
+                    ? valueFormatter(p.value)
+                    : 'n/a'}
+                </span>
+              </div>
+            ))}
+        </div>
+      )
+    },
+    [hiddenLines, valueFormatter],
+  )
 
   if (data.length === 0) {
     return (
@@ -402,8 +423,7 @@ function ResourceComparisonChart({
           />
           <YAxis domain={yAxisDomain} tickFormatter={yAxisFormatter} width={68} />
           <Tooltip
-            formatter={tooltipFormatter}
-            labelFormatter={formatElapsedTooltipLabel}
+            content={renderTooltip}
             isAnimationActive={false}
           />
           <Legend onClick={handleLegendClick} />
@@ -1267,7 +1287,7 @@ export function BenchmarkRunComparisonPage() {
                           ]}
                           yAxisDomain={host.machineCpuDomain}
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
-                          tooltipFormatter={compCpuTooltipFormatter}
+                          valueFormatter={compCpuValueFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                           summaryContent={buildCpuSummary(
                             host.derivedA?.resource?.cpu,
@@ -1280,7 +1300,7 @@ export function BenchmarkRunComparisonPage() {
                           lines={memoryLines}
                           yAxisDomain={host.machineMemoryDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
-                          tooltipFormatter={compByteTooltipFormatter}
+                          valueFormatter={compByteValueFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                           summaryContent={buildMemorySummary(
                             host.derivedA?.resource?.memory,
@@ -1309,7 +1329,7 @@ export function BenchmarkRunComparisonPage() {
                           ]}
                           yAxisDomain={host.machineNetworkDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
-                          tooltipFormatter={compByteTooltipFormatter}
+                          valueFormatter={compByteValueFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                           summaryContent={buildIoSummary(
                             host.visibleMachinePoints,
@@ -1338,7 +1358,7 @@ export function BenchmarkRunComparisonPage() {
                           ]}
                           yAxisDomain={host.machineBlockDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
-                          tooltipFormatter={compByteTooltipFormatter}
+                          valueFormatter={compByteValueFormatter}
                           showPointsOnly={resourceShowPointsOnly}
                           summaryContent={buildIoSummary(
                             host.visibleMachinePoints,
@@ -1378,7 +1398,7 @@ export function BenchmarkRunComparisonPage() {
                                         ]}
                                         yAxisDomain={svc.cpuDomain}
                                         yAxisFormatter={(v) => `${Math.round(v)}%`}
-                                        tooltipFormatter={compCpuTooltipFormatter}
+                                        valueFormatter={compCpuValueFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
                                         summaryContent={buildCpuSummary(
                                           svc.derivedResourceA?.cpu,
@@ -1413,7 +1433,7 @@ export function BenchmarkRunComparisonPage() {
                                             lines={svcMemLines}
                                             yAxisDomain={svc.memoryDomain}
                                             yAxisFormatter={(v) => formatBytes(v)}
-                                            tooltipFormatter={compByteTooltipFormatter}
+                                            valueFormatter={compByteValueFormatter}
                                             showPointsOnly={resourceShowPointsOnly}
                                             summaryContent={buildMemorySummary(
                                               svc.derivedResourceA?.memory,
@@ -1434,7 +1454,7 @@ export function BenchmarkRunComparisonPage() {
                                         ]}
                                         yAxisDomain={svc.networkDomain}
                                         yAxisFormatter={(v) => formatBytes(v)}
-                                        tooltipFormatter={compByteTooltipFormatter}
+                                        valueFormatter={compByteValueFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
                                         summaryContent={buildIoSummary(
                                           svc.visiblePoints,
@@ -1453,7 +1473,7 @@ export function BenchmarkRunComparisonPage() {
                                         ]}
                                         yAxisDomain={svc.blockDomain}
                                         yAxisFormatter={(v) => formatBytes(v)}
-                                        tooltipFormatter={compByteTooltipFormatter}
+                                        valueFormatter={compByteValueFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
                                         summaryContent={buildIoSummary(
                                           svc.visiblePoints,
