@@ -1,6 +1,7 @@
 import type { BenchmarkRunDerivedDTO } from '../../generated/openapi/models/BenchmarkRunDerivedDTO'
 import type { BenchmarkRunRawDTO } from '../../generated/openapi/models/BenchmarkRunRawDTO'
 import type { DerivedHostSummaryDTO } from '../../generated/openapi/models/DerivedHostSummaryDTO'
+import type { DerivedResourceSummaryDTO } from '../../generated/openapi/models/DerivedResourceSummaryDTO'
 import type { RawResourceDataPointDTO } from '../../generated/openapi/models/RawResourceDataPointDTO'
 import type { AxisDomain, AxisScaleMode } from './charting'
 import { normalizeResourceDataPoints } from './resourceCharting'
@@ -35,6 +36,8 @@ export interface MatchedServiceComparison {
   serviceName: string
   hasA: boolean
   hasB: boolean
+  derivedResourceA: DerivedResourceSummaryDTO | null
+  derivedResourceB: DerivedResourceSummaryDTO | null
   baseComparisonPoints: ResourceComparisonPoint[]
 }
 
@@ -242,11 +245,21 @@ export function matchHosts(
     for (const serviceKey of allServiceKeys) {
       const svcA = serviceMapA.get(serviceKey)
       const svcB = serviceMapB.get(serviceKey)
+      const derivedSvcA =
+        (derivedHostA?.services ?? []).find(
+          (s) => (s.serviceName ?? s.serviceId) === serviceKey,
+        ) ?? null
+      const derivedSvcB =
+        (derivedHostB?.services ?? []).find(
+          (s) => (s.serviceName ?? s.serviceId) === serviceKey,
+        ) ?? null
       services.push({
         serviceKey,
         serviceName: serviceKey,
         hasA: svcA != null,
         hasB: svcB != null,
+        derivedResourceA: derivedSvcA?.resource ?? null,
+        derivedResourceB: derivedSvcB?.resource ?? null,
         baseComparisonPoints: mergeResourceComparisonByElapsed(svcA?.dataPoints, svcB?.dataPoints),
       })
     }

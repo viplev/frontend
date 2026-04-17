@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import type { DerivedHttpSummaryDTO } from '../../generated/openapi/models/DerivedHttpSummaryDTO'
+import type { DerivedResourceStatsDTO } from '../../generated/openapi/models/DerivedResourceStatsDTO'
 import { getEnvironmentDetails } from '../environments/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import type { AxisDomain, AxisScaleMode } from './charting'
@@ -221,6 +222,117 @@ function makeCompResourceTooltipFormatter(isByteMetric: boolean) {
 const compCpuTooltipFormatter = makeCompResourceTooltipFormatter(false)
 const compByteTooltipFormatter = makeCompResourceTooltipFormatter(true)
 
+// ---------------------------------------------------------------------------
+// Chart summary stat helpers
+// ---------------------------------------------------------------------------
+
+function computePointStats(
+  data: object[],
+  metricKey: string,
+): { avg: number | null; max: number | null } {
+  let sum = 0
+  let count = 0
+  let max = Number.NEGATIVE_INFINITY
+  for (const point of data) {
+    const val = (point as Record<string, unknown>)[metricKey]
+    if (typeof val === 'number' && !Number.isNaN(val)) {
+      sum += val
+      count += 1
+      if (val > max) max = val
+    }
+  }
+  if (count === 0) return { avg: null, max: null }
+  return { avg: sum / count, max }
+}
+
+function fmtPct(v?: number | null): string {
+  return v != null ? `${v.toFixed(1)}%` : '—'
+}
+
+function fmtPercentile(stats?: DerivedResourceStatsDTO | null, key?: string): string {
+  const val = key ? stats?.percentiles?.[key] : undefined
+  return val != null ? `${val.toFixed(1)}%` : '—'
+}
+
+function buildCpuSummary(
+  cpuA?: DerivedResourceStatsDTO | null,
+  cpuB?: DerivedResourceStatsDTO | null,
+): React.ReactNode {
+  if (!cpuA && !cpuB) return null
+  return (
+    <div className="run-comparison-chart-summary">
+      {cpuA && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>Avg {fmtPct(cpuA.avg)} · Max {fmtPct(cpuA.max)} · p75 {fmtPercentile(cpuA, 'p75')} · p90 {fmtPercentile(cpuA, 'p90')} · p95 {fmtPercentile(cpuA, 'p95')}</span>
+        </div>
+      )}
+      {cpuB && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>Avg {fmtPct(cpuB.avg)} · Max {fmtPct(cpuB.max)} · p75 {fmtPercentile(cpuB, 'p75')} · p90 {fmtPercentile(cpuB, 'p90')} · p95 {fmtPercentile(cpuB, 'p95')}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function buildMemorySummary(
+  memA?: DerivedResourceStatsDTO | null,
+  memB?: DerivedResourceStatsDTO | null,
+  data?: object[],
+): React.ReactNode {
+  if (!memA && !memB) return null
+  const statsA = data ? computePointStats(data, 'memoryUsageBytes_A') : { avg: null, max: null }
+  const statsB = data ? computePointStats(data, 'memoryUsageBytes_B') : { avg: null, max: null }
+  return (
+    <div className="run-comparison-chart-summary">
+      {(memA || statsA.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>Avg {formatBytes(statsA.avg ?? undefined)} ({fmtPct(memA?.avg)}) · Max {formatBytes(statsA.max ?? undefined)} ({fmtPct(memA?.max)})</span>
+        </div>
+      )}
+      {(memB || statsB.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>Avg {formatBytes(statsB.avg ?? undefined)} ({fmtPct(memB?.avg)}) · Max {formatBytes(statsB.max ?? undefined)} ({fmtPct(memB?.max)})</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function buildIoSummary(
+  data: object[],
+  inKeyA: string,
+  inKeyB: string,
+  outKeyA: string,
+  outKeyB: string,
+): React.ReactNode {
+  const inA = computePointStats(data, inKeyA)
+  const inB = computePointStats(data, inKeyB)
+  const outA = computePointStats(data, outKeyA)
+  const outB = computePointStats(data, outKeyB)
+  if (inA.avg == null && inB.avg == null && outA.avg == null && outB.avg == null) return null
+  return (
+    <div className="run-comparison-chart-summary">
+      {(inA.avg != null || outA.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>In avg {formatBytes(inA.avg ?? undefined)} · max {formatBytes(inA.max ?? undefined)} | Out avg {formatBytes(outA.avg ?? undefined)} · max {formatBytes(outA.max ?? undefined)}</span>
+        </div>
+      )}
+      {(inB.avg != null || outB.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>In avg {formatBytes(inB.avg ?? undefined)} · max {formatBytes(inB.max ?? undefined)} | Out avg {formatBytes(outB.avg ?? undefined)} · max {formatBytes(outB.max ?? undefined)}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ResourceComparisonChart({
   title,
   data,
@@ -229,6 +341,7 @@ function ResourceComparisonChart({
   yAxisFormatter,
   tooltipFormatter,
   showPointsOnly,
+  summaryContent,
 }: {
   title: string
   data: object[]
@@ -240,6 +353,7 @@ function ResourceComparisonChart({
     name: number | string | undefined,
   ) => [string, string]
   showPointsOnly: boolean
+  summaryContent?: React.ReactNode
 }) {
   const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set())
 
@@ -262,6 +376,7 @@ function ResourceComparisonChart({
     return (
       <div className="run-results-resource-chart-wrap">
         <h4 className="run-results-resource-chart-title">{title}</h4>
+        {summaryContent}
         <p className="run-results-placeholder">No data</p>
       </div>
     )
@@ -270,6 +385,7 @@ function ResourceComparisonChart({
   return (
     <div className="run-results-resource-chart-wrap">
       <h4 className="run-results-resource-chart-title">{title}</h4>
+      {summaryContent}
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
           <CartesianGrid stroke="#d9e2ef" strokeDasharray="3 3" />
@@ -579,6 +695,8 @@ export function BenchmarkRunComparisonPage() {
           serviceName: svc.serviceName,
           hasA: svc.hasA,
           hasB: svc.hasB,
+          derivedResourceA: svc.derivedResourceA,
+          derivedResourceB: svc.derivedResourceB,
           visiblePoints: visibleSvcPoints,
           cpuDomain: resolveResourceComparisonYAxisDomain(
             visibleSvcPoints,
@@ -1201,6 +1319,10 @@ export function BenchmarkRunComparisonPage() {
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
                           tooltipFormatter={compCpuTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildCpuSummary(
+                            host.derivedA?.resource?.cpu,
+                            host.derivedB?.resource?.cpu,
+                          )}
                         />
                         <ResourceComparisonChart
                           title="Memory"
@@ -1210,6 +1332,11 @@ export function BenchmarkRunComparisonPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={compByteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildMemorySummary(
+                            host.derivedA?.resource?.memory,
+                            host.derivedB?.resource?.memory,
+                            host.visibleMachinePoints,
+                          )}
                         />
                         <ResourceComparisonChart
                           title="Network I/O"
@@ -1234,6 +1361,11 @@ export function BenchmarkRunComparisonPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={compByteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildIoSummary(
+                            host.visibleMachinePoints,
+                            'networkInBytes_A', 'networkInBytes_B',
+                            'networkOutBytes_A', 'networkOutBytes_B',
+                          )}
                         />
                         <ResourceComparisonChart
                           title="Block I/O"
@@ -1258,6 +1390,11 @@ export function BenchmarkRunComparisonPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={compByteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildIoSummary(
+                            host.visibleMachinePoints,
+                            'blockInBytes_A', 'blockInBytes_B',
+                            'blockOutBytes_A', 'blockOutBytes_B',
+                          )}
                         />
                       </div>
                     </div>
@@ -1315,7 +1452,7 @@ export function BenchmarkRunComparisonPage() {
                               {host.services
                                 .filter((s) => host.selectedServiceKeys.has(s.serviceKey))
                                 .map((svc) => (
-                                  <details key={svc.serviceKey} className="run-comparison-service-section" open>
+                                  <details key={svc.serviceKey} className="run-comparison-service-section">
                                     <summary className="run-comparison-service-name">
                                       {svc.serviceName}
                                       {!svc.hasA && (
@@ -1346,6 +1483,10 @@ export function BenchmarkRunComparisonPage() {
                                         yAxisFormatter={(v) => `${Math.round(v)}%`}
                                         tooltipFormatter={compCpuTooltipFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildCpuSummary(
+                                          svc.derivedResourceA?.cpu,
+                                          svc.derivedResourceB?.cpu,
+                                        )}
                                       />
                                       <ResourceComparisonChart
                                         title="Memory"
@@ -1367,6 +1508,11 @@ export function BenchmarkRunComparisonPage() {
                                         yAxisFormatter={(v) => formatBytes(v)}
                                         tooltipFormatter={compByteTooltipFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildMemorySummary(
+                                          svc.derivedResourceA?.memory,
+                                          svc.derivedResourceB?.memory,
+                                          svc.visiblePoints,
+                                        )}
                                       />
                                       <ResourceComparisonChart
                                         title="Network I/O"
@@ -1399,6 +1545,11 @@ export function BenchmarkRunComparisonPage() {
                                         yAxisFormatter={(v) => formatBytes(v)}
                                         tooltipFormatter={compByteTooltipFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildIoSummary(
+                                          svc.visiblePoints,
+                                          'networkInBytes_A', 'networkInBytes_B',
+                                          'networkOutBytes_A', 'networkOutBytes_B',
+                                        )}
                                       />
                                       <ResourceComparisonChart
                                         title="Block I/O"
@@ -1431,6 +1582,11 @@ export function BenchmarkRunComparisonPage() {
                                         yAxisFormatter={(v) => formatBytes(v)}
                                         tooltipFormatter={compByteTooltipFormatter}
                                         showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildIoSummary(
+                                          svc.visiblePoints,
+                                          'blockInBytes_A', 'blockInBytes_B',
+                                          'blockOutBytes_A', 'blockOutBytes_B',
+                                        )}
                                       />
                                     </div>
                                   </details>

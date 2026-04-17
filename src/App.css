@@ -2047,6 +2047,33 @@
   cursor: pointer;
 }
 
+.run-comparison-chart-summary {
+  font-size: 0.78rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 0.35rem;
+}
+
+.run-comparison-chart-summary-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.run-comparison-chart-summary-label {
+  font-weight: 700;
+  min-width: 1.1rem;
+}
+
+.run-comparison-label-a {
+  color: #2563eb;
+}
+
+.run-comparison-label-b {
+  color: #dc2626;
+}
+
 .run-comparison-hosts {
   display: grid;
   grid-template-columns: 1fr 1fr;
