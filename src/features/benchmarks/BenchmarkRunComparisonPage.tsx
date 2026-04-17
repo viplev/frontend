@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Brush,
@@ -12,9 +12,10 @@ import {
   YAxis,
 } from 'recharts'
 import type { DerivedHttpSummaryDTO } from '../../generated/openapi/models/DerivedHttpSummaryDTO'
+import type { DerivedResourceStatsDTO } from '../../generated/openapi/models/DerivedResourceStatsDTO'
 import { getEnvironmentDetails } from '../environments/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
-import type { AxisScaleMode } from './charting'
+import type { AxisDomain, AxisScaleMode } from './charting'
 import {
   applyComparisonSlidingAverage,
   COMPARISON_MS_METRICS,
@@ -23,6 +24,12 @@ import {
   mergeK6ChartPointsByElapsed,
   resolveComparisonYAxisDomain,
 } from './comparisonCharting'
+import {
+  applyResourceComparisonSlidingAverage,
+  matchHosts,
+  resolveResourceComparisonYAxisDomain,
+  type ResourceComparisonMetricKey,
+} from './resourceComparisonCharting'
 import {
   BenchmarkRunDetailsError,
   getBenchmark,
@@ -174,6 +181,330 @@ const SERIES_CONFIG: Array<{
   { dataKey: 'vus_B', name: 'VUs (B)', yAxisId: 'vus', color: '#a855f7', dashPattern: '10 4', width: 2.5 },
 ]
 
+function formatElapsedAxisTick(value: number | string): string {
+  const ms = typeof value === 'number' ? value : Number(value)
+  if (Number.isNaN(ms)) return ''
+  const totalSeconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  if (minutes > 0) return `${minutes}m ${seconds.toString().padStart(2, '0')}s`
+  return `${seconds}s`
+}
+
+function formatElapsedTooltipLabel(label: unknown): string {
+  if (typeof label !== 'number') return String(label ?? '')
+  return formatElapsedAxisTick(label)
+}
+
+interface ResourceCompLineConfig {
+  dataKey: string
+  name: string
+  color: string
+  dashPattern?: string
+}
+
+const compCpuValueFormatter = (v: number) => `${v.toFixed(1)}%`
+const compByteValueFormatter = (v: number) => formatBytes(v)
+
+// ---------------------------------------------------------------------------
+// Chart summary stat helpers
+// ---------------------------------------------------------------------------
+
+function computePointStats(
+  data: object[],
+  metricKey: string,
+): { avg: number | null; max: number | null } {
+  let sum = 0
+  let count = 0
+  let max = Number.NEGATIVE_INFINITY
+  for (const point of data) {
+    const val = (point as Record<string, unknown>)[metricKey]
+    if (typeof val === 'number' && !Number.isNaN(val)) {
+      sum += val
+      count += 1
+      if (val > max) max = val
+    }
+  }
+  if (count === 0) return { avg: null, max: null }
+  return { avg: sum / count, max }
+}
+
+function fmtPct(v?: number | null): string {
+  return v != null ? `${v.toFixed(1)}%` : '—'
+}
+
+function fmtPercentile(stats?: DerivedResourceStatsDTO | null, key?: string): string {
+  const val = key ? stats?.percentiles?.[key] : undefined
+  return val != null ? `${val.toFixed(1)}%` : '—'
+}
+
+function buildCpuSummary(
+  cpuA?: DerivedResourceStatsDTO | null,
+  cpuB?: DerivedResourceStatsDTO | null,
+): React.ReactNode {
+  if (!cpuA && !cpuB) return null
+  return (
+    <div className="run-comparison-chart-summary">
+      {cpuA && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>Avg {fmtPct(cpuA.avg)} · Max {fmtPct(cpuA.max)} · p75 {fmtPercentile(cpuA, 'p75')} · p90 {fmtPercentile(cpuA, 'p90')} · p95 {fmtPercentile(cpuA, 'p95')}</span>
+        </div>
+      )}
+      {cpuB && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>Avg {fmtPct(cpuB.avg)} · Max {fmtPct(cpuB.max)} · p75 {fmtPercentile(cpuB, 'p75')} · p90 {fmtPercentile(cpuB, 'p90')} · p95 {fmtPercentile(cpuB, 'p95')}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function buildMemorySummary(
+  memA?: DerivedResourceStatsDTO | null,
+  memB?: DerivedResourceStatsDTO | null,
+  data?: object[],
+): React.ReactNode {
+  const statsA = data ? computePointStats(data, 'memoryUsageBytes_A') : { avg: null, max: null }
+  const statsB = data ? computePointStats(data, 'memoryUsageBytes_B') : { avg: null, max: null }
+  if (
+    !memA &&
+    !memB &&
+    statsA.avg == null &&
+    statsA.max == null &&
+    statsB.avg == null &&
+    statsB.max == null
+  ) {
+    return null
+  }
+  return (
+    <div className="run-comparison-chart-summary">
+      {(memA || statsA.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>Avg {formatBytes(statsA.avg ?? undefined)} ({fmtPct(memA?.avg)}) · Max {formatBytes(statsA.max ?? undefined)} ({fmtPct(memA?.max)})</span>
+        </div>
+      )}
+      {(memB || statsB.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>Avg {formatBytes(statsB.avg ?? undefined)} ({fmtPct(memB?.avg)}) · Max {formatBytes(statsB.max ?? undefined)} ({fmtPct(memB?.max)})</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function buildIoSummary(
+  data: object[],
+  inKeyA: string,
+  inKeyB: string,
+  outKeyA: string,
+  outKeyB: string,
+): React.ReactNode {
+  const inA = computePointStats(data, inKeyA)
+  const inB = computePointStats(data, inKeyB)
+  const outA = computePointStats(data, outKeyA)
+  const outB = computePointStats(data, outKeyB)
+  if (inA.avg == null && inB.avg == null && outA.avg == null && outB.avg == null) return null
+  return (
+    <div className="run-comparison-chart-summary">
+      {(inA.avg != null || outA.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
+          <span>In avg {formatBytes(inA.avg ?? undefined)} · max {formatBytes(inA.max ?? undefined)} | Out avg {formatBytes(outA.avg ?? undefined)} · max {formatBytes(outA.max ?? undefined)}</span>
+        </div>
+      )}
+      {(inB.avg != null || outB.avg != null) && (
+        <div className="run-comparison-chart-summary-row">
+          <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
+          <span>In avg {formatBytes(inB.avg ?? undefined)} · max {formatBytes(inB.max ?? undefined)} | Out avg {formatBytes(outB.avg ?? undefined)} · max {formatBytes(outB.max ?? undefined)}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ResourceComparisonChart({
+  title,
+  data,
+  lines,
+  yAxisDomain,
+  yAxisFormatter,
+  valueFormatter,
+  showPointsOnly,
+  summaryContent,
+}: {
+  title: string
+  data: object[]
+  lines: ResourceCompLineConfig[]
+  yAxisDomain: AxisDomain
+  yAxisFormatter: (value: number) => string
+  valueFormatter: (value: number) => string
+  showPointsOnly: boolean
+  summaryContent?: React.ReactNode
+}) {
+  const [hiddenLines, setHiddenLines] = useState<Set<string>>(() => new Set())
+
+  const handleLegendClick = useCallback((entry: unknown) => {
+    if (!entry || typeof entry !== 'object' || !('dataKey' in entry)) return
+    const dataKey = (entry as { dataKey?: string }).dataKey
+    if (typeof dataKey !== 'string') return
+    setHiddenLines((current) => {
+      const next = new Set(current)
+      if (next.has(dataKey)) {
+        next.delete(dataKey)
+      } else {
+        next.add(dataKey)
+      }
+      return next
+    })
+  }, [])
+
+  const runSpanMs = useMemo(() => {
+    if (data.length < 2) return 0
+    const first = (data[0] as Record<string, unknown>).elapsedMs
+    const last = (data[data.length - 1] as Record<string, unknown>).elapsedMs
+    return typeof first === 'number' && typeof last === 'number' ? last - first : 0
+  }, [data])
+
+  const renderTooltip = useCallback(
+    (props: Record<string, unknown>) => {
+      const { active, label } = props as {
+        active?: boolean
+        label?: number | string
+      }
+      if (!active || typeof label !== 'number') return null
+
+      const tolerance = runSpanMs * 0.01
+      const minElapsed = label - tolerance
+      const maxElapsed = label + tolerance
+
+      const findStartIndex = (targetElapsed: number): number => {
+        let low = 0
+        let high = data.length
+        while (low < high) {
+          const mid = Math.floor((low + high) / 2)
+          const pt = data[mid] as Record<string, unknown>
+          const elapsed = pt.elapsedMs as number
+          if (elapsed < targetElapsed) {
+            low = mid + 1
+          } else {
+            high = mid
+          }
+        }
+        return low
+      }
+
+      const resolveValue = (dataKey: string): number | null => {
+        let bestVal: number | null = null
+        let bestDist = Infinity
+        for (let i = findStartIndex(minElapsed); i < data.length; i++) {
+          const pt = data[i] as Record<string, unknown>
+          const elapsed = pt.elapsedMs as number
+          if (elapsed > maxElapsed) break
+          const dist = Math.abs(elapsed - label)
+          const v = pt[dataKey]
+          if (typeof v === 'number' && !Number.isNaN(v) && dist < bestDist) {
+            bestDist = dist
+            bestVal = v
+          }
+        }
+        return bestVal
+      }
+
+      const entries = lines
+        .filter((l) => !hiddenLines.has(l.dataKey))
+        .map((l) => ({
+          ...l,
+          resolved: resolveValue(l.dataKey),
+        }))
+
+      if (entries.every((e) => e.resolved === null)) return null
+
+      return (
+        <div className="run-comparison-tooltip">
+          <div className="run-comparison-tooltip-label">
+            {formatElapsedTooltipLabel(label)}
+          </div>
+          {entries.map((e) => (
+            <div key={e.dataKey} className="run-comparison-tooltip-row">
+              <span
+                className="run-comparison-tooltip-swatch"
+                style={{ background: e.color }}
+              />
+              <span className="run-comparison-tooltip-name">{e.name}</span>
+              <span className="run-comparison-tooltip-value">
+                {e.resolved !== null ? valueFormatter(e.resolved) : 'n/a'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    [data, lines, hiddenLines, valueFormatter, runSpanMs],
+  )
+
+  if (data.length === 0) {
+    return (
+      <div className="run-results-resource-chart-wrap">
+        <div className="run-comparison-chart-header">
+          <h4 className="run-results-resource-chart-title">{title}</h4>
+          {summaryContent}
+        </div>
+        <p className="run-results-placeholder">No data</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="run-results-resource-chart-wrap">
+      <div className="run-comparison-chart-header">
+        <h4 className="run-results-resource-chart-title">{title}</h4>
+        {summaryContent}
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+          <CartesianGrid stroke="#d9e2ef" strokeDasharray="3 3" />
+          <XAxis
+            dataKey="elapsedMs"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            minTickGap={42}
+            tickFormatter={formatElapsedAxisTick}
+          />
+          <YAxis domain={yAxisDomain} tickFormatter={yAxisFormatter} width={68} />
+          <Tooltip
+            content={renderTooltip}
+            isAnimationActive={false}
+          />
+          <Legend onClick={handleLegendClick} />
+          {lines.map((line) => (
+            <Line
+              key={line.dataKey}
+              type="linear"
+              dataKey={line.dataKey}
+              name={line.name}
+              stroke={line.color}
+              strokeDasharray={line.dashPattern}
+              strokeWidth={showPointsOnly ? 0.0001 : 2}
+              dot={
+                showPointsOnly
+                  ? { r: 3, fill: line.color, stroke: line.color, strokeWidth: 1 }
+                  : false
+              }
+              activeDot={{ r: 4, fill: line.color, stroke: line.color }}
+              connectNulls
+              hide={hiddenLines.has(line.dataKey)}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 export function BenchmarkRunComparisonPage() {
   const {
     environmentId = '',
@@ -201,6 +532,9 @@ export function BenchmarkRunComparisonPage() {
   const [visibleSeries, setVisibleSeries] = useState<ComparisonSeriesVisibility>(DEFAULT_SERIES_VISIBILITY)
   const [brushRange, setBrushRange] = useState<BrushRange | null>(null)
   const [selectedPercentiles, setSelectedPercentiles] = useState<Set<string> | null>(null)
+  const [resourceAxisScaleMode, setResourceAxisScaleMode] = useState<AxisScaleMode>('auto')
+  const [resourceChartRenderMode, setResourceChartRenderMode] = useState<ChartRenderMode>('line')
+  const [resourceSmoothingLevel, setResourceSmoothingLevel] = useState(0)
 
   const environmentLabel = (environmentName ?? environmentId).trim() || 'n/a'
   const benchmarkLabel = (benchmarkName ?? benchmarkId).trim() || 'n/a'
@@ -268,9 +602,6 @@ export function BenchmarkRunComparisonPage() {
   const httpB = useMemo(() => [...(comparisonData?.derivedB?.http ?? [])].sort((a, b) => (b.totalRequests ?? 0) - (a.totalRequests ?? 0)), [comparisonData])
   const vusA = comparisonData?.derivedA?.vus
   const vusB = comparisonData?.derivedB?.vus
-  const hostsA = useMemo(() => [...(comparisonData?.derivedA?.hosts ?? [])].sort((a, b) => (a.hostName ?? '').localeCompare(b.hostName ?? '')), [comparisonData])
-  const hostsB = useMemo(() => [...(comparisonData?.derivedB?.hosts ?? [])].sort((a, b) => (a.hostName ?? '').localeCompare(b.hostName ?? '')), [comparisonData])
-
   const matchedHttpGroups = useMemo(() => matchHttpGroups(httpA, httpB), [httpA, httpB])
   const percentileKeys = useMemo(() => collectPercentileKeys(httpA, httpB), [httpA, httpB])
 
@@ -360,6 +691,137 @@ export function BenchmarkRunComparisonPage() {
     if (!dataKey) return
     setVisibleSeries((current) => ({ ...current, [dataKey]: !current[dataKey] }))
   }
+
+  const resourceCompSmoothingWindowSize = resourceSmoothingLevel === 0 ? 1 : resourceSmoothingLevel + 1
+
+  const resourceBrushElapsedRange = useMemo<[number, number] | null>(() => {
+    if (chartPoints.length === 0) return null
+    return [chartPoints[brushStartIndex].elapsedMs, chartPoints[brushEndIndex].elapsedMs]
+  }, [brushStartIndex, brushEndIndex, chartPoints])
+
+  const processedComparisonHosts = useMemo(() => {
+    if (!comparisonData) return []
+    const matched = matchHosts(
+      comparisonData.rawA,
+      comparisonData.rawB,
+      comparisonData.derivedA,
+      comparisonData.derivedB,
+    )
+    return matched.map((host) => {
+      const smoothedMachinePoints = applyResourceComparisonSlidingAverage(
+        host.baseComparisonPoints,
+        resourceCompSmoothingWindowSize,
+      )
+      const visibleMachinePoints = resourceBrushElapsedRange
+        ? smoothedMachinePoints.filter(
+            (p) =>
+              p.elapsedMs >= resourceBrushElapsedRange[0] &&
+              p.elapsedMs <= resourceBrushElapsedRange[1],
+          )
+        : smoothedMachinePoints
+
+      const machineCpuDomain = resolveResourceComparisonYAxisDomain(
+        visibleMachinePoints,
+        ['cpuPercentage_A', 'cpuPercentage_B'],
+        resourceAxisScaleMode,
+      )
+      const machineMemoryMetrics: ResourceComparisonMetricKey[] = [
+        'memoryUsageBytes_A',
+        'memoryUsageBytes_B',
+      ]
+      if (host.hasMemoryLimitA) machineMemoryMetrics.push('memoryLimitBytes_A')
+      if (host.hasMemoryLimitB) machineMemoryMetrics.push('memoryLimitBytes_B')
+      const machineMemoryDomain = resolveResourceComparisonYAxisDomain(
+        visibleMachinePoints,
+        machineMemoryMetrics,
+        resourceAxisScaleMode,
+      )
+      const machineNetworkDomain = resolveResourceComparisonYAxisDomain(
+        visibleMachinePoints,
+        ['networkInBytes_A', 'networkInBytes_B', 'networkOutBytes_A', 'networkOutBytes_B'],
+        resourceAxisScaleMode,
+      )
+      const machineBlockDomain = resolveResourceComparisonYAxisDomain(
+        visibleMachinePoints,
+        ['blockInBytes_A', 'blockInBytes_B', 'blockOutBytes_A', 'blockOutBytes_B'],
+        resourceAxisScaleMode,
+      )
+
+      const services = host.services.map((svc) => {
+        const smoothedSvcPoints = applyResourceComparisonSlidingAverage(
+          svc.baseComparisonPoints,
+          resourceCompSmoothingWindowSize,
+        )
+        const visibleSvcPoints = resourceBrushElapsedRange
+          ? smoothedSvcPoints.filter(
+              (p) =>
+                p.elapsedMs >= resourceBrushElapsedRange[0] &&
+                p.elapsedMs <= resourceBrushElapsedRange[1],
+            )
+          : smoothedSvcPoints
+
+        const svcMemoryMetrics: ResourceComparisonMetricKey[] = [
+          'memoryUsageBytes_A', 'memoryUsageBytes_B',
+        ]
+        if (svc.hasMemoryLimitA) svcMemoryMetrics.push('memoryLimitBytes_A')
+        if (svc.hasMemoryLimitB) svcMemoryMetrics.push('memoryLimitBytes_B')
+
+        return {
+          serviceKey: svc.serviceKey,
+          serviceName: svc.serviceName,
+          hasA: svc.hasA,
+          hasB: svc.hasB,
+          hasMemoryLimitA: svc.hasMemoryLimitA,
+          hasMemoryLimitB: svc.hasMemoryLimitB,
+          derivedResourceA: svc.derivedResourceA,
+          derivedResourceB: svc.derivedResourceB,
+          visiblePoints: visibleSvcPoints,
+          cpuDomain: resolveResourceComparisonYAxisDomain(
+            visibleSvcPoints,
+            ['cpuPercentage_A', 'cpuPercentage_B'],
+            resourceAxisScaleMode,
+          ),
+          memoryDomain: resolveResourceComparisonYAxisDomain(
+            visibleSvcPoints,
+            svcMemoryMetrics,
+            resourceAxisScaleMode,
+          ),
+          networkDomain: resolveResourceComparisonYAxisDomain(
+            visibleSvcPoints,
+            ['networkInBytes_A', 'networkInBytes_B', 'networkOutBytes_A', 'networkOutBytes_B'],
+            resourceAxisScaleMode,
+          ),
+          blockDomain: resolveResourceComparisonYAxisDomain(
+            visibleSvcPoints,
+            ['blockInBytes_A', 'blockInBytes_B', 'blockOutBytes_A', 'blockOutBytes_B'],
+            resourceAxisScaleMode,
+          ),
+        }
+      })
+
+      return {
+        hostKey: host.hostKey,
+        hostName: host.hostName,
+        hasA: host.hasA,
+        hasB: host.hasB,
+        derivedA: host.derivedA,
+        derivedB: host.derivedB,
+        hasMemoryLimitA: host.hasMemoryLimitA,
+        hasMemoryLimitB: host.hasMemoryLimitB,
+        visibleMachinePoints,
+        machineCpuDomain,
+        machineMemoryDomain,
+        machineNetworkDomain,
+        machineBlockDomain,
+        services,
+      }
+    })
+  }, [
+    comparisonData,
+    resourceAxisScaleMode,
+    resourceBrushElapsedRange,
+    resourceCompSmoothingWindowSize,
+  ])
 
   const runIdAShort = runIdA.slice(0, 8)
   const runIdBShort = runIdB.slice(0, 8)
@@ -759,45 +1221,329 @@ export function BenchmarkRunComparisonPage() {
         {/* Host resources comparison */}
         <section className="run-results-section">
           <h2>Host resources</h2>
-          {hostsA.length === 0 && hostsB.length === 0 ? (
+          {processedComparisonHosts.length === 0 ? (
             <p className="run-results-placeholder">
               No host resource data available for comparison.
             </p>
           ) : (
-            <div className="run-comparison-hosts">
-              <div className="run-comparison-host-panel">
-                <h3>Run A hosts</h3>
-                {hostsA.length === 0 ? (
-                  <p>No host data available.</p>
-                ) : (
-                  <ul className="run-results-host-list">
-                    {hostsA.map((host) => (
-                      <li key={`a-${host.hostId ?? host.hostName ?? ''}`}>
-                        <h4>{host.hostName ?? host.hostId ?? 'Host'}</h4>
-                        <p>CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg {formatMetric(host.resource?.memory?.avg, '%')}</p>
-                        <p>Net in {formatBytes(host.resource?.networkInTotalBytes)} | Net out {formatBytes(host.resource?.networkOutTotalBytes)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <>
+              <div className="run-results-chart-controls">
+                <div className="run-results-axis-mode-group" role="group" aria-label="Resource Y-axis scale">
+                  {AXIS_MODE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`shell-alert-dismiss run-results-axis-mode-button${resourceAxisScaleMode === option.value ? ' is-selected' : ''}`}
+                      onClick={() => setResourceAxisScaleMode(option.value)}
+                      aria-pressed={resourceAxisScaleMode === option.value}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="run-results-axis-mode-group" role="group" aria-label="Resource render mode">
+                  {CHART_RENDER_MODE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`shell-alert-dismiss run-results-axis-mode-button${resourceChartRenderMode === option.value ? ' is-selected' : ''}`}
+                      onClick={() => setResourceChartRenderMode(option.value)}
+                      aria-pressed={resourceChartRenderMode === option.value}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="run-results-smoothing-slider-group">
+                  <label
+                    className="run-results-smoothing-slider-label"
+                    htmlFor="resource-comparison-smoothing-slider"
+                  >
+                    Sliding average: {resourceSmoothingLevel === 0 ? 'Raw' : resourceSmoothingLevel}
+                  </label>
+                  <input
+                    id="resource-comparison-smoothing-slider"
+                    className="run-results-smoothing-slider-input"
+                    type="range"
+                    min={0}
+                    max={9}
+                    step={1}
+                    value={resourceSmoothingLevel}
+                    onChange={(e) => {
+                      const next = Number(e.currentTarget.value)
+                      if (!Number.isNaN(next))
+                        setResourceSmoothingLevel(Math.min(Math.max(next, 0), 9))
+                    }}
+                    aria-label="Resource sliding average level from 0 to 9"
+                  />
+                  <div className="run-results-smoothing-slider-marks" aria-hidden="true">
+                    <span>Raw</span>
+                    <span>5</span>
+                    <span>9</span>
+                  </div>
+                </div>
               </div>
-              <div className="run-comparison-host-panel">
-                <h3>Run B hosts</h3>
-                {hostsB.length === 0 ? (
-                  <p>No host data available.</p>
-                ) : (
-                  <ul className="run-results-host-list">
-                    {hostsB.map((host) => (
-                      <li key={`b-${host.hostId ?? host.hostName ?? ''}`}>
-                        <h4>{host.hostName ?? host.hostId ?? 'Host'}</h4>
-                        <p>CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg {formatMetric(host.resource?.memory?.avg, '%')}</p>
-                        <p>Net in {formatBytes(host.resource?.networkInTotalBytes)} | Net out {formatBytes(host.resource?.networkOutTotalBytes)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+
+              {processedComparisonHosts.map((host) => {
+                const resourceShowPointsOnly = resourceChartRenderMode === 'points'
+                const memoryLines: ResourceCompLineConfig[] = [
+                  { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#2563eb' },
+                  { dataKey: 'memoryUsageBytes_B', name: 'Usage (B)', color: '#dc2626' },
+                ]
+                if (host.hasMemoryLimitA) {
+                  memoryLines.push({
+                    dataKey: 'memoryLimitBytes_A',
+                    name: 'Limit (A)',
+                    color: '#93c5fd',
+                    dashPattern: '10 4',
+                  })
+                }
+                if (host.hasMemoryLimitB) {
+                  memoryLines.push({
+                    dataKey: 'memoryLimitBytes_B',
+                    name: 'Limit (B)',
+                    color: '#fca5a5',
+                    dashPattern: '10 4',
+                  })
+                }
+
+                return (
+                  <details key={host.hostKey} className="run-comparison-host-card" open>
+                    <summary className="run-comparison-host-card-summary">
+                      <span className="run-results-host-card-name">{host.hostName}</span>
+                      {!host.hasA && (
+                        <span className="run-comparison-host-badge">Only in Run B</span>
+                      )}
+                      {!host.hasB && (
+                        <span className="run-comparison-host-badge">Only in Run A</span>
+                      )}
+                      <span className="run-results-host-card-stats">
+                        CPU avg A: {formatMetric(host.derivedA?.resource?.cpu?.avg, '%')} B:{' '}
+                        {formatMetric(host.derivedB?.resource?.cpu?.avg, '%')}
+                        {' | '}
+                        Mem avg A: {formatMetric(host.derivedA?.resource?.memory?.avg, '%')} B:{' '}
+                        {formatMetric(host.derivedB?.resource?.memory?.avg, '%')}
+                      </span>
+                    </summary>
+
+                    <div className="run-comparison-host-machine-section">
+                      <h4>Machine</h4>
+                      <div className="run-results-resource-grid">
+                        <ResourceComparisonChart
+                          title="CPU %"
+                          data={host.visibleMachinePoints}
+                          lines={[
+                            { dataKey: 'cpuPercentage_A', name: 'CPU % (A)', color: '#2563eb' },
+                            { dataKey: 'cpuPercentage_B', name: 'CPU % (B)', color: '#dc2626' },
+                          ]}
+                          yAxisDomain={host.machineCpuDomain}
+                          yAxisFormatter={(v) => `${Math.round(v)}%`}
+                          valueFormatter={compCpuValueFormatter}
+                          showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildCpuSummary(
+                            host.derivedA?.resource?.cpu,
+                            host.derivedB?.resource?.cpu,
+                          )}
+                        />
+                        <ResourceComparisonChart
+                          title="Memory"
+                          data={host.visibleMachinePoints}
+                          lines={memoryLines}
+                          yAxisDomain={host.machineMemoryDomain}
+                          yAxisFormatter={(v) => formatBytes(v)}
+                          valueFormatter={compByteValueFormatter}
+                          showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildMemorySummary(
+                            host.derivedA?.resource?.memory,
+                            host.derivedB?.resource?.memory,
+                            host.visibleMachinePoints,
+                          )}
+                        />
+                        <ResourceComparisonChart
+                          title="Network I/O"
+                          data={host.visibleMachinePoints}
+                          lines={[
+                            { dataKey: 'networkOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                            { dataKey: 'networkOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                            {
+                              dataKey: 'networkInBytes_A',
+                              name: 'In (A)',
+                              color: '#2563eb',
+                              dashPattern: '10 4',
+                            },
+                            {
+                              dataKey: 'networkInBytes_B',
+                              name: 'In (B)',
+                              color: '#dc2626',
+                              dashPattern: '10 4',
+                            },
+                          ]}
+                          yAxisDomain={host.machineNetworkDomain}
+                          yAxisFormatter={(v) => formatBytes(v)}
+                          valueFormatter={compByteValueFormatter}
+                          showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildIoSummary(
+                            host.visibleMachinePoints,
+                            'networkInBytes_A', 'networkInBytes_B',
+                            'networkOutBytes_A', 'networkOutBytes_B',
+                          )}
+                        />
+                        <ResourceComparisonChart
+                          title="Block I/O"
+                          data={host.visibleMachinePoints}
+                          lines={[
+                            { dataKey: 'blockOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                            { dataKey: 'blockOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                            {
+                              dataKey: 'blockInBytes_A',
+                              name: 'In (A)',
+                              color: '#2563eb',
+                              dashPattern: '10 4',
+                            },
+                            {
+                              dataKey: 'blockInBytes_B',
+                              name: 'In (B)',
+                              color: '#dc2626',
+                              dashPattern: '10 4',
+                            },
+                          ]}
+                          yAxisDomain={host.machineBlockDomain}
+                          yAxisFormatter={(v) => formatBytes(v)}
+                          valueFormatter={compByteValueFormatter}
+                          showPointsOnly={resourceShowPointsOnly}
+                          summaryContent={buildIoSummary(
+                            host.visibleMachinePoints,
+                            'blockInBytes_A', 'blockInBytes_B',
+                            'blockOutBytes_A', 'blockOutBytes_B',
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="run-comparison-host-container-section">
+                      <h4>Containers</h4>
+                      {host.services.length === 0 ? (
+                        <p className="run-results-placeholder">
+                          No containers recorded for this host.
+                        </p>
+                      ) : (
+                        <>
+                          {host.services.map((svc) => (
+                                  <details key={svc.serviceKey} className="run-comparison-service-section">
+                                    <summary className="run-comparison-service-name">
+                                      {svc.serviceName}
+                                      {!svc.hasA && (
+                                        <span className="run-comparison-host-badge">Only in Run B</span>
+                                      )}
+                                      {!svc.hasB && (
+                                        <span className="run-comparison-host-badge">Only in Run A</span>
+                                      )}
+                                    </summary>
+                                    <div className="run-results-resource-grid">
+                                      <ResourceComparisonChart
+                                        title="CPU %"
+                                        data={svc.visiblePoints}
+                                        lines={[
+                                          { dataKey: 'cpuPercentage_A', name: 'CPU % (A)', color: '#2563eb' },
+                                          { dataKey: 'cpuPercentage_B', name: 'CPU % (B)', color: '#dc2626' },
+                                        ]}
+                                        yAxisDomain={svc.cpuDomain}
+                                        yAxisFormatter={(v) => `${Math.round(v)}%`}
+                                        valueFormatter={compCpuValueFormatter}
+                                        showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildCpuSummary(
+                                          svc.derivedResourceA?.cpu,
+                                          svc.derivedResourceB?.cpu,
+                                        )}
+                                      />
+                                      {(() => {
+                                        const svcMemLines: ResourceCompLineConfig[] = [
+                                          { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#2563eb' },
+                                          { dataKey: 'memoryUsageBytes_B', name: 'Usage (B)', color: '#dc2626' },
+                                        ]
+                                        if (svc.hasMemoryLimitA) {
+                                          svcMemLines.push({
+                                            dataKey: 'memoryLimitBytes_A',
+                                            name: 'Limit (A)',
+                                            color: '#93c5fd',
+                                            dashPattern: '10 4',
+                                          })
+                                        }
+                                        if (svc.hasMemoryLimitB) {
+                                          svcMemLines.push({
+                                            dataKey: 'memoryLimitBytes_B',
+                                            name: 'Limit (B)',
+                                            color: '#fca5a5',
+                                            dashPattern: '10 4',
+                                          })
+                                        }
+                                        return (
+                                          <ResourceComparisonChart
+                                            title="Memory"
+                                            data={svc.visiblePoints}
+                                            lines={svcMemLines}
+                                            yAxisDomain={svc.memoryDomain}
+                                            yAxisFormatter={(v) => formatBytes(v)}
+                                            valueFormatter={compByteValueFormatter}
+                                            showPointsOnly={resourceShowPointsOnly}
+                                            summaryContent={buildMemorySummary(
+                                              svc.derivedResourceA?.memory,
+                                              svc.derivedResourceB?.memory,
+                                              svc.visiblePoints,
+                                            )}
+                                          />
+                                        )
+                                      })()}
+                                      <ResourceComparisonChart
+                                        title="Network I/O"
+                                        data={svc.visiblePoints}
+                                        lines={[
+                                          { dataKey: 'networkOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                                          { dataKey: 'networkOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                                          { dataKey: 'networkInBytes_A', name: 'In (A)', color: '#2563eb', dashPattern: '10 4' },
+                                          { dataKey: 'networkInBytes_B', name: 'In (B)', color: '#dc2626', dashPattern: '10 4' },
+                                        ]}
+                                        yAxisDomain={svc.networkDomain}
+                                        yAxisFormatter={(v) => formatBytes(v)}
+                                        valueFormatter={compByteValueFormatter}
+                                        showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildIoSummary(
+                                          svc.visiblePoints,
+                                          'networkInBytes_A', 'networkInBytes_B',
+                                          'networkOutBytes_A', 'networkOutBytes_B',
+                                        )}
+                                      />
+                                      <ResourceComparisonChart
+                                        title="Block I/O"
+                                        data={svc.visiblePoints}
+                                        lines={[
+                                          { dataKey: 'blockOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                                          { dataKey: 'blockOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                                          { dataKey: 'blockInBytes_A', name: 'In (A)', color: '#2563eb', dashPattern: '10 4' },
+                                          { dataKey: 'blockInBytes_B', name: 'In (B)', color: '#dc2626', dashPattern: '10 4' },
+                                        ]}
+                                        yAxisDomain={svc.blockDomain}
+                                        yAxisFormatter={(v) => formatBytes(v)}
+                                        valueFormatter={compByteValueFormatter}
+                                        showPointsOnly={resourceShowPointsOnly}
+                                        summaryContent={buildIoSummary(
+                                          svc.visiblePoints,
+                                          'blockInBytes_A', 'blockInBytes_B',
+                                          'blockOutBytes_A', 'blockOutBytes_B',
+                                        )}
+                                      />
+                                    </div>
+                                  </details>
+                                ))}
+                        </>
+                      )}
+                    </div>
+                  </details>
+                )
+              })}
+            </>
           )}
         </section>
       </AsyncStateView>

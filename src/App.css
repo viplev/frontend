@@ -1982,6 +1982,142 @@
   font-size: 0.95rem;
 }
 
+.run-comparison-host-card {
+  border: 1px solid #d6e2f1;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.run-comparison-host-card-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #17324a;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.run-comparison-host-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.run-comparison-host-machine-section,
+.run-comparison-host-container-section {
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid #e5eaf3;
+}
+
+.run-comparison-host-machine-section h4,
+.run-comparison-host-container-section h4 {
+  margin: 0 0 0.5rem;
+  color: #17324a;
+  font-size: 0.95rem;
+}
+
+.run-comparison-service-section {
+  margin-bottom: 1.2rem;
+  padding: 0.75rem;
+  border: 1px solid #d6e2f1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.run-comparison-service-name {
+  margin: 0;
+  padding: 0.3rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #17324a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+.run-comparison-chart-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.run-comparison-chart-summary {
+  font-size: 0.78rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.run-comparison-chart-summary-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.run-comparison-chart-summary-label {
+  font-weight: 700;
+  min-width: 1.1rem;
+}
+
+.run-comparison-label-a {
+  color: #2563eb;
+}
+
+.run-comparison-label-b {
+  color: #dc2626;
+}
+
+/* Custom comparison chart tooltip */
+.run-comparison-tooltip {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  min-width: 140px;
+}
+.run-comparison-tooltip-label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #374151;
+}
+.run-comparison-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1px 0;
+}
+.run-comparison-tooltip-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.run-comparison-tooltip-name {
+  flex: 1;
+  color: #4b5563;
+}
+.run-comparison-tooltip-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+}
+
 .run-comparison-hosts {
   display: grid;
   grid-template-columns: 1fr 1fr;
