@@ -284,6 +284,7 @@ function ResourceChart({
   yAxisFormatter,
   tooltipFormatter,
   showPointsOnly,
+  xAxisDomain,
 }: {
   title: string
   data: object[]
@@ -295,7 +296,8 @@ function ResourceChart({
     name: number | string | undefined,
   ) => [string, string]
   showPointsOnly: boolean
-}) {
+  xAxisDomain?: [number, number]
+}){
   if (data.length === 0) {
     return (
       <div className="run-results-resource-chart-wrap">
@@ -317,7 +319,7 @@ function ResourceChart({
           <XAxis
             dataKey="timestampMs"
             type="number"
-            domain={['dataMin', 'dataMax']}
+            domain={xAxisDomain ?? ['dataMin', 'dataMax']}
             minTickGap={42}
             tickFormatter={formatChartTickLabel}
           />
@@ -538,6 +540,14 @@ export function BenchmarkRunResultsPage() {
   const isZoomed =
     k6ChartPoints.length > 1 &&
     (brushStartIndex > 0 || brushEndIndex < k6ChartPoints.length - 1)
+
+  const brushTimeRange = useMemo<[number, number] | null>(() => {
+    if (k6ChartPoints.length === 0) return null
+    const startMs = k6ChartPoints[brushStartIndex]?.timestampMs
+    const endMs = k6ChartPoints[brushEndIndex]?.timestampMs
+    if (startMs == null || endMs == null) return null
+    return [startMs, endMs]
+  }, [brushStartIndex, brushEndIndex, k6ChartPoints])
 
   const handleBrushChange = (nextRange: BrushChangeEvent) => {
     if (k6ChartPoints.length === 0) {
@@ -1247,6 +1257,7 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
                           tooltipFormatter={cpuTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Memory"
@@ -1256,6 +1267,7 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Network I/O"
@@ -1268,6 +1280,7 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Block I/O"
@@ -1280,6 +1293,7 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
+                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                       </div>
                     </div>
@@ -1337,6 +1351,7 @@ export function BenchmarkRunResultsPage() {
                                 yAxisFormatter={(v) => `${Math.round(v)}%`}
                                 tooltipFormatter={cpuTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
+                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Memory"
@@ -1346,6 +1361,7 @@ export function BenchmarkRunResultsPage() {
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
+                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Network I/O"
@@ -1355,6 +1371,7 @@ export function BenchmarkRunResultsPage() {
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
+                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Block I/O"
@@ -1364,6 +1381,7 @@ export function BenchmarkRunResultsPage() {
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
+                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                             </div>
                           )}
