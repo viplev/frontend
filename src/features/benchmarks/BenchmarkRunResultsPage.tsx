@@ -284,7 +284,6 @@ function ResourceChart({
   yAxisFormatter,
   tooltipFormatter,
   showPointsOnly,
-  xAxisDomain,
 }: {
   title: string
   data: object[]
@@ -296,7 +295,6 @@ function ResourceChart({
     name: number | string | undefined,
   ) => [string, string]
   showPointsOnly: boolean
-  xAxisDomain?: [number, number]
 }){
   if (data.length === 0) {
     return (
@@ -319,7 +317,7 @@ function ResourceChart({
           <XAxis
             dataKey="timestampMs"
             type="number"
-            domain={xAxisDomain ?? ['dataMin', 'dataMax']}
+            domain={['dataMin', 'dataMax']}
             minTickGap={42}
             tickFormatter={formatChartTickLabel}
           />
@@ -1142,20 +1140,26 @@ export function BenchmarkRunResultsPage() {
                 const selectedKeys = selectedServiceKeysByHost[host.key] ?? new Set<string>()
                 const resourceShowPointsOnly = resourceChartRenderMode === 'points'
 
+                const visibleMachinePoints = brushTimeRange
+                  ? host.machinePoints.filter(
+                      (p) => p.timestampMs >= brushTimeRange[0] && p.timestampMs <= brushTimeRange[1],
+                    )
+                  : host.machinePoints
+
                 const machineCpuDomain = resolveResourceYAxisDomain(
-                  host.machinePoints, ['cpuPercentage'], resourceAxisScaleMode,
+                  visibleMachinePoints, ['cpuPercentage'], resourceAxisScaleMode,
                 )
                 const machineMemoryMetrics: ResourceMetricKey[] = host.hasMemoryLimit
                   ? ['memoryUsageBytes', 'memoryLimitBytes']
                   : ['memoryUsageBytes']
                 const machineMemoryDomain = resolveResourceYAxisDomain(
-                  host.machinePoints, machineMemoryMetrics, resourceAxisScaleMode,
+                  visibleMachinePoints, machineMemoryMetrics, resourceAxisScaleMode,
                 )
                 const machineNetworkDomain = resolveResourceYAxisDomain(
-                  host.machinePoints, ['networkInBytes', 'networkOutBytes'], resourceAxisScaleMode,
+                  visibleMachinePoints, ['networkInBytes', 'networkOutBytes'], resourceAxisScaleMode,
                 )
                 const machineBlockDomain = resolveResourceYAxisDomain(
-                  host.machinePoints, ['blockInBytes', 'blockOutBytes'], resourceAxisScaleMode,
+                  visibleMachinePoints, ['blockInBytes', 'blockOutBytes'], resourceAxisScaleMode,
                 )
 
                 const machineMemoryLines: ResourceLineConfig[] = [
@@ -1214,17 +1218,33 @@ export function BenchmarkRunResultsPage() {
                     ]
                   })
 
+                const filterContainerData = <T extends { timestampMs: number | string }>(
+                  points: T[],
+                ): T[] => {
+                  if (!brushTimeRange) return points
+                  return points.filter(
+                    (p) =>
+                      (p.timestampMs as number) >= brushTimeRange[0] &&
+                      (p.timestampMs as number) <= brushTimeRange[1],
+                  )
+                }
+
+                const visibleContainerCpuData = filterContainerData(host.containerCpu.data)
+                const visibleContainerMemoryData = filterContainerData(host.containerMemory.data)
+                const visibleContainerNetworkData = filterContainerData(host.containerNetwork.data)
+                const visibleContainerBlockData = filterContainerData(host.containerBlock.data)
+
                 const containerCpuDomain = resolveMultiSeriesYAxisDomain(
-                  host.containerCpu.data, host.containerCpu.dataKeys, resourceAxisScaleMode,
+                  visibleContainerCpuData, host.containerCpu.dataKeys, resourceAxisScaleMode,
                 )
                 const containerMemoryDomain = resolveMultiSeriesYAxisDomain(
-                  host.containerMemory.data, host.containerMemory.dataKeys, resourceAxisScaleMode,
+                  visibleContainerMemoryData, host.containerMemory.dataKeys, resourceAxisScaleMode,
                 )
                 const containerNetworkDomain = resolveMultiSeriesYAxisDomain(
-                  host.containerNetwork.data, host.containerNetwork.dataKeys, resourceAxisScaleMode,
+                  visibleContainerNetworkData, host.containerNetwork.dataKeys, resourceAxisScaleMode,
                 )
                 const containerBlockDomain = resolveMultiSeriesYAxisDomain(
-                  host.containerBlock.data, host.containerBlock.dataKeys, resourceAxisScaleMode,
+                  visibleContainerBlockData, host.containerBlock.dataKeys, resourceAxisScaleMode,
                 )
 
                 const derivedCpu = host.derivedSummary?.resource?.cpu
@@ -1249,7 +1269,7 @@ export function BenchmarkRunResultsPage() {
                       <div className="run-results-resource-grid">
                         <ResourceChart
                           title="CPU %"
-                          data={host.machinePoints}
+                          data={visibleMachinePoints}
                           lines={[
                             { dataKey: 'cpuPercentage', name: 'CPU %', color: '#2563eb' },
                           ]}
@@ -1257,21 +1277,19 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
                           tooltipFormatter={cpuTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
-                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Memory"
-                          data={host.machinePoints}
+                          data={visibleMachinePoints}
                           lines={machineMemoryLines}
                           yAxisDomain={machineMemoryDomain}
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
-                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Network I/O"
-                          data={host.machinePoints}
+                          data={visibleMachinePoints}
                           lines={[
                             { dataKey: 'networkInBytes', name: 'In', color: '#16a34a' },
                             { dataKey: 'networkOutBytes', name: 'Out', color: '#f97316' },
@@ -1280,11 +1298,10 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
-                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                         <ResourceChart
                           title="Block I/O"
-                          data={host.machinePoints}
+                          data={visibleMachinePoints}
                           lines={[
                             { dataKey: 'blockInBytes', name: 'In', color: '#06b6d4' },
                             { dataKey: 'blockOutBytes', name: 'Out', color: '#d97706' },
@@ -1293,7 +1310,6 @@ export function BenchmarkRunResultsPage() {
                           yAxisFormatter={(v) => formatBytes(v)}
                           tooltipFormatter={byteTooltipFormatter}
                           showPointsOnly={resourceShowPointsOnly}
-                          xAxisDomain={brushTimeRange ?? undefined}
                         />
                       </div>
                     </div>
@@ -1345,43 +1361,39 @@ export function BenchmarkRunResultsPage() {
                             <div className="run-results-resource-grid">
                               <ResourceChart
                                 title="CPU %"
-                                data={host.containerCpu.data}
+                                data={visibleContainerCpuData}
                                 lines={containerCpuLines}
                                 yAxisDomain={containerCpuDomain}
                                 yAxisFormatter={(v) => `${Math.round(v)}%`}
                                 tooltipFormatter={cpuTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
-                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Memory"
-                                data={host.containerMemory.data}
+                                data={visibleContainerMemoryData}
                                 lines={containerMemoryLines}
                                 yAxisDomain={containerMemoryDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
-                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Network I/O"
-                                data={host.containerNetwork.data}
+                                data={visibleContainerNetworkData}
                                 lines={containerNetworkLines}
                                 yAxisDomain={containerNetworkDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
-                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                               <ResourceChart
                                 title="Block I/O"
-                                data={host.containerBlock.data}
+                                data={visibleContainerBlockData}
                                 lines={containerBlockLines}
                                 yAxisDomain={containerBlockDomain}
                                 yAxisFormatter={(v) => formatBytes(v)}
                                 tooltipFormatter={byteTooltipFormatter}
                                 showPointsOnly={resourceShowPointsOnly}
-                                xAxisDomain={brushTimeRange ?? undefined}
                               />
                             </div>
                           )}
