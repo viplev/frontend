@@ -266,9 +266,18 @@ function buildMemorySummary(
   memB?: DerivedResourceStatsDTO | null,
   data?: object[],
 ): React.ReactNode {
-  if (!memA && !memB) return null
   const statsA = data ? computePointStats(data, 'memoryUsageBytes_A') : { avg: null, max: null }
   const statsB = data ? computePointStats(data, 'memoryUsageBytes_B') : { avg: null, max: null }
+  if (
+    !memA &&
+    !memB &&
+    statsA.avg == null &&
+    statsA.max == null &&
+    statsB.avg == null &&
+    statsB.max == null
+  ) {
+    return null
+  }
   return (
     <div className="run-comparison-chart-summary">
       {(memA || statsA.avg != null) && (
@@ -336,7 +345,7 @@ function ResourceComparisonChart({
   showPointsOnly: boolean
   summaryContent?: React.ReactNode
 }) {
-  const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set())
+  const [hiddenLines, setHiddenLines] = useState<Set<string>>(() => new Set())
 
   const handleLegendClick = useCallback((entry: unknown) => {
     if (!entry || typeof entry !== 'object' || !('dataKey' in entry)) return
@@ -369,25 +378,37 @@ function ResourceComparisonChart({
       if (!active || typeof label !== 'number') return null
 
       const tolerance = runSpanMs * 0.01
+      const minElapsed = label - tolerance
+      const maxElapsed = label + tolerance
+
+      const findStartIndex = (targetElapsed: number): number => {
+        let low = 0
+        let high = data.length
+        while (low < high) {
+          const mid = Math.floor((low + high) / 2)
+          const pt = data[mid] as Record<string, unknown>
+          const elapsed = pt.elapsedMs as number
+          if (elapsed < targetElapsed) {
+            low = mid + 1
+          } else {
+            high = mid
+          }
+        }
+        return low
+      }
 
       const resolveValue = (dataKey: string): number | null => {
-        // Binary-ish search: find the nearest point with a non-null value
         let bestVal: number | null = null
         let bestDist = Infinity
-        for (let i = 0; i < data.length; i++) {
+        for (let i = findStartIndex(minElapsed); i < data.length; i++) {
           const pt = data[i] as Record<string, unknown>
           const elapsed = pt.elapsedMs as number
+          if (elapsed > maxElapsed) break
           const dist = Math.abs(elapsed - label)
-          if (dist > tolerance) {
-            if (elapsed > label + tolerance) break
-            continue
-          }
           const v = pt[dataKey]
-          if (typeof v === 'number' && !Number.isNaN(v)) {
-            if (dist < bestDist) {
-              bestDist = dist
-              bestVal = v
-            }
+          if (typeof v === 'number' && !Number.isNaN(v) && dist < bestDist) {
+            bestDist = dist
+            bestVal = v
           }
         }
         return bestVal

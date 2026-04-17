@@ -213,8 +213,10 @@ export function matchHosts(
     const rawHostA = hostMapA.get(hostKey)
     const rawHostB = hostMapB.get(hostKey)
 
-    const derivedHostA = derivedHostsA.find((h) => (h.hostName ?? h.hostId) === hostKey) ?? null
-    const derivedHostB = derivedHostsB.find((h) => (h.hostName ?? h.hostId) === hostKey) ?? null
+    const derivedHostA =
+      derivedHostsA.find((h) => h.hostId === hostKey || h.hostName === hostKey) ?? null
+    const derivedHostB =
+      derivedHostsB.find((h) => h.hostId === hostKey || h.hostName === hostKey) ?? null
 
     const baseComparisonPoints = mergeResourceComparisonByElapsed(
       rawHostA?.dataPoints,
@@ -249,11 +251,11 @@ export function matchHosts(
       const svcB = serviceMapB.get(serviceKey)
       const derivedSvcA =
         (derivedHostA?.services ?? []).find(
-          (s) => (s.serviceName ?? s.serviceId) === serviceKey,
+          (s) => s.serviceId === serviceKey || s.serviceName === serviceKey,
         ) ?? null
       const derivedSvcB =
         (derivedHostB?.services ?? []).find(
-          (s) => (s.serviceName ?? s.serviceId) === serviceKey,
+          (s) => s.serviceId === serviceKey || s.serviceName === serviceKey,
         ) ?? null
       const svcPoints = mergeResourceComparisonByElapsed(svcA?.dataPoints, svcB?.dataPoints)
       const svcHasMemLimitA = svcPoints.some(
