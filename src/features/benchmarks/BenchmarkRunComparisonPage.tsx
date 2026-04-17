@@ -375,8 +375,10 @@ function ResourceComparisonChart({
   if (data.length === 0) {
     return (
       <div className="run-results-resource-chart-wrap">
-        <h4 className="run-results-resource-chart-title">{title}</h4>
-        {summaryContent}
+        <div className="run-comparison-chart-header">
+          <h4 className="run-results-resource-chart-title">{title}</h4>
+          {summaryContent}
+        </div>
         <p className="run-results-placeholder">No data</p>
       </div>
     )
@@ -384,8 +386,10 @@ function ResourceComparisonChart({
 
   return (
     <div className="run-results-resource-chart-wrap">
-      <h4 className="run-results-resource-chart-title">{title}</h4>
-      {summaryContent}
+      <div className="run-comparison-chart-header">
+        <h4 className="run-results-resource-chart-title">{title}</h4>
+        {summaryContent}
+      </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
           <CartesianGrid stroke="#d9e2ef" strokeDasharray="3 3" />
@@ -458,9 +462,6 @@ export function BenchmarkRunComparisonPage() {
   const [resourceAxisScaleMode, setResourceAxisScaleMode] = useState<AxisScaleMode>('auto')
   const [resourceChartRenderMode, setResourceChartRenderMode] = useState<ChartRenderMode>('line')
   const [resourceSmoothingLevel, setResourceSmoothingLevel] = useState(0)
-  const [selectedCompServiceKeysByHost, setSelectedCompServiceKeysByHost] = useState<
-    Record<string, Set<string>>
-  >({})
 
   const environmentLabel = (environmentName ?? environmentId).trim() || 'n/a'
   const benchmarkLabel = (benchmarkName ?? benchmarkId).trim() || 'n/a'
@@ -634,10 +635,6 @@ export function BenchmarkRunComparisonPage() {
       comparisonData.derivedB,
     )
     return matched.map((host) => {
-      const selectedServiceKeys =
-        selectedCompServiceKeysByHost[host.hostKey] ??
-        new Set(host.services.map((s) => s.serviceKey))
-
       const smoothedMachinePoints = applyResourceComparisonSlidingAverage(
         host.baseComparisonPoints,
         resourceCompSmoothingWindowSize,
@@ -730,7 +727,6 @@ export function BenchmarkRunComparisonPage() {
         derivedB: host.derivedB,
         hasMemoryLimitA: host.hasMemoryLimitA,
         hasMemoryLimitB: host.hasMemoryLimitB,
-        selectedServiceKeys,
         visibleMachinePoints,
         machineCpuDomain,
         machineMemoryDomain,
@@ -744,52 +740,7 @@ export function BenchmarkRunComparisonPage() {
     resourceAxisScaleMode,
     resourceBrushElapsedRange,
     resourceCompSmoothingWindowSize,
-    selectedCompServiceKeysByHost,
   ])
-
-  useEffect(() => {
-    if (!comparisonData) {
-      setSelectedCompServiceKeysByHost({})
-      return
-    }
-    const matched = matchHosts(
-      comparisonData.rawA,
-      comparisonData.rawB,
-      comparisonData.derivedA,
-      comparisonData.derivedB,
-    )
-    const initial: Record<string, Set<string>> = {}
-    for (const host of matched) {
-      initial[host.hostKey] = new Set(host.services.map((s) => s.serviceKey))
-    }
-    setSelectedCompServiceKeysByHost(initial)
-  }, [comparisonData])
-
-  const handleToggleCompService = (hostKey: string, serviceKey: string) => {
-    setSelectedCompServiceKeysByHost((current) => {
-      const hostSet = new Set(current[hostKey] ?? [])
-      if (hostSet.has(serviceKey)) {
-        hostSet.delete(serviceKey)
-      } else {
-        hostSet.add(serviceKey)
-      }
-      return { ...current, [hostKey]: hostSet }
-    })
-  }
-
-  const handleSelectAllCompServices = (hostKey: string, allKeys: string[]) => {
-    setSelectedCompServiceKeysByHost((current) => ({
-      ...current,
-      [hostKey]: new Set(allKeys),
-    }))
-  }
-
-  const handleSelectNoCompServices = (hostKey: string) => {
-    setSelectedCompServiceKeysByHost((current) => ({
-      ...current,
-      [hostKey]: new Set<string>(),
-    }))
-  }
 
   const runIdAShort = runIdA.slice(0, 8)
   const runIdBShort = runIdB.slice(0, 8)
@@ -1257,26 +1208,22 @@ export function BenchmarkRunComparisonPage() {
               {processedComparisonHosts.map((host) => {
                 const resourceShowPointsOnly = resourceChartRenderMode === 'points'
                 const memoryLines: ResourceCompLineConfig[] = [
-                  { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#8b5cf6' },
-                  {
-                    dataKey: 'memoryUsageBytes_B',
-                    name: 'Usage (B)',
-                    color: '#d946ef',
-                    dashPattern: '10 4',
-                  },
+                  { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#2563eb' },
+                  { dataKey: 'memoryUsageBytes_B', name: 'Usage (B)', color: '#dc2626' },
                 ]
                 if (host.hasMemoryLimitA) {
                   memoryLines.push({
                     dataKey: 'memoryLimitBytes_A',
                     name: 'Limit (A)',
-                    color: '#94a3b8',
+                    color: '#93c5fd',
+                    dashPattern: '10 4',
                   })
                 }
                 if (host.hasMemoryLimitB) {
                   memoryLines.push({
                     dataKey: 'memoryLimitBytes_B',
                     name: 'Limit (B)',
-                    color: '#64748b',
+                    color: '#fca5a5',
                     dashPattern: '10 4',
                   })
                 }
@@ -1308,12 +1255,7 @@ export function BenchmarkRunComparisonPage() {
                           data={host.visibleMachinePoints}
                           lines={[
                             { dataKey: 'cpuPercentage_A', name: 'CPU % (A)', color: '#2563eb' },
-                            {
-                              dataKey: 'cpuPercentage_B',
-                              name: 'CPU % (B)',
-                              color: '#dc2626',
-                              dashPattern: '10 4',
-                            },
+                            { dataKey: 'cpuPercentage_B', name: 'CPU % (B)', color: '#dc2626' },
                           ]}
                           yAxisDomain={host.machineCpuDomain}
                           yAxisFormatter={(v) => `${Math.round(v)}%`}
@@ -1342,18 +1284,18 @@ export function BenchmarkRunComparisonPage() {
                           title="Network I/O"
                           data={host.visibleMachinePoints}
                           lines={[
-                            { dataKey: 'networkInBytes_A', name: 'In (A)', color: '#16a34a' },
+                            { dataKey: 'networkOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                            { dataKey: 'networkOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                            {
+                              dataKey: 'networkInBytes_A',
+                              name: 'In (A)',
+                              color: '#2563eb',
+                              dashPattern: '10 4',
+                            },
                             {
                               dataKey: 'networkInBytes_B',
                               name: 'In (B)',
-                              color: '#0d9488',
-                              dashPattern: '10 4',
-                            },
-                            { dataKey: 'networkOutBytes_A', name: 'Out (A)', color: '#f97316' },
-                            {
-                              dataKey: 'networkOutBytes_B',
-                              name: 'Out (B)',
-                              color: '#d97706',
+                              color: '#dc2626',
                               dashPattern: '10 4',
                             },
                           ]}
@@ -1371,18 +1313,18 @@ export function BenchmarkRunComparisonPage() {
                           title="Block I/O"
                           data={host.visibleMachinePoints}
                           lines={[
-                            { dataKey: 'blockInBytes_A', name: 'In (A)', color: '#06b6d4' },
+                            { dataKey: 'blockOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                            { dataKey: 'blockOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                            {
+                              dataKey: 'blockInBytes_A',
+                              name: 'In (A)',
+                              color: '#2563eb',
+                              dashPattern: '10 4',
+                            },
                             {
                               dataKey: 'blockInBytes_B',
                               name: 'In (B)',
-                              color: '#0ea5e9',
-                              dashPattern: '10 4',
-                            },
-                            { dataKey: 'blockOutBytes_A', name: 'Out (A)', color: '#d97706' },
-                            {
-                              dataKey: 'blockOutBytes_B',
-                              name: 'Out (B)',
-                              color: '#ca8a04',
+                              color: '#dc2626',
                               dashPattern: '10 4',
                             },
                           ]}
@@ -1407,51 +1349,7 @@ export function BenchmarkRunComparisonPage() {
                         </p>
                       ) : (
                         <>
-                          <div className="run-results-service-selector">
-                            <button
-                              type="button"
-                              className="shell-alert-dismiss run-results-service-pill"
-                              onClick={() =>
-                                handleSelectAllCompServices(
-                                  host.hostKey,
-                                  host.services.map((s) => s.serviceKey),
-                                )
-                              }
-                            >
-                              Select all
-                            </button>
-                            <button
-                              type="button"
-                              className="shell-alert-dismiss run-results-service-pill"
-                              onClick={() => handleSelectNoCompServices(host.hostKey)}
-                            >
-                              Select none
-                            </button>
-                            {host.services.map((svc) => {
-                              const isSelected = host.selectedServiceKeys.has(svc.serviceKey)
-                              const badge = !svc.hasA ? ' (B only)' : !svc.hasB ? ' (A only)' : ''
-                              return (
-                                <button
-                                  key={svc.serviceKey}
-                                  type="button"
-                                  aria-pressed={isSelected}
-                                  className={`shell-alert-dismiss run-results-service-pill${isSelected ? ' is-selected' : ''}`}
-                                  onClick={() =>
-                                    handleToggleCompService(host.hostKey, svc.serviceKey)
-                                  }
-                                >
-                                  {svc.serviceName}{badge}
-                                </button>
-                              )
-                            })}
-                          </div>
-                          {host.selectedServiceKeys.size === 0 ? (
-                            <p className="run-results-placeholder">No services selected.</p>
-                          ) : (
-                            <>
-                              {host.services
-                                .filter((s) => host.selectedServiceKeys.has(s.serviceKey))
-                                .map((svc) => (
+                          {host.services.map((svc) => (
                                   <details key={svc.serviceKey} className="run-comparison-service-section">
                                     <summary className="run-comparison-service-name">
                                       {svc.serviceName}
@@ -1467,17 +1365,8 @@ export function BenchmarkRunComparisonPage() {
                                         title="CPU %"
                                         data={svc.visiblePoints}
                                         lines={[
-                                          {
-                                            dataKey: 'cpuPercentage_A',
-                                            name: 'CPU % (A)',
-                                            color: '#2563eb',
-                                          },
-                                          {
-                                            dataKey: 'cpuPercentage_B',
-                                            name: 'CPU % (B)',
-                                            color: '#dc2626',
-                                            dashPattern: '10 4',
-                                          },
+                                          { dataKey: 'cpuPercentage_A', name: 'CPU % (A)', color: '#2563eb' },
+                                          { dataKey: 'cpuPercentage_B', name: 'CPU % (B)', color: '#dc2626' },
                                         ]}
                                         yAxisDomain={svc.cpuDomain}
                                         yAxisFormatter={(v) => `${Math.round(v)}%`}
@@ -1492,17 +1381,8 @@ export function BenchmarkRunComparisonPage() {
                                         title="Memory"
                                         data={svc.visiblePoints}
                                         lines={[
-                                          {
-                                            dataKey: 'memoryUsageBytes_A',
-                                            name: 'Usage (A)',
-                                            color: '#8b5cf6',
-                                          },
-                                          {
-                                            dataKey: 'memoryUsageBytes_B',
-                                            name: 'Usage (B)',
-                                            color: '#d946ef',
-                                            dashPattern: '10 4',
-                                          },
+                                          { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#2563eb' },
+                                          { dataKey: 'memoryUsageBytes_B', name: 'Usage (B)', color: '#dc2626' },
                                         ]}
                                         yAxisDomain={svc.memoryDomain}
                                         yAxisFormatter={(v) => formatBytes(v)}
@@ -1518,28 +1398,10 @@ export function BenchmarkRunComparisonPage() {
                                         title="Network I/O"
                                         data={svc.visiblePoints}
                                         lines={[
-                                          {
-                                            dataKey: 'networkInBytes_A',
-                                            name: 'In (A)',
-                                            color: '#16a34a',
-                                          },
-                                          {
-                                            dataKey: 'networkInBytes_B',
-                                            name: 'In (B)',
-                                            color: '#0d9488',
-                                            dashPattern: '10 4',
-                                          },
-                                          {
-                                            dataKey: 'networkOutBytes_A',
-                                            name: 'Out (A)',
-                                            color: '#f97316',
-                                          },
-                                          {
-                                            dataKey: 'networkOutBytes_B',
-                                            name: 'Out (B)',
-                                            color: '#d97706',
-                                            dashPattern: '10 4',
-                                          },
+                                          { dataKey: 'networkOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                                          { dataKey: 'networkOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                                          { dataKey: 'networkInBytes_A', name: 'In (A)', color: '#2563eb', dashPattern: '10 4' },
+                                          { dataKey: 'networkInBytes_B', name: 'In (B)', color: '#dc2626', dashPattern: '10 4' },
                                         ]}
                                         yAxisDomain={svc.networkDomain}
                                         yAxisFormatter={(v) => formatBytes(v)}
@@ -1555,28 +1417,10 @@ export function BenchmarkRunComparisonPage() {
                                         title="Block I/O"
                                         data={svc.visiblePoints}
                                         lines={[
-                                          {
-                                            dataKey: 'blockInBytes_A',
-                                            name: 'In (A)',
-                                            color: '#06b6d4',
-                                          },
-                                          {
-                                            dataKey: 'blockInBytes_B',
-                                            name: 'In (B)',
-                                            color: '#0ea5e9',
-                                            dashPattern: '10 4',
-                                          },
-                                          {
-                                            dataKey: 'blockOutBytes_A',
-                                            name: 'Out (A)',
-                                            color: '#d97706',
-                                          },
-                                          {
-                                            dataKey: 'blockOutBytes_B',
-                                            name: 'Out (B)',
-                                            color: '#ca8a04',
-                                            dashPattern: '10 4',
-                                          },
+                                          { dataKey: 'blockOutBytes_A', name: 'Out (A)', color: '#2563eb' },
+                                          { dataKey: 'blockOutBytes_B', name: 'Out (B)', color: '#dc2626' },
+                                          { dataKey: 'blockInBytes_A', name: 'In (A)', color: '#2563eb', dashPattern: '10 4' },
+                                          { dataKey: 'blockInBytes_B', name: 'In (B)', color: '#dc2626', dashPattern: '10 4' },
                                         ]}
                                         yAxisDomain={svc.blockDomain}
                                         yAxisFormatter={(v) => formatBytes(v)}
@@ -1591,8 +1435,6 @@ export function BenchmarkRunComparisonPage() {
                                     </div>
                                   </details>
                                 ))}
-                            </>
-                          )}
                         </>
                       )}
                     </div>
