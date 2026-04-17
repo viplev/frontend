@@ -36,6 +36,8 @@ export interface MatchedServiceComparison {
   serviceName: string
   hasA: boolean
   hasB: boolean
+  hasMemoryLimitA: boolean
+  hasMemoryLimitB: boolean
   derivedResourceA: DerivedResourceSummaryDTO | null
   derivedResourceB: DerivedResourceSummaryDTO | null
   baseComparisonPoints: ResourceComparisonPoint[]
@@ -253,14 +255,23 @@ export function matchHosts(
         (derivedHostB?.services ?? []).find(
           (s) => (s.serviceName ?? s.serviceId) === serviceKey,
         ) ?? null
+      const svcPoints = mergeResourceComparisonByElapsed(svcA?.dataPoints, svcB?.dataPoints)
+      const svcHasMemLimitA = svcPoints.some(
+        (p) => p.memoryLimitBytes_A != null && p.memoryLimitBytes_A > 0,
+      )
+      const svcHasMemLimitB = svcPoints.some(
+        (p) => p.memoryLimitBytes_B != null && p.memoryLimitBytes_B > 0,
+      )
       services.push({
         serviceKey,
         serviceName: serviceKey,
         hasA: svcA != null,
         hasB: svcB != null,
+        hasMemoryLimitA: svcHasMemLimitA,
+        hasMemoryLimitB: svcHasMemLimitB,
         derivedResourceA: derivedSvcA?.resource ?? null,
         derivedResourceB: derivedSvcB?.resource ?? null,
-        baseComparisonPoints: mergeResourceComparisonByElapsed(svcA?.dataPoints, svcB?.dataPoints),
+        baseComparisonPoints: svcPoints,
       })
     }
 

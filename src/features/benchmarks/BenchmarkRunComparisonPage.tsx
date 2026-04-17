@@ -687,11 +687,19 @@ export function BenchmarkRunComparisonPage() {
             )
           : smoothedSvcPoints
 
+        const svcMemoryMetrics: ResourceComparisonMetricKey[] = [
+          'memoryUsageBytes_A', 'memoryUsageBytes_B',
+        ]
+        if (svc.hasMemoryLimitA) svcMemoryMetrics.push('memoryLimitBytes_A')
+        if (svc.hasMemoryLimitB) svcMemoryMetrics.push('memoryLimitBytes_B')
+
         return {
           serviceKey: svc.serviceKey,
           serviceName: svc.serviceName,
           hasA: svc.hasA,
           hasB: svc.hasB,
+          hasMemoryLimitA: svc.hasMemoryLimitA,
+          hasMemoryLimitB: svc.hasMemoryLimitB,
           derivedResourceA: svc.derivedResourceA,
           derivedResourceB: svc.derivedResourceB,
           visiblePoints: visibleSvcPoints,
@@ -702,7 +710,7 @@ export function BenchmarkRunComparisonPage() {
           ),
           memoryDomain: resolveResourceComparisonYAxisDomain(
             visibleSvcPoints,
-            ['memoryUsageBytes_A', 'memoryUsageBytes_B'],
+            svcMemoryMetrics,
             resourceAxisScaleMode,
           ),
           networkDomain: resolveResourceComparisonYAxisDomain(
@@ -1377,23 +1385,44 @@ export function BenchmarkRunComparisonPage() {
                                           svc.derivedResourceB?.cpu,
                                         )}
                                       />
-                                      <ResourceComparisonChart
-                                        title="Memory"
-                                        data={svc.visiblePoints}
-                                        lines={[
+                                      {(() => {
+                                        const svcMemLines: ResourceCompLineConfig[] = [
                                           { dataKey: 'memoryUsageBytes_A', name: 'Usage (A)', color: '#2563eb' },
                                           { dataKey: 'memoryUsageBytes_B', name: 'Usage (B)', color: '#dc2626' },
-                                        ]}
-                                        yAxisDomain={svc.memoryDomain}
-                                        yAxisFormatter={(v) => formatBytes(v)}
-                                        tooltipFormatter={compByteTooltipFormatter}
-                                        showPointsOnly={resourceShowPointsOnly}
-                                        summaryContent={buildMemorySummary(
-                                          svc.derivedResourceA?.memory,
-                                          svc.derivedResourceB?.memory,
-                                          svc.visiblePoints,
-                                        )}
-                                      />
+                                        ]
+                                        if (svc.hasMemoryLimitA) {
+                                          svcMemLines.push({
+                                            dataKey: 'memoryLimitBytes_A',
+                                            name: 'Limit (A)',
+                                            color: '#93c5fd',
+                                            dashPattern: '10 4',
+                                          })
+                                        }
+                                        if (svc.hasMemoryLimitB) {
+                                          svcMemLines.push({
+                                            dataKey: 'memoryLimitBytes_B',
+                                            name: 'Limit (B)',
+                                            color: '#fca5a5',
+                                            dashPattern: '10 4',
+                                          })
+                                        }
+                                        return (
+                                          <ResourceComparisonChart
+                                            title="Memory"
+                                            data={svc.visiblePoints}
+                                            lines={svcMemLines}
+                                            yAxisDomain={svc.memoryDomain}
+                                            yAxisFormatter={(v) => formatBytes(v)}
+                                            tooltipFormatter={compByteTooltipFormatter}
+                                            showPointsOnly={resourceShowPointsOnly}
+                                            summaryContent={buildMemorySummary(
+                                              svc.derivedResourceA?.memory,
+                                              svc.derivedResourceB?.memory,
+                                              svc.visiblePoints,
+                                            )}
+                                          />
+                                        )
+                                      })()}
                                       <ResourceComparisonChart
                                         title="Network I/O"
                                         data={svc.visiblePoints}
