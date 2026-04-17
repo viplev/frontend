@@ -1694,29 +1694,87 @@
   border-bottom: 0;
 }
 
-.run-results-host-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.run-results-host-list li {
+.run-results-host-card {
   border: 1px solid #d6e2f1;
   border-radius: 10px;
   background: #f8fbff;
-  padding: 0.65rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.55rem;
 }
 
-.run-results-host-list h3 {
-  margin: 0 0 0.35rem;
+.run-results-host-card-summary {
+  cursor: pointer;
+  font-weight: 600;
   color: #17324a;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
-.run-results-host-list p {
-  margin: 0.2rem 0;
+.run-results-host-card-name {
+  font-size: 1rem;
+}
+
+.run-results-host-card-stats {
+  font-weight: 400;
+  font-size: 0.85rem;
   color: #2f475f;
+}
+
+.run-results-host-machine-section,
+.run-results-host-container-section {
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid #e5eaf3;
+}
+
+.run-results-host-machine-section h4,
+.run-results-host-container-section h4 {
+  margin: 0 0 0.5rem;
+  color: #17324a;
+  font-size: 0.95rem;
+}
+
+.run-results-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.run-results-resource-chart-wrap {
+  min-height: 230px;
+}
+
+.run-results-resource-chart-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2f475f;
+}
+
+.run-results-service-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.run-results-service-pill {
+  font-size: 0.82rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #d6e2f1;
+  background: #fff;
+  color: #2f475f;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.run-results-service-pill.is-selected {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
 }
 
 .run-results-raw-sections {
@@ -1767,6 +1825,10 @@
 
   .run-results-chart-container {
     height: 320px;
+  }
+
+  .run-results-resource-grid {
+    grid-template-columns: 1fr;
   }
 }
 
