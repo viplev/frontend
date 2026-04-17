@@ -353,44 +353,76 @@ function ResourceComparisonChart({
     })
   }, [])
 
+  const runSpanMs = useMemo(() => {
+    if (data.length < 2) return 0
+    const first = (data[0] as Record<string, unknown>).elapsedMs
+    const last = (data[data.length - 1] as Record<string, unknown>).elapsedMs
+    return typeof first === 'number' && typeof last === 'number' ? last - first : 0
+  }, [data])
+
   const renderTooltip = useCallback(
     (props: Record<string, unknown>) => {
-      const { active, label, payload } = props as {
+      const { active, label } = props as {
         active?: boolean
         label?: number | string
-        payload?: Array<{
-          dataKey?: string
-          name?: string
-          value?: number | null
-          color?: string
-        }>
       }
-      if (!active || !payload || payload.length === 0) return null
+      if (!active || typeof label !== 'number') return null
+
+      const tolerance = runSpanMs * 0.01
+
+      const resolveValue = (dataKey: string): number | null => {
+        // Binary-ish search: find the nearest point with a non-null value
+        let bestVal: number | null = null
+        let bestDist = Infinity
+        for (let i = 0; i < data.length; i++) {
+          const pt = data[i] as Record<string, unknown>
+          const elapsed = pt.elapsedMs as number
+          const dist = Math.abs(elapsed - label)
+          if (dist > tolerance) {
+            if (elapsed > label + tolerance) break
+            continue
+          }
+          const v = pt[dataKey]
+          if (typeof v === 'number' && !Number.isNaN(v)) {
+            if (dist < bestDist) {
+              bestDist = dist
+              bestVal = v
+            }
+          }
+        }
+        return bestVal
+      }
+
+      const entries = lines
+        .filter((l) => !hiddenLines.has(l.dataKey))
+        .map((l) => ({
+          ...l,
+          resolved: resolveValue(l.dataKey),
+        }))
+
+      if (entries.every((e) => e.resolved === null)) return null
+
       return (
         <div className="run-comparison-tooltip">
           <div className="run-comparison-tooltip-label">
             {formatElapsedTooltipLabel(label)}
           </div>
-          {payload
-            .filter((p) => !hiddenLines.has(p.dataKey ?? ''))
-            .map((p) => (
-              <div key={p.dataKey} className="run-comparison-tooltip-row">
-                <span
-                  className="run-comparison-tooltip-swatch"
-                  style={{ background: p.color }}
-                />
-                <span className="run-comparison-tooltip-name">{p.name}</span>
-                <span className="run-comparison-tooltip-value">
-                  {typeof p.value === 'number' && !Number.isNaN(p.value)
-                    ? valueFormatter(p.value)
-                    : 'n/a'}
-                </span>
-              </div>
-            ))}
+          {entries.map((e) => (
+            <div key={e.dataKey} className="run-comparison-tooltip-row">
+              <span
+                className="run-comparison-tooltip-swatch"
+                style={{ background: e.color }}
+              />
+              <span className="run-comparison-tooltip-name">{e.name}</span>
+              <span className="run-comparison-tooltip-value">
+                {e.resolved !== null ? valueFormatter(e.resolved) : 'n/a'}
+              </span>
+            </div>
+          ))}
         </div>
       )
     },
-    [hiddenLines, valueFormatter],
+    [data, lines, hiddenLines, valueFormatter, runSpanMs],
   )
 
   if (data.length === 0) {
