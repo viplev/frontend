@@ -1315,8 +1315,8 @@ export function BenchmarkRunComparisonPage() {
                               {host.services
                                 .filter((s) => host.selectedServiceKeys.has(s.serviceKey))
                                 .map((svc) => (
-                                  <div key={svc.serviceKey} className="run-comparison-service-section">
-                                    <h5 className="run-comparison-service-name">
+                                  <details key={svc.serviceKey} className="run-comparison-service-section" open>
+                                    <summary className="run-comparison-service-name">
                                       {svc.serviceName}
                                       {!svc.hasA && (
                                         <span className="run-comparison-host-badge">Only in Run B</span>
@@ -1324,7 +1324,7 @@ export function BenchmarkRunComparisonPage() {
                                       {!svc.hasB && (
                                         <span className="run-comparison-host-badge">Only in Run A</span>
                                       )}
-                                    </h5>
+                                    </summary>
                                     <div className="run-results-resource-grid">
                                       <ResourceComparisonChart
                                         title="CPU %"
@@ -1433,7 +1433,7 @@ export function BenchmarkRunComparisonPage() {
                                         showPointsOnly={resourceShowPointsOnly}
                                       />
                                     </div>
-                                  </div>
+                                  </details>
                                 ))}
                             </>
                           )}

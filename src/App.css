@@ -2027,18 +2027,24 @@
 }
 
 .run-comparison-service-section {
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
+  padding: 0.75rem;
+  border: 1px solid #d6e2f1;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .run-comparison-service-name {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #2f475f;
+  margin: 0;
+  padding: 0.3rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #17324a;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  cursor: pointer;
 }
 
 .run-comparison-hosts {
