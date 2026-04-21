@@ -83,22 +83,14 @@ export function BenchmarkFormPage() {
         })
         return
       }
+      const textarea = k6TextareaRef.current
+      if (!textarea) return
+      // Restore focus and cursor position, then use execCommand so the
+      // insertion is recorded on the browser's native undo stack (Ctrl+Z).
       const { start, end } = k6SelectionRef.current
-      setValues((prev) => {
-        const next =
-          prev.k6Instructions.slice(0, start) +
-          serviceName +
-          prev.k6Instructions.slice(end)
-        return { ...prev, k6Instructions: next }
-      })
-      setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
-      setSubmitError(null)
-      const newCursor = start + serviceName.length
-      k6SelectionRef.current = { start: newCursor, end: newCursor }
-      setTimeout(() => {
-        k6TextareaRef.current?.focus()
-        k6TextareaRef.current?.setSelectionRange(newCursor, newCursor)
-      }, 0)
+      textarea.focus()
+      textarea.setSelectionRange(start, end)
+      document.execCommand('insertText', false, serviceName)
     },
     [],
   )
@@ -344,6 +336,10 @@ export function BenchmarkFormPage() {
                   k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
                 }}
                 onKeyUp={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                onBlur={(e) => {
                   const t = e.currentTarget
                   k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
                 }}

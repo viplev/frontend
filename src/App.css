@@ -1514,6 +1514,28 @@
   gap: 0.5rem;
 }
 
+.benchmark-service-picker-search {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e2eaf4;
+}
+
+.benchmark-service-picker-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  border: 1px solid #c7d4e3;
+  border-radius: 5px;
+  background: #fff;
+  color: #1f3347;
+  outline: none;
+}
+
+.benchmark-service-picker-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
 .benchmark-service-picker-title {
   font-size: 0.85rem;
   font-weight: 600;

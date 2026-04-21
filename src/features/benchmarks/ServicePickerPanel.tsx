@@ -21,6 +21,7 @@ export function ServicePickerPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCounter, setRetryCounter] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchServices = useCallback(
     async (isActive: { value: boolean }) => {
@@ -54,12 +55,31 @@ export function ServicePickerPanel({
     }
   }, [fetchServices, retryCounter])
 
+  const filteredServices = searchQuery.trim()
+    ? services.filter((s) =>
+        s.serviceName.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+      )
+    : services
+
   return (
     <aside className="benchmark-service-picker">
       <div className="benchmark-service-picker-header">
         <span className="benchmark-service-picker-title">Services</span>
         {loading && <span className="benchmark-service-picker-loading">Loading…</span>}
       </div>
+
+      {!error && (
+        <div className="benchmark-service-picker-search">
+          <input
+            type="search"
+            className="benchmark-service-picker-search-input"
+            placeholder="Filter services…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Filter services"
+          />
+        </div>
+      )}
 
       {error ? (
         <div className="benchmark-service-picker-error">
@@ -74,9 +94,11 @@ export function ServicePickerPanel({
         </div>
       ) : !loading && services.length === 0 ? (
         <p className="benchmark-service-picker-empty">No services registered.</p>
+      ) : !loading && filteredServices.length === 0 ? (
+        <p className="benchmark-service-picker-empty">No services match your search.</p>
       ) : (
         <ul className="benchmark-service-picker-list" role="list">
-          {services.map((svc) => (
+          {filteredServices.map((svc) => (
             <li key={svc.id ?? svc.serviceName}>
               <button
                 type="button"
