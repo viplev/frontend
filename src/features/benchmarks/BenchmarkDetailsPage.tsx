@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEnvironmentDetails } from '../environments/service'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
@@ -166,11 +166,27 @@ export function BenchmarkDetailsPage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionNotice, setActionNotice] = useState<string | null>(null)
   const [selectedRunIds, setSelectedRunIds] = useState<Array<string>>([])
-
-  // Clear run selections when navigating to a different benchmark
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false)
+  const codeBlockRef = useRef<HTMLPreElement>(null)
+  const [instructionsOverflow, setInstructionsOverflow] = useState(false)
+  // Clear run selections and reset instructions expansion when navigating to a different benchmark
   useEffect(() => {
     setSelectedRunIds([])
+    setInstructionsExpanded(false)
   }, [environmentId, benchmarkId])
+
+  // Detect whether the instructions code block overflows its collapsed max-height
+  useEffect(() => {
+    if (instructionsExpanded) {
+      return
+    }
+
+    const el = codeBlockRef.current
+    if (el) {
+      setInstructionsOverflow(el.scrollHeight > el.clientHeight)
+    }
+  }, [instructions, instructionsExpanded])
+
   const toggleRunSelection = (runId: string) => {
     setSelectedRunIds((current) => {
       if (current.includes(runId)) {
@@ -538,7 +554,11 @@ export function BenchmarkDetailsPage() {
 
           <section className="benchmark-details-section benchmark-details-instructions-section">
             <div className="benchmark-details-instructions-shell">
-              <pre className="benchmark-details-code-block">
+              <pre
+                id="benchmark-instructions-code"
+                ref={codeBlockRef}
+                className={`benchmark-details-code-block${instructionsExpanded ? ' expanded' : ''}`}
+              >
                 <code>
                   {instructionTokens.map((token, index) => (
                     <span
@@ -550,6 +570,17 @@ export function BenchmarkDetailsPage() {
                   ))}
                 </code>
               </pre>
+              {(instructionsOverflow || instructionsExpanded) && (
+                <button
+                  type="button"
+                  className="benchmark-details-instructions-toggle"
+                  aria-expanded={instructionsExpanded}
+                  aria-controls="benchmark-instructions-code"
+                  onClick={() => setInstructionsExpanded((v) => !v)}
+                >
+                  {instructionsExpanded ? 'Show less instructions' : 'Show more instructions'}
+                </button>
+              )}
             </div>
           </section>
         </section>
