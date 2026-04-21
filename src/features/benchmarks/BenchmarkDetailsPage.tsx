@@ -169,18 +169,23 @@ export function BenchmarkDetailsPage() {
   const [instructionsExpanded, setInstructionsExpanded] = useState(false)
   const codeBlockRef = useRef<HTMLPreElement>(null)
   const [instructionsOverflow, setInstructionsOverflow] = useState(false)
-  // Clear run selections when navigating to a different benchmark
+  // Clear run selections and reset instructions expansion when navigating to a different benchmark
   useEffect(() => {
     setSelectedRunIds([])
+    setInstructionsExpanded(false)
   }, [environmentId, benchmarkId])
 
-  // Detect whether the instructions code block overflows its max-height
+  // Detect whether the instructions code block overflows its collapsed max-height
   useEffect(() => {
+    if (instructionsExpanded) {
+      return
+    }
+
     const el = codeBlockRef.current
     if (el) {
       setInstructionsOverflow(el.scrollHeight > el.clientHeight)
     }
-  }, [instructions])
+  }, [instructions, instructionsExpanded])
 
   const toggleRunSelection = (runId: string) => {
     setSelectedRunIds((current) => {
@@ -550,6 +555,7 @@ export function BenchmarkDetailsPage() {
           <section className="benchmark-details-section benchmark-details-instructions-section">
             <div className="benchmark-details-instructions-shell">
               <pre
+                id="benchmark-instructions-code"
                 ref={codeBlockRef}
                 className={`benchmark-details-code-block${instructionsExpanded ? ' expanded' : ''}`}
               >
@@ -568,9 +574,11 @@ export function BenchmarkDetailsPage() {
                 <button
                   type="button"
                   className="benchmark-details-instructions-toggle"
+                  aria-expanded={instructionsExpanded}
+                  aria-controls="benchmark-instructions-code"
                   onClick={() => setInstructionsExpanded((v) => !v)}
                 >
-                  {instructionsExpanded ? 'Show less' : 'Show more'}
+                  {instructionsExpanded ? 'Show less instructions' : 'Show more instructions'}
                 </button>
               )}
             </div>
