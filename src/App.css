@@ -1439,7 +1439,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  max-width: 760px;
+  max-width: 1100px;
 }
 
 .benchmark-textarea {
@@ -1465,6 +1465,158 @@
 .benchmark-form-actions .shell-alert-dismiss {
   margin-top: 0;
   min-height: 40px;
+}
+
+/* K6 instructions section: two-column layout with service picker */
+.benchmark-k6-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.benchmark-k6-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.benchmark-k6-field .benchmark-textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .benchmark-k6-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Service picker panel */
+.benchmark-service-picker {
+  border: 1px solid #c7d4e3;
+  border-radius: 8px;
+  background: #f9fbfe;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+}
+
+.benchmark-service-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #c7d4e3;
+  background: #f0f5fb;
+  gap: 0.5rem;
+}
+
+.benchmark-service-picker-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f3347;
+}
+
+.benchmark-service-picker-loading {
+  font-size: 0.78rem;
+  color: #5a7a99;
+}
+
+.benchmark-service-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.benchmark-service-picker-list li {
+  margin: 0;
+}
+
+.benchmark-service-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  gap: 0.1rem;
+  transition: background 0.12s;
+}
+
+.benchmark-service-picker-item:hover {
+  background: #e8f0fa;
+}
+
+.benchmark-service-picker-item:active {
+  background: #d0e4f7;
+}
+
+.benchmark-service-picker-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1a3250;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.benchmark-service-picker-item-image {
+  font-size: 0.75rem;
+  color: #5a7a99;
+  word-break: break-all;
+}
+
+.benchmark-service-picker-copied {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #166534;
+  background: #dcfce7;
+  border-radius: 3px;
+  padding: 0 0.3rem;
+  margin-top: 0.1rem;
+}
+
+.benchmark-service-picker-empty {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: #5a7a99;
+}
+
+.benchmark-service-picker-error {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.benchmark-service-picker-error p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b42318;
+}
+
+.benchmark-service-picker-retry {
+  align-self: flex-start;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #c7d4e3;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  color: #1f3347;
+}
+
+.benchmark-service-picker-retry:hover {
+  background: #f0f5fb;
 }
 
 .async-state {

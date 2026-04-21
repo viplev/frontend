@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
@@ -10,6 +10,7 @@ import {
   updateBenchmark,
   UpdateBenchmarkError,
 } from './service'
+import { ServicePickerPanel } from './ServicePickerPanel'
 
 interface BenchmarkFormValues {
   name: string
@@ -64,6 +65,43 @@ export function BenchmarkFormPage() {
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retryAttempt, setRetryAttempt] = useState(0)
+
+  // K6 textarea cursor tracking for service picker insertion
+  const k6TextareaRef = useRef<HTMLTextAreaElement>(null)
+  const k6SelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+  const k6HasFocusedRef = useRef(false)
+  const [copiedService, setCopiedService] = useState<string | null>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleInsertService = useCallback(
+    (serviceName: string) => {
+      if (!k6HasFocusedRef.current) {
+        void navigator.clipboard.writeText(serviceName).then(() => {
+          setCopiedService(serviceName)
+          if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+          copiedTimerRef.current = setTimeout(() => setCopiedService(null), 2000)
+        })
+        return
+      }
+      const { start, end } = k6SelectionRef.current
+      setValues((prev) => {
+        const next =
+          prev.k6Instructions.slice(0, start) +
+          serviceName +
+          prev.k6Instructions.slice(end)
+        return { ...prev, k6Instructions: next }
+      })
+      setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
+      setSubmitError(null)
+      const newCursor = start + serviceName.length
+      k6SelectionRef.current = { start: newCursor, end: newCursor }
+      setTimeout(() => {
+        k6TextareaRef.current?.focus()
+        k6TextareaRef.current?.setSelectionRange(newCursor, newCursor)
+      }, 0)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!isEditMode || !benchmarkId) {
@@ -287,30 +325,51 @@ export function BenchmarkFormPage() {
             </p>
           ) : null}
 
-          <label className="auth-label" htmlFor="benchmark-k6-instructions">
-            K6 instructions
-          </label>
-          <textarea
-            id="benchmark-k6-instructions"
-            className="auth-input benchmark-textarea"
-            value={values.k6Instructions}
-            onChange={handleChange('k6Instructions')}
-            aria-invalid={Boolean(errors.k6Instructions)}
-            aria-describedby={
-              errors.k6Instructions ? 'benchmark-k6-instructions-error' : undefined
-            }
-            disabled={isSubmitting}
-            rows={8}
-          />
-          {errors.k6Instructions ? (
-            <p
-              id="benchmark-k6-instructions-error"
-              className="benchmark-field-error"
-              role="alert"
-            >
-              {errors.k6Instructions}
-            </p>
-          ) : null}
+          <div className="benchmark-k6-section">
+            <div className="benchmark-k6-field">
+              <label className="auth-label" htmlFor="benchmark-k6-instructions">
+                K6 instructions
+              </label>
+              <textarea
+                id="benchmark-k6-instructions"
+                ref={k6TextareaRef}
+                className="auth-input benchmark-textarea"
+                value={values.k6Instructions}
+                onChange={handleChange('k6Instructions')}
+                onFocus={() => {
+                  k6HasFocusedRef.current = true
+                }}
+                onSelect={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                onKeyUp={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                aria-invalid={Boolean(errors.k6Instructions)}
+                aria-describedby={
+                  errors.k6Instructions ? 'benchmark-k6-instructions-error' : undefined
+                }
+                disabled={isSubmitting}
+                rows={8}
+              />
+              {errors.k6Instructions ? (
+                <p
+                  id="benchmark-k6-instructions-error"
+                  className="benchmark-field-error"
+                  role="alert"
+                >
+                  {errors.k6Instructions}
+                </p>
+              ) : null}
+            </div>
+            <ServicePickerPanel
+              environmentId={environmentId}
+              onServiceClick={handleInsertService}
+              copiedService={copiedService}
+            />
+          </div>
 
           {submitError ? (
             <p className="auth-notice auth-notice-error" role="alert">
