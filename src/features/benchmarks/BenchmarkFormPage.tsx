@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import type { EditorView } from '@codemirror/view'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
   createBenchmark,
@@ -11,6 +12,7 @@ import {
   UpdateBenchmarkError,
 } from './service'
 import { ServicePickerPanel } from './ServicePickerPanel'
+import { K6Editor } from './K6Editor'
 
 interface BenchmarkFormValues {
   name: string
@@ -66,9 +68,7 @@ export function BenchmarkFormPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retryAttempt, setRetryAttempt] = useState(0)
 
-  // K6 textarea cursor tracking for service picker insertion
-  const k6TextareaRef = useRef<HTMLTextAreaElement>(null)
-  const k6SelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+  const k6EditorViewRef = useRef<EditorView | null>(null)
   const k6HasFocusedRef = useRef(false)
   const [copiedService, setCopiedService] = useState<string | null>(null)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -87,23 +87,16 @@ export function BenchmarkFormPage() {
   }, [])
 
   const insertAtCursor = useCallback((serviceName: string) => {
-    const textarea = k6TextareaRef.current
-    if (!textarea) return
-    const { start, end } = k6SelectionRef.current
-    textarea.focus()
-    textarea.setSelectionRange(start, end)
-    // Use execCommand for native undo stack (Ctrl+Z). Fall back to state
-    // splice if the command is unavailable or returns false.
-    const inserted = document.execCommand('insertText', false, serviceName)
-    if (!inserted) {
-      const next = textarea.value.slice(0, start) + serviceName + textarea.value.slice(end)
-      setValues((prev) => ({ ...prev, k6Instructions: next }))
-      setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
-      setSubmitError(null)
-      const newCursor = start + serviceName.length
-      k6SelectionRef.current = { start: newCursor, end: newCursor }
-      setTimeout(() => { textarea.setSelectionRange(newCursor, newCursor) }, 0)
-    }
+    const view = k6EditorViewRef.current
+    if (!view) return
+    view.focus()
+    const selection = view.state.selection.main
+    const nextPosition = selection.from + serviceName.length
+    view.dispatch({
+      changes: { from: selection.from, to: selection.to, insert: serviceName },
+      selection: { anchor: nextPosition, head: nextPosition },
+      scrollIntoView: true,
+    })
   }, [])
 
   const handleInsertService = useCallback(
@@ -112,9 +105,11 @@ export function BenchmarkFormPage() {
         navigator.clipboard.writeText(serviceName).then(
           () => showCopiedBadge(serviceName),
           () => {
-            // Clipboard unavailable — fall back to inserting at position 0.
+            // Clipboard unavailable - fall back to inserting at position 0.
             k6HasFocusedRef.current = true
-            k6SelectionRef.current = { start: 0, end: 0 }
+            const view = k6EditorViewRef.current
+            if (!view) return
+            view.dispatch({ selection: { anchor: 0, head: 0 } })
             insertAtCursor(serviceName)
           },
         )
@@ -213,6 +208,12 @@ export function BenchmarkFormPage() {
       setErrors((prev) => ({ ...prev, [key]: undefined }))
       setSubmitError(null)
     }
+
+  const handleK6InstructionsChange = useCallback((nextValue: string) => {
+    setValues((prev) => ({ ...prev, k6Instructions: nextValue }))
+    setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
+    setSubmitError(null)
+  }, [])
 
   const heading = useMemo(
     () => (isEditMode ? 'Edit benchmark' : 'Create benchmark'),
@@ -352,33 +353,21 @@ export function BenchmarkFormPage() {
               <label className="auth-label" htmlFor="benchmark-k6-instructions">
                 K6 instructions
               </label>
-              <textarea
+              <K6Editor
                 id="benchmark-k6-instructions"
-                ref={k6TextareaRef}
-                className="auth-input benchmark-textarea"
                 value={values.k6Instructions}
-                onChange={handleChange('k6Instructions')}
-                onFocus={() => {
-                  k6HasFocusedRef.current = true
+                onChange={handleK6InstructionsChange}
+                onFocusChange={(hasFocus) => {
+                  if (hasFocus) k6HasFocusedRef.current = true
                 }}
-                onSelect={(e) => {
-                  const t = e.currentTarget
-                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                onEditorReady={(view) => {
+                  k6EditorViewRef.current = view
                 }}
-                onKeyUp={(e) => {
-                  const t = e.currentTarget
-                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
-                }}
-                onBlur={(e) => {
-                  const t = e.currentTarget
-                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
-                }}
-                aria-invalid={Boolean(errors.k6Instructions)}
-                aria-describedby={
+                disabled={isSubmitting}
+                hasError={Boolean(errors.k6Instructions)}
+                ariaDescribedBy={
                   errors.k6Instructions ? 'benchmark-k6-instructions-error' : undefined
                 }
-                disabled={isSubmitting}
-                rows={8}
               />
               {errors.k6Instructions ? (
                 <p
@@ -389,6 +378,17 @@ export function BenchmarkFormPage() {
                   {errors.k6Instructions}
                 </p>
               ) : null}
+              <p className="benchmark-k6-help-link">
+                Need help writing K6 scripts?{' '}
+                <a
+                  href="https://grafana.com/docs/k6/latest/using-k6/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Read the K6 documentation
+                </a>
+                .
+              </p>
             </div>
             <ServicePickerPanel
               environmentId={environmentId}
