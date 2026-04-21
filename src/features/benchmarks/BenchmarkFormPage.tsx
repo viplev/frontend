@@ -73,26 +73,56 @@ export function BenchmarkFormPage() {
   const [copiedService, setCopiedService] = useState<string | null>(null)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Clear any pending badge timer on unmount to avoid state updates after navigation.
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
+
+  const showCopiedBadge = useCallback((serviceName: string) => {
+    setCopiedService(serviceName)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopiedService(null), 2000)
+  }, [])
+
+  const insertAtCursor = useCallback((serviceName: string) => {
+    const textarea = k6TextareaRef.current
+    if (!textarea) return
+    const { start, end } = k6SelectionRef.current
+    textarea.focus()
+    textarea.setSelectionRange(start, end)
+    // Use execCommand for native undo stack (Ctrl+Z). Fall back to state
+    // splice if the command is unavailable or returns false.
+    const inserted = document.execCommand('insertText', false, serviceName)
+    if (!inserted) {
+      const next = textarea.value.slice(0, start) + serviceName + textarea.value.slice(end)
+      setValues((prev) => ({ ...prev, k6Instructions: next }))
+      setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
+      setSubmitError(null)
+      const newCursor = start + serviceName.length
+      k6SelectionRef.current = { start: newCursor, end: newCursor }
+      setTimeout(() => { textarea.setSelectionRange(newCursor, newCursor) }, 0)
+    }
+  }, [])
+
   const handleInsertService = useCallback(
     (serviceName: string) => {
       if (!k6HasFocusedRef.current) {
-        void navigator.clipboard.writeText(serviceName).then(() => {
-          setCopiedService(serviceName)
-          if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-          copiedTimerRef.current = setTimeout(() => setCopiedService(null), 2000)
-        })
+        navigator.clipboard.writeText(serviceName).then(
+          () => showCopiedBadge(serviceName),
+          () => {
+            // Clipboard unavailable — fall back to inserting at position 0.
+            k6HasFocusedRef.current = true
+            k6SelectionRef.current = { start: 0, end: 0 }
+            insertAtCursor(serviceName)
+          },
+        )
         return
       }
-      const textarea = k6TextareaRef.current
-      if (!textarea) return
-      // Restore focus and cursor position, then use execCommand so the
-      // insertion is recorded on the browser's native undo stack (Ctrl+Z).
-      const { start, end } = k6SelectionRef.current
-      textarea.focus()
-      textarea.setSelectionRange(start, end)
-      document.execCommand('insertText', false, serviceName)
+      insertAtCursor(serviceName)
     },
-    [],
+    [insertAtCursor, showCopiedBadge],
   )
 
   useEffect(() => {

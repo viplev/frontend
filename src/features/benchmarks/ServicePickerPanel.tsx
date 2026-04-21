@@ -41,6 +41,10 @@ export function ServicePickerPanel({
   )
 
   useEffect(() => {
+    if (!environmentId.trim()) {
+      setLoading(false)
+      return
+    }
     const isActive = { value: true }
     setLoading(true)
     void fetchServices(isActive)
@@ -53,7 +57,7 @@ export function ServicePickerPanel({
       isActive.value = false
       clearInterval(interval)
     }
-  }, [fetchServices, retryCounter])
+  }, [fetchServices, retryCounter, environmentId])
 
   const filteredServices = searchQuery.trim()
     ? services.filter((s) =>
