@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
@@ -10,6 +10,7 @@ import {
   updateBenchmark,
   UpdateBenchmarkError,
 } from './service'
+import { ServicePickerPanel } from './ServicePickerPanel'
 
 interface BenchmarkFormValues {
   name: string
@@ -64,6 +65,65 @@ export function BenchmarkFormPage() {
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retryAttempt, setRetryAttempt] = useState(0)
+
+  // K6 textarea cursor tracking for service picker insertion
+  const k6TextareaRef = useRef<HTMLTextAreaElement>(null)
+  const k6SelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+  const k6HasFocusedRef = useRef(false)
+  const [copiedService, setCopiedService] = useState<string | null>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clear any pending badge timer on unmount to avoid state updates after navigation.
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
+
+  const showCopiedBadge = useCallback((serviceName: string) => {
+    setCopiedService(serviceName)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopiedService(null), 2000)
+  }, [])
+
+  const insertAtCursor = useCallback((serviceName: string) => {
+    const textarea = k6TextareaRef.current
+    if (!textarea) return
+    const { start, end } = k6SelectionRef.current
+    textarea.focus()
+    textarea.setSelectionRange(start, end)
+    // Use execCommand for native undo stack (Ctrl+Z). Fall back to state
+    // splice if the command is unavailable or returns false.
+    const inserted = document.execCommand('insertText', false, serviceName)
+    if (!inserted) {
+      const next = textarea.value.slice(0, start) + serviceName + textarea.value.slice(end)
+      setValues((prev) => ({ ...prev, k6Instructions: next }))
+      setErrors((prev) => ({ ...prev, k6Instructions: undefined }))
+      setSubmitError(null)
+      const newCursor = start + serviceName.length
+      k6SelectionRef.current = { start: newCursor, end: newCursor }
+      setTimeout(() => { textarea.setSelectionRange(newCursor, newCursor) }, 0)
+    }
+  }, [])
+
+  const handleInsertService = useCallback(
+    (serviceName: string) => {
+      if (!k6HasFocusedRef.current) {
+        navigator.clipboard.writeText(serviceName).then(
+          () => showCopiedBadge(serviceName),
+          () => {
+            // Clipboard unavailable — fall back to inserting at position 0.
+            k6HasFocusedRef.current = true
+            k6SelectionRef.current = { start: 0, end: 0 }
+            insertAtCursor(serviceName)
+          },
+        )
+        return
+      }
+      insertAtCursor(serviceName)
+    },
+    [insertAtCursor, showCopiedBadge],
+  )
 
   useEffect(() => {
     if (!isEditMode || !benchmarkId) {
@@ -287,30 +347,55 @@ export function BenchmarkFormPage() {
             </p>
           ) : null}
 
-          <label className="auth-label" htmlFor="benchmark-k6-instructions">
-            K6 instructions
-          </label>
-          <textarea
-            id="benchmark-k6-instructions"
-            className="auth-input benchmark-textarea"
-            value={values.k6Instructions}
-            onChange={handleChange('k6Instructions')}
-            aria-invalid={Boolean(errors.k6Instructions)}
-            aria-describedby={
-              errors.k6Instructions ? 'benchmark-k6-instructions-error' : undefined
-            }
-            disabled={isSubmitting}
-            rows={8}
-          />
-          {errors.k6Instructions ? (
-            <p
-              id="benchmark-k6-instructions-error"
-              className="benchmark-field-error"
-              role="alert"
-            >
-              {errors.k6Instructions}
-            </p>
-          ) : null}
+          <div className="benchmark-k6-section">
+            <div className="benchmark-k6-field">
+              <label className="auth-label" htmlFor="benchmark-k6-instructions">
+                K6 instructions
+              </label>
+              <textarea
+                id="benchmark-k6-instructions"
+                ref={k6TextareaRef}
+                className="auth-input benchmark-textarea"
+                value={values.k6Instructions}
+                onChange={handleChange('k6Instructions')}
+                onFocus={() => {
+                  k6HasFocusedRef.current = true
+                }}
+                onSelect={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                onKeyUp={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                onBlur={(e) => {
+                  const t = e.currentTarget
+                  k6SelectionRef.current = { start: t.selectionStart, end: t.selectionEnd }
+                }}
+                aria-invalid={Boolean(errors.k6Instructions)}
+                aria-describedby={
+                  errors.k6Instructions ? 'benchmark-k6-instructions-error' : undefined
+                }
+                disabled={isSubmitting}
+                rows={8}
+              />
+              {errors.k6Instructions ? (
+                <p
+                  id="benchmark-k6-instructions-error"
+                  className="benchmark-field-error"
+                  role="alert"
+                >
+                  {errors.k6Instructions}
+                </p>
+              ) : null}
+            </div>
+            <ServicePickerPanel
+              environmentId={environmentId}
+              onServiceClick={handleInsertService}
+              copiedService={copiedService}
+            />
+          </div>
 
           {submitError ? (
             <p className="auth-notice auth-notice-error" role="alert">
