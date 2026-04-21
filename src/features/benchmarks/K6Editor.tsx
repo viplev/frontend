@@ -1,5 +1,5 @@
 import { basicSetup } from 'codemirror'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { javascript } from '@codemirror/lang-javascript'
 import { useEffect, useRef } from 'react'
@@ -14,6 +14,8 @@ interface K6EditorProps {
   onFocusChange: (hasFocus: boolean) => void
   onEditorReady: (view: EditorView | null) => void
 }
+
+const externalSyncAnnotation = Annotation.define<boolean>()
 
 export function K6Editor({
   id,
@@ -30,6 +32,11 @@ export function K6Editor({
   const onChangeRef = useRef(onChange)
   const onFocusChangeRef = useRef(onFocusChange)
   const onEditorReadyRef = useRef(onEditorReady)
+  const idRef = useRef(id)
+  const valueRef = useRef(value)
+  const disabledRef = useRef(disabled)
+  const hasErrorRef = useRef(hasError)
+  const ariaDescribedByRef = useRef(ariaDescribedBy)
   const editableCompartmentRef = useRef(new Compartment())
   const readOnlyCompartmentRef = useRef(new Compartment())
   const contentAttributesCompartmentRef = useRef(new Compartment())
@@ -38,7 +45,12 @@ export function K6Editor({
     onChangeRef.current = onChange
     onFocusChangeRef.current = onFocusChange
     onEditorReadyRef.current = onEditorReady
-  }, [onChange, onEditorReady, onFocusChange])
+    idRef.current = id
+    valueRef.current = value
+    disabledRef.current = disabled
+    hasErrorRef.current = hasError
+    ariaDescribedByRef.current = ariaDescribedBy
+  }, [ariaDescribedBy, disabled, hasError, id, onChange, onEditorReady, onFocusChange, value])
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -49,17 +61,30 @@ export function K6Editor({
 
     const editor = new EditorView({
       state: EditorState.create({
-        doc: '',
+        doc: valueRef.current,
         extensions: [
           basicSetup,
           javascript(),
           EditorView.lineWrapping,
-          editableCompartment.of(EditorView.editable.of(true)),
-          readOnlyCompartment.of(EditorState.readOnly.of(false)),
-          contentAttributesCompartment.of(EditorView.contentAttributes.of({})),
+          editableCompartment.of(EditorView.editable.of(!disabledRef.current)),
+          readOnlyCompartment.of(EditorState.readOnly.of(disabledRef.current)),
+          contentAttributesCompartment.of(
+            EditorView.contentAttributes.of({
+              id: idRef.current,
+              'aria-invalid': hasErrorRef.current ? 'true' : 'false',
+              ...(ariaDescribedByRef.current
+                ? { 'aria-describedby': ariaDescribedByRef.current }
+                : {}),
+            }),
+          ),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              onChangeRef.current(update.state.doc.toString())
+              const isExternalSync = update.transactions.some(
+                (transaction) => transaction.annotation(externalSyncAnnotation) === true,
+              )
+              if (!isExternalSync) {
+                onChangeRef.current(update.state.doc.toString())
+              }
             }
             if (update.focusChanged) {
               onFocusChangeRef.current(update.view.hasFocus)
@@ -87,6 +112,7 @@ export function K6Editor({
     if (currentValue === value) return
     editor.dispatch({
       changes: { from: 0, to: currentValue.length, insert: value },
+      annotations: [Transaction.addToHistory.of(false), externalSyncAnnotation.of(true)],
     })
   }, [value])
 

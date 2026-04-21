@@ -383,7 +383,7 @@ export function BenchmarkFormPage() {
                 <a
                   href="https://grafana.com/docs/k6/latest/using-k6/"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   Read the K6 documentation
                 </a>
