@@ -1,4 +1,4 @@
-// @ts-nocheck - Auto-generated file, TypeScript strict checks disabled intentionally
+// @ts-nocheck
 /* tslint:disable */
 /* eslint-disable */
 export * from './AgentApi';

@@ -30,6 +30,7 @@ import {
   applyMultiSeriesSlidingAverage,
   applyResourceSlidingAverage,
   getMultiSeriesDataKeys,
+  aggregateServiceReplicaDataPoints,
   mergeResourceSeries,
   normalizeResourceDataPoints,
   resolveMultiSeriesYAxisDomain,
@@ -502,7 +503,7 @@ export function BenchmarkRunResultsPage() {
     (sum, host) =>
       sum +
       (host.services ?? []).reduce(
-        (serviceSum, service) => serviceSum + (service.dataPoints?.length ?? 0),
+        (serviceSum, service) => serviceSum + (service.replicas ?? []).reduce((s, r) => s + (r.dataPoints?.length ?? 0), 0),
         0,
       ),
     0,
@@ -698,7 +699,7 @@ export function BenchmarkRunResultsPage() {
       const allServices = (host.services ?? []).map((s, serviceIndex) => ({
         key: s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`,
         label: s.serviceName ?? s.serviceId ?? 'Service',
-        dataPoints: s.dataPoints ?? [],
+        dataPoints: aggregateServiceReplicaDataPoints(s.replicas ?? []),
       }))
 
       const selectedKeys = selectedServiceKeysByHost[hostKey] ?? new Set<string>()

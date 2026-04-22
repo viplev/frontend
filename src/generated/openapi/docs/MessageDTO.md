@@ -9,6 +9,7 @@ Name | Type
 `benchmarkId` | string
 `runId` | string
 `messageType` | string
+`benchmarkData` | [BenchmarkDTO](BenchmarkDTO.md)
 
 ## Example
 
@@ -20,6 +21,7 @@ const example = {
   "benchmarkId": null,
   "runId": null,
   "messageType": null,
+  "benchmarkData": null,
 } satisfies MessageDTO
 
 console.log(example)

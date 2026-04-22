@@ -1,3 +1,4 @@
+import type { RawReplicaTimeSeriesDTO } from '../../generated/openapi/models/RawReplicaTimeSeriesDTO'
 import type { RawResourceDataPointDTO } from '../../generated/openapi/models/RawResourceDataPointDTO'
 import { formatReadableTimestamp } from '../dateTime'
 import type { AxisDomain, AxisScaleMode } from './charting'
@@ -85,6 +86,47 @@ function computeDomain(
     return [0, paddedMax]
   }
   return withTightPadding(min, max)
+}
+
+// ---------------------------------------------------------------------------
+// Replica aggregation
+// ---------------------------------------------------------------------------
+
+/**
+ * Aggregates multiple container replica time-series into a single service-level
+ * data-point array by summing each resource metric at each shared timestamp.
+ */
+export function aggregateServiceReplicaDataPoints(
+  replicas: ReadonlyArray<RawReplicaTimeSeriesDTO>,
+): Array<RawResourceDataPointDTO> {
+  if (replicas.length === 0) return []
+  if (replicas.length === 1) return [...(replicas[0].dataPoints ?? [])]
+
+  const byTimestamp = new Map<string, RawResourceDataPointDTO>()
+  for (const replica of replicas) {
+    for (const point of replica.dataPoints ?? []) {
+      const key = point.timestamp?.toISOString()
+      if (!key) continue
+      const existing = byTimestamp.get(key)
+      if (!existing) {
+        byTimestamp.set(key, { ...point })
+      } else {
+        byTimestamp.set(key, {
+          timestamp: existing.timestamp,
+          cpuPercentage: (existing.cpuPercentage ?? 0) + (point.cpuPercentage ?? 0),
+          memoryUsageBytes: (existing.memoryUsageBytes ?? 0) + (point.memoryUsageBytes ?? 0),
+          memoryLimitBytes: (existing.memoryLimitBytes ?? 0) + (point.memoryLimitBytes ?? 0),
+          networkInBytes: (existing.networkInBytes ?? 0) + (point.networkInBytes ?? 0),
+          networkOutBytes: (existing.networkOutBytes ?? 0) + (point.networkOutBytes ?? 0),
+          blockInBytes: (existing.blockInBytes ?? 0) + (point.blockInBytes ?? 0),
+          blockOutBytes: (existing.blockOutBytes ?? 0) + (point.blockOutBytes ?? 0),
+        })
+      }
+    }
+  }
+  return Array.from(byTimestamp.values()).sort(
+    (a, b) => (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
+  )
 }
 
 // ---------------------------------------------------------------------------

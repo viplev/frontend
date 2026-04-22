@@ -1,5 +1,5 @@
 
-# MetricResourceServiceDTO
+# ServiceRegistrationServiceDTO
 
 
 ## Properties
@@ -7,18 +7,30 @@
 Name | Type
 ------------ | -------------
 `serviceName` | string
-`replicas` | [Array&lt;MetricResourceServiceReplicaDTO&gt;](MetricResourceServiceReplicaDTO.md)
+`imageSha` | string
+`imageName` | string
+`cpuLimit` | number
+`cpuReservation` | number
+`memoryLimitBytes` | number
+`memoryReservationBytes` | number
+`replicas` | [Array&lt;ServiceReplicaDTO&gt;](ServiceReplicaDTO.md)
 
 ## Example
 
 ```typescript
-import type { MetricResourceServiceDTO } from ''
+import type { ServiceRegistrationServiceDTO } from ''
 
 // TODO: Update the object below with actual values
 const example = {
   "serviceName": null,
+  "imageSha": null,
+  "imageName": null,
+  "cpuLimit": null,
+  "cpuReservation": null,
+  "memoryLimitBytes": null,
+  "memoryReservationBytes": null,
   "replicas": null,
-} satisfies MetricResourceServiceDTO
+} satisfies ServiceRegistrationServiceDTO
 
 console.log(example)
 
@@ -27,7 +39,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as MetricResourceServiceDTO
+const exampleParsed = JSON.parse(exampleJSON) as ServiceRegistrationServiceDTO
 console.log(exampleParsed)
 ```
 
