@@ -2028,7 +2028,6 @@
 }
 
 .run-results-resource-chart-wrap {
-  min-height: 230px;
 }
 
 .run-results-resource-chart-title {
@@ -2375,6 +2374,35 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #111827;
+}
+
+/* Custom legend outside chart area — lets chart height stay fixed */
+.run-resource-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.4rem;
+  padding: 0 0.5rem;
+}
+.run-resource-chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #374151;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+.run-resource-chart-legend-item--hidden {
+  opacity: 0.35;
+}
+.run-resource-chart-legend-icon {
+  flex-shrink: 0;
+  overflow: visible;
+}
+.run-resource-chart-legend-label {
+  color: #374151;
 }
 
 /* Custom resource chart nearest-neighbour tooltip */

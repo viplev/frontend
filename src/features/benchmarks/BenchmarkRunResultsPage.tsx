@@ -440,8 +440,8 @@ function ResourceChart({
           <Tooltip
             content={renderTooltip}
             isAnimationActive={false}
+            wrapperStyle={{ zIndex: 100 }}
           />
-          <Legend onClick={handleLegendClick} />
           {lines.map((line) => (
             <Line
               key={line.dataKey}
@@ -463,6 +463,21 @@ function ResourceChart({
           ))}
         </LineChart>
       </ResponsiveContainer>
+      <div className="run-resource-chart-legend">
+        {lines.map((line) => (
+          <div
+            key={line.dataKey}
+            className={`run-resource-chart-legend-item${hiddenLines.has(line.dataKey) ? ' run-resource-chart-legend-item--hidden' : ''}`}
+            onClick={() => handleLegendClick({ dataKey: line.dataKey })}
+          >
+            <svg className="run-resource-chart-legend-icon" width="14" height="14" viewBox="0 0 14 14">
+              <line x1="0" y1="7" x2="14" y2="7" stroke={line.color} strokeWidth="2" strokeDasharray={line.strokeDasharray} />
+              <circle cx="7" cy="7" r="3" fill={line.color} />
+            </svg>
+            <span className="run-resource-chart-legend-label">{line.name}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
