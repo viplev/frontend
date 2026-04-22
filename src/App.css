@@ -1454,6 +1454,16 @@
   font-size: 0.9rem;
 }
 
+.benchmark-k6-help-link {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4c627b;
+}
+
+.benchmark-k6-help-link a {
+  color: #1d4ed8;
+}
+
 .benchmark-form-actions {
   display: flex;
   gap: 0.6rem;
@@ -1482,9 +1492,57 @@
   min-width: 0;
 }
 
-.benchmark-k6-field .benchmark-textarea {
+.benchmark-k6-field .k6-editor {
   width: 100%;
   box-sizing: border-box;
+}
+
+.k6-editor {
+  border: 1px solid #bcc9d7;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.k6-editor:focus-within {
+  outline: 2px solid #4895ef;
+  border-color: #4895ef;
+}
+
+.k6-editor--error {
+  border-color: #b42318;
+}
+
+.k6-editor--error:focus-within {
+  outline: 2px solid rgba(180, 35, 24, 0.2);
+  border-color: #b42318;
+}
+
+.k6-editor .cm-editor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  min-height: 220px;
+  color: #1f3347;
+}
+
+.k6-editor .cm-focused {
+  outline: none;
+}
+
+.k6-editor .cm-scroller {
+  min-height: 220px;
+  line-height: 1.45;
+}
+
+.k6-editor .cm-gutters {
+  background: #f5f8fc;
+  color: #5f738a;
+  border-right: 1px solid #d5e0ec;
+}
+
+.k6-editor .cm-activeLine,
+.k6-editor .cm-activeLineGutter {
+  background: rgba(72, 149, 239, 0.12);
 }
 
 @media (max-width: 700px) {
