@@ -144,6 +144,25 @@ const CHART_RENDER_MODE_OPTIONS: Array<{
   },
 ]
 
+type ReplicaViewMode = 'aggregated' | 'per-replica'
+
+const REPLICA_VIEW_MODE_OPTIONS: Array<{
+  value: ReplicaViewMode
+  label: string
+  description: string
+}> = [
+  {
+    value: 'aggregated',
+    label: 'Aggregated',
+    description: 'Show aggregated replica metrics per service.',
+  },
+  {
+    value: 'per-replica',
+    label: 'Per-replica',
+    description: 'Show each container replica as a separate chart series.',
+  },
+]
+
 type SeriesVisibility = Record<K6MetricKey, boolean>
 
 const DEFAULT_SERIES_VISIBILITY: SeriesVisibility = {
@@ -401,6 +420,7 @@ export function BenchmarkRunResultsPage() {
   const [resourceAxisScaleMode, setResourceAxisScaleMode] = useState<AxisScaleMode>('auto')
   const [resourceChartRenderMode, setResourceChartRenderMode] = useState<ChartRenderMode>('line')
   const [resourceSmoothingLevel, setResourceSmoothingLevel] = useState(0)
+  const [replicaViewMode, setReplicaViewMode] = useState<ReplicaViewMode>('aggregated')
   const [selectedServiceKeysByHost, setSelectedServiceKeysByHost] = useState<
     Record<string, Set<string>>
   >({})
@@ -696,14 +716,39 @@ export function BenchmarkRunResultsPage() {
         })
       }
 
-      const allServices = (host.services ?? []).map((s, serviceIndex) => ({
-        key: s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`,
-        label: s.serviceName ?? s.serviceId ?? 'Service',
-        dataPoints: aggregateServiceReplicaDataPoints(s.replicas ?? []),
-      }))
+      const allServices = (host.services ?? []).map((s, serviceIndex) => {
+        const serviceKey = s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`
+        const serviceLabel = s.serviceName ?? s.serviceId ?? 'Service'
+        const replicas = s.replicas ?? []
+        return {
+          key: serviceKey,
+          label: serviceLabel,
+          replicaCount: replicas.length,
+          aggregatedDataPoints: aggregateServiceReplicaDataPoints(replicas),
+          perReplicaEntities: replicas.map((r, rIndex) => ({
+            key: `${serviceKey}|r${rIndex}`,
+            label: `${serviceLabel} [${r.containerId?.slice(0, 12) ?? r.replicaId ?? `#${rIndex + 1}`}]`,
+            dataPoints: r.dataPoints ?? [],
+          })),
+        }
+      })
+
+      const hasAnyMultipleReplicas = allServices.some((s) => s.replicaCount > 1)
 
       const selectedKeys = selectedServiceKeysByHost[hostKey] ?? new Set<string>()
-      const selectedEntities = allServices.filter((s) => selectedKeys.has(s.key))
+      const selectedServiceObjects = allServices.filter((s) => selectedKeys.has(s.key))
+      const selectedEntities =
+        replicaViewMode === 'per-replica'
+          ? selectedServiceObjects.flatMap((s) =>
+              s.perReplicaEntities.length > 0
+                ? s.perReplicaEntities
+                : [{ key: s.key, label: s.label, dataPoints: s.aggregatedDataPoints }],
+            )
+          : selectedServiceObjects.map((s) => ({
+              key: s.key,
+              label: s.label,
+              dataPoints: s.aggregatedDataPoints,
+            }))
 
       const buildChart = (metrics: ResourceMetricKey[]) => {
         const data = mergeResourceSeries(selectedEntities, metrics)
@@ -803,6 +848,7 @@ export function BenchmarkRunResultsPage() {
         visibleMachinePoints,
         hasMemoryLimit,
         allServices: allServices.map((s) => ({ key: s.key, label: s.label })),
+        hasAnyMultipleReplicas,
         machineCpuDomain,
         machineMemoryDomain,
         machineMemoryLines,
@@ -822,7 +868,7 @@ export function BenchmarkRunResultsPage() {
         containerBlockLines,
       }
     })
-  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize, brushTimeRange, resourceAxisScaleMode])
+  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize, brushTimeRange, resourceAxisScaleMode, replicaViewMode])
 
   const handleToggleService = (hostKey: string, serviceKey: string) => {
     setSelectedServiceKeysByHost((current) => {
@@ -1244,6 +1290,27 @@ export function BenchmarkRunResultsPage() {
                     )
                   })}
                 </div>
+                {processedHosts.some((h) => h.hasAnyMultipleReplicas) && (
+                  <div className="run-results-axis-mode-group" role="group" aria-label="Container replica view">
+                    {REPLICA_VIEW_MODE_OPTIONS.map((option) => {
+                      const isSelected = replicaViewMode === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`shell-alert-dismiss run-results-axis-mode-button${
+                            isSelected ? ' is-selected' : ''
+                          }`}
+                          onClick={() => setReplicaViewMode(option.value)}
+                          aria-pressed={isSelected}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
                 <div className="run-results-smoothing-slider-group">
                   <label
                     className="run-results-smoothing-slider-label"
