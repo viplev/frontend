@@ -333,6 +333,80 @@ function ResourceChart({
     })
   }, [])
 
+  const renderTooltip = useCallback(
+    (props: Record<string, unknown>) => {
+      const { active, label } = props as { active?: boolean; label?: number | string }
+      if (!active || typeof label !== 'number') return null
+
+      const resolveValue = (dataKey: string): number | null => {
+        if (data.length === 0) return null
+
+        // Binary search: find the first index at or after `label`
+        let lo = 0
+        let hi = data.length
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1
+          const ts = ((data[mid] as Record<string, unknown>).timestampMs as number)
+          if (ts < label) lo = mid + 1
+          else hi = mid
+        }
+
+        let bestVal: number | null = null
+        let bestDist = Infinity
+
+        // Scan forward from lo — timestamps increase, so first non-null is the nearest forward
+        for (let i = lo; i < data.length; i++) {
+          const pt = data[i] as Record<string, unknown>
+          const dist = (pt.timestampMs as number) - label
+          if (dist >= bestDist) break
+          const v = pt[dataKey]
+          if (typeof v === 'number' && !Number.isNaN(v)) {
+            bestDist = dist
+            bestVal = v
+            break
+          }
+        }
+
+        // Scan backward from lo-1 — timestamps decrease, so first non-null is the nearest backward
+        for (let i = lo - 1; i >= 0; i--) {
+          const pt = data[i] as Record<string, unknown>
+          const dist = label - (pt.timestampMs as number)
+          if (dist >= bestDist) break
+          const v = pt[dataKey]
+          if (typeof v === 'number' && !Number.isNaN(v)) {
+            bestDist = dist
+            bestVal = v
+            break
+          }
+        }
+
+        return bestVal
+      }
+
+      const entries = lines
+        .filter((l) => !hiddenLines.has(l.dataKey))
+        .map((l) => ({ ...l, resolved: resolveValue(l.dataKey) }))
+
+      if (entries.every((e) => e.resolved === null)) return null
+
+      return (
+        <div className="run-resource-tooltip">
+          <div className="run-resource-tooltip-label">{formatChartTooltipLabel(label)}</div>
+          {entries.map((e) => (
+            <div key={e.dataKey} className="run-resource-tooltip-row">
+              <span className="run-resource-tooltip-swatch" style={{ background: e.color }} />
+              <span className="run-resource-tooltip-name">{e.name}</span>
+              <span className="run-resource-tooltip-value">
+                {e.resolved !== null ? tooltipFormatter(e.resolved, e.name)[0] : 'n/a'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    [data, lines, hiddenLines, tooltipFormatter],
+  )
+
   if (data.length === 0) {
     return (
       <div className="run-results-resource-chart-wrap">
@@ -364,8 +438,7 @@ function ResourceChart({
             width={68}
           />
           <Tooltip
-            formatter={tooltipFormatter}
-            labelFormatter={formatChartTooltipLabel}
+            content={renderTooltip}
             isAnimationActive={false}
           />
           <Legend onClick={handleLegendClick} />
