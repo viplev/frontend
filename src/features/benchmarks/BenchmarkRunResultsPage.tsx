@@ -144,6 +144,25 @@ const CHART_RENDER_MODE_OPTIONS: Array<{
   },
 ]
 
+type ReplicaViewMode = 'aggregated' | 'per-replica'
+
+const REPLICA_VIEW_MODE_OPTIONS: Array<{
+  value: ReplicaViewMode
+  label: string
+  description: string
+}> = [
+  {
+    value: 'aggregated',
+    label: 'Aggregated',
+    description: 'Show summed replica metrics per service.',
+  },
+  {
+    value: 'per-replica',
+    label: 'Per-replica',
+    description: 'Show each container replica as a separate chart series.',
+  },
+]
+
 type SeriesVisibility = Record<K6MetricKey, boolean>
 
 const DEFAULT_SERIES_VISIBILITY: SeriesVisibility = {
@@ -314,6 +333,73 @@ function ResourceChart({
     })
   }, [])
 
+  const seriesValueIndex = useMemo(() => {
+    const index = new Map<string, Array<{ timestampMs: number; value: number }>>()
+    for (const line of lines) {
+      index.set(line.dataKey, [])
+    }
+    for (const point of data) {
+      const record = point as Record<string, unknown>
+      const ts = record.timestampMs
+      if (typeof ts !== 'number' || Number.isNaN(ts)) continue
+      for (const line of lines) {
+        const v = record[line.dataKey]
+        if (typeof v === 'number' && !Number.isNaN(v)) {
+          index.get(line.dataKey)?.push({ timestampMs: ts, value: v })
+        }
+      }
+    }
+    return index
+  }, [data, lines])
+
+  const renderTooltip = useCallback(
+    (props: Record<string, unknown>) => {
+      const { active, label } = props as { active?: boolean; label?: number | string }
+      if (!active || typeof label !== 'number') return null
+
+      const resolveValue = (dataKey: string): number | null => {
+        const series = seriesValueIndex.get(dataKey)
+        if (!series || series.length === 0) return null
+
+        let lo = 0
+        let hi = series.length
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1
+          if (series[mid].timestampMs < label) lo = mid + 1
+          else hi = mid
+        }
+
+        const next = lo < series.length ? series[lo] : null
+        const prev = lo > 0 ? series[lo - 1] : null
+        if (!prev) return next?.value ?? null
+        if (!next) return prev.value
+        return label - prev.timestampMs <= next.timestampMs - label ? prev.value : next.value
+      }
+
+      const entries = lines
+        .filter((l) => !hiddenLines.has(l.dataKey))
+        .map((l) => ({ ...l, resolved: resolveValue(l.dataKey) }))
+
+      if (entries.every((e) => e.resolved === null)) return null
+
+      return (
+        <div className="run-resource-tooltip">
+          <div className="run-resource-tooltip-label">{formatChartTooltipLabel(label)}</div>
+          {entries.map((e) => (
+            <div key={e.dataKey} className="run-resource-tooltip-row">
+              <span className="run-resource-tooltip-swatch" style={{ background: e.color }} />
+              <span className="run-resource-tooltip-name">{e.name}</span>
+              <span className="run-resource-tooltip-value">
+                {e.resolved !== null ? tooltipFormatter(e.resolved, e.name)[0] : 'n/a'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    [seriesValueIndex, lines, hiddenLines, tooltipFormatter],
+  )
+
   if (data.length === 0) {
     return (
       <div className="run-results-resource-chart-wrap">
@@ -345,11 +431,10 @@ function ResourceChart({
             width={68}
           />
           <Tooltip
-            formatter={tooltipFormatter}
-            labelFormatter={formatChartTooltipLabel}
+            content={renderTooltip}
             isAnimationActive={false}
+            wrapperStyle={{ zIndex: 100 }}
           />
-          <Legend onClick={handleLegendClick} />
           {lines.map((line) => (
             <Line
               key={line.dataKey}
@@ -371,6 +456,23 @@ function ResourceChart({
           ))}
         </LineChart>
       </ResponsiveContainer>
+      <div className="run-resource-chart-legend">
+        {lines.map((line) => (
+          <button
+            key={line.dataKey}
+            type="button"
+            className={`run-resource-chart-legend-item${hiddenLines.has(line.dataKey) ? ' run-resource-chart-legend-item--hidden' : ''}`}
+            onClick={() => handleLegendClick({ dataKey: line.dataKey })}
+            aria-pressed={!hiddenLines.has(line.dataKey)}
+          >
+            <svg className="run-resource-chart-legend-icon" width="14" height="14" viewBox="0 0 14 14">
+              <line x1="0" y1="7" x2="14" y2="7" stroke={line.color} strokeWidth="2" strokeDasharray={line.strokeDasharray} />
+              <circle cx="7" cy="7" r="3" fill={line.color} />
+            </svg>
+            <span className="run-resource-chart-legend-label">{line.name}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -401,6 +503,7 @@ export function BenchmarkRunResultsPage() {
   const [resourceAxisScaleMode, setResourceAxisScaleMode] = useState<AxisScaleMode>('auto')
   const [resourceChartRenderMode, setResourceChartRenderMode] = useState<ChartRenderMode>('line')
   const [resourceSmoothingLevel, setResourceSmoothingLevel] = useState(0)
+  const [replicaViewMode, setReplicaViewMode] = useState<ReplicaViewMode>('aggregated')
   const [selectedServiceKeysByHost, setSelectedServiceKeysByHost] = useState<
     Record<string, Set<string>>
   >({})
@@ -696,14 +799,42 @@ export function BenchmarkRunResultsPage() {
         })
       }
 
-      const allServices = (host.services ?? []).map((s, serviceIndex) => ({
-        key: s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`,
-        label: s.serviceName ?? s.serviceId ?? 'Service',
-        dataPoints: aggregateServiceReplicaDataPoints(s.replicas ?? []),
-      }))
+      const allServices = (host.services ?? []).map((s, serviceIndex) => {
+        const serviceKey = s.serviceId ?? s.serviceName ?? `service-${serviceIndex}`
+        const serviceLabel = s.serviceName ?? s.serviceId ?? 'Service'
+        const replicas = s.replicas ?? []
+        return {
+          key: serviceKey,
+          label: serviceLabel,
+          replicaCount: replicas.length,
+          aggregatedDataPoints: aggregateServiceReplicaDataPoints(replicas),
+          perReplicaEntities: replicas.map((r, rIndex) => {
+            const replicaKeyPart = r.containerId ?? r.replicaId ?? `r${rIndex}`
+            return {
+              key: `${serviceKey}|${replicaKeyPart}`,
+              label: `${serviceLabel} [${r.containerId?.slice(0, 12) ?? r.replicaId ?? `#${rIndex + 1}`}]`,
+              dataPoints: r.dataPoints ?? [],
+            }
+          }),
+        }
+      })
+
+      const hasAnyMultipleReplicas = allServices.some((s) => s.replicaCount > 1)
 
       const selectedKeys = selectedServiceKeysByHost[hostKey] ?? new Set<string>()
-      const selectedEntities = allServices.filter((s) => selectedKeys.has(s.key))
+      const selectedServiceObjects = allServices.filter((s) => selectedKeys.has(s.key))
+      const selectedEntities =
+        replicaViewMode === 'per-replica'
+          ? selectedServiceObjects.flatMap((s) =>
+              s.perReplicaEntities.length > 0
+                ? s.perReplicaEntities
+                : [{ key: s.key, label: s.label, dataPoints: s.aggregatedDataPoints }],
+            )
+          : selectedServiceObjects.map((s) => ({
+              key: s.key,
+              label: s.label,
+              dataPoints: s.aggregatedDataPoints,
+            }))
 
       const buildChart = (metrics: ResourceMetricKey[]) => {
         const data = mergeResourceSeries(selectedEntities, metrics)
@@ -803,6 +934,7 @@ export function BenchmarkRunResultsPage() {
         visibleMachinePoints,
         hasMemoryLimit,
         allServices: allServices.map((s) => ({ key: s.key, label: s.label })),
+        hasAnyMultipleReplicas,
         machineCpuDomain,
         machineMemoryDomain,
         machineMemoryLines,
@@ -822,7 +954,7 @@ export function BenchmarkRunResultsPage() {
         containerBlockLines,
       }
     })
-  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize, brushTimeRange, resourceAxisScaleMode])
+  }, [rawData, derivedData, selectedServiceKeysByHost, resourceSmoothingWindowSize, brushTimeRange, resourceAxisScaleMode, replicaViewMode])
 
   const handleToggleService = (hostKey: string, serviceKey: string) => {
     setSelectedServiceKeysByHost((current) => {
@@ -1244,6 +1376,27 @@ export function BenchmarkRunResultsPage() {
                     )
                   })}
                 </div>
+                {processedHosts.some((h) => h.hasAnyMultipleReplicas) && (
+                  <div className="run-results-axis-mode-group" role="group" aria-label="Container replica view">
+                    {REPLICA_VIEW_MODE_OPTIONS.map((option) => {
+                      const isSelected = replicaViewMode === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`shell-alert-dismiss run-results-axis-mode-button${
+                            isSelected ? ' is-selected' : ''
+                          }`}
+                          onClick={() => setReplicaViewMode(option.value)}
+                          aria-pressed={isSelected}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
                 <div className="run-results-smoothing-slider-group">
                   <label
                     className="run-results-smoothing-slider-label"
