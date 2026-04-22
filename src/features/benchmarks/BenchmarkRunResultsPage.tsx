@@ -154,7 +154,7 @@ const REPLICA_VIEW_MODE_OPTIONS: Array<{
   {
     value: 'aggregated',
     label: 'Aggregated',
-    description: 'Show aggregated replica metrics per service.',
+    description: 'Show summed replica metrics per service.',
   },
   {
     value: 'per-replica',
@@ -333,54 +333,47 @@ function ResourceChart({
     })
   }, [])
 
+  const seriesValueIndex = useMemo(() => {
+    const index = new Map<string, Array<{ timestampMs: number; value: number }>>()
+    for (const line of lines) {
+      index.set(line.dataKey, [])
+    }
+    for (const point of data) {
+      const record = point as Record<string, unknown>
+      const ts = record.timestampMs
+      if (typeof ts !== 'number' || Number.isNaN(ts)) continue
+      for (const line of lines) {
+        const v = record[line.dataKey]
+        if (typeof v === 'number' && !Number.isNaN(v)) {
+          index.get(line.dataKey)?.push({ timestampMs: ts, value: v })
+        }
+      }
+    }
+    return index
+  }, [data, lines])
+
   const renderTooltip = useCallback(
     (props: Record<string, unknown>) => {
       const { active, label } = props as { active?: boolean; label?: number | string }
       if (!active || typeof label !== 'number') return null
 
       const resolveValue = (dataKey: string): number | null => {
-        if (data.length === 0) return null
+        const series = seriesValueIndex.get(dataKey)
+        if (!series || series.length === 0) return null
 
-        // Binary search: find the first index at or after `label`
         let lo = 0
-        let hi = data.length
+        let hi = series.length
         while (lo < hi) {
           const mid = (lo + hi) >> 1
-          const ts = ((data[mid] as Record<string, unknown>).timestampMs as number)
-          if (ts < label) lo = mid + 1
+          if (series[mid].timestampMs < label) lo = mid + 1
           else hi = mid
         }
 
-        let bestVal: number | null = null
-        let bestDist = Infinity
-
-        // Scan forward from lo — timestamps increase, so first non-null is the nearest forward
-        for (let i = lo; i < data.length; i++) {
-          const pt = data[i] as Record<string, unknown>
-          const dist = (pt.timestampMs as number) - label
-          if (dist >= bestDist) break
-          const v = pt[dataKey]
-          if (typeof v === 'number' && !Number.isNaN(v)) {
-            bestDist = dist
-            bestVal = v
-            break
-          }
-        }
-
-        // Scan backward from lo-1 — timestamps decrease, so first non-null is the nearest backward
-        for (let i = lo - 1; i >= 0; i--) {
-          const pt = data[i] as Record<string, unknown>
-          const dist = label - (pt.timestampMs as number)
-          if (dist >= bestDist) break
-          const v = pt[dataKey]
-          if (typeof v === 'number' && !Number.isNaN(v)) {
-            bestDist = dist
-            bestVal = v
-            break
-          }
-        }
-
-        return bestVal
+        const next = lo < series.length ? series[lo] : null
+        const prev = lo > 0 ? series[lo - 1] : null
+        if (!prev) return next?.value ?? null
+        if (!next) return prev.value
+        return label - prev.timestampMs <= next.timestampMs - label ? prev.value : next.value
       }
 
       const entries = lines
@@ -404,7 +397,7 @@ function ResourceChart({
         </div>
       )
     },
-    [data, lines, hiddenLines, tooltipFormatter],
+    [seriesValueIndex, lines, hiddenLines, tooltipFormatter],
   )
 
   if (data.length === 0) {
@@ -465,17 +458,19 @@ function ResourceChart({
       </ResponsiveContainer>
       <div className="run-resource-chart-legend">
         {lines.map((line) => (
-          <div
+          <button
             key={line.dataKey}
+            type="button"
             className={`run-resource-chart-legend-item${hiddenLines.has(line.dataKey) ? ' run-resource-chart-legend-item--hidden' : ''}`}
             onClick={() => handleLegendClick({ dataKey: line.dataKey })}
+            aria-pressed={!hiddenLines.has(line.dataKey)}
           >
             <svg className="run-resource-chart-legend-icon" width="14" height="14" viewBox="0 0 14 14">
               <line x1="0" y1="7" x2="14" y2="7" stroke={line.color} strokeWidth="2" strokeDasharray={line.strokeDasharray} />
               <circle cx="7" cy="7" r="3" fill={line.color} />
             </svg>
             <span className="run-resource-chart-legend-label">{line.name}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -813,11 +808,14 @@ export function BenchmarkRunResultsPage() {
           label: serviceLabel,
           replicaCount: replicas.length,
           aggregatedDataPoints: aggregateServiceReplicaDataPoints(replicas),
-          perReplicaEntities: replicas.map((r, rIndex) => ({
-            key: `${serviceKey}|r${rIndex}`,
-            label: `${serviceLabel} [${r.containerId?.slice(0, 12) ?? r.replicaId ?? `#${rIndex + 1}`}]`,
-            dataPoints: r.dataPoints ?? [],
-          })),
+          perReplicaEntities: replicas.map((r, rIndex) => {
+            const replicaKeyPart = r.containerId ?? r.replicaId ?? `r${rIndex}`
+            return {
+              key: `${serviceKey}|${replicaKeyPart}`,
+              label: `${serviceLabel} [${r.containerId?.slice(0, 12) ?? r.replicaId ?? `#${rIndex + 1}`}]`,
+              dataPoints: r.dataPoints ?? [],
+            }
+          }),
         }
       })
 
