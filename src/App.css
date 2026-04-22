@@ -1115,15 +1115,52 @@
 }
 
 .environment-benchmarks-section h2,
-.environment-services-section h2 {
+.environment-services-section h2,
+.environment-hosts-section h2 {
   margin: 0 0 0.55rem;
   color: #1f3347;
 }
 
-.environment-services-section {
+.environment-services-section,
+.environment-hosts-section {
   margin-top: 1.75rem;
   padding-top: 0.35rem;
   border-top: 1px solid #e3ebf5;
+}
+
+.environment-hosts-empty {
+  color: #5a7a9a;
+  font-size: 0.95rem;
+  margin: 0.3rem 0;
+}
+
+.environment-hosts-table-wrap {
+  overflow-x: auto;
+}
+
+.environment-hosts-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d6e2f1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.environment-hosts-table th,
+.environment-hosts-table td {
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid #e3ebf5;
+  color: #1f3347;
+}
+
+.environment-hosts-table th {
+  background: #f3f8ff;
+  font-size: 0.88rem;
+}
+
+.environment-hosts-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .benchmark-status-badge {
@@ -1418,6 +1455,32 @@
 .run-metric-list span {
   color: #3d4b5c;
   font-size: 0.9rem;
+}
+
+.run-metric-card-count {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: #4a6a8a;
+}
+
+.run-metric-host-services {
+  list-style: none;
+  padding: 0.2rem 0 0 0.6rem;
+  margin: 0.2rem 0 0;
+  display: grid;
+  gap: 0.25rem;
+  border-left: 2px solid #d6e2f1;
+}
+
+.run-metric-host-services li {
+  display: grid;
+  gap: 0.05rem;
+}
+
+.run-metric-host-service-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2f475f;
 }
 
 .benchmark-empty-cta {

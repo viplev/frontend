@@ -950,10 +950,7 @@ export function BenchmarkRunResultsPage() {
                   <p>Total hosts: {hostMetrics.length}</p>
                   <p>
                     Total services:{' '}
-                    {hostMetrics.reduce(
-                      (sum, host) => sum + (host.services?.length ?? 0),
-                      0,
-                    )}
+                    {rawServiceCount}
                   </p>
                 </>
               )}

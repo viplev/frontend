@@ -588,19 +588,47 @@ export function BenchmarkRunMonitorPage() {
               </article>
 
               <article className="run-metric-card">
-                <h3>Host resources</h3>
+                <h3>
+                  Host resources
+                  {hostMetrics.length > 1 && (
+                    <span className="run-metric-card-count"> ({hostMetrics.length} hosts)</span>
+                  )}
+                </h3>
                 {hostMetrics.length === 0 ? (
                   <p>No host metrics available yet.</p>
                 ) : (
                   <ul className="run-metric-list">
-                    {hostMetrics.slice(0, 4).map((host) => (
-                      <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
+                     {hostMetrics.map((host, index) => (
+                      <li
+                        key={
+                          host.hostId || host.hostName
+                            ? `${host.hostId ?? ''}|${host.hostName ?? ''}`
+                            : `host-${index}`
+                        }
+                      >
                         <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
                         <span>
                           CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
                           {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
                           {formatBytes(host.resource?.networkInTotalBytes)}
                         </span>
+                        {host.services && host.services.length > 0 && (
+                          <ul className="run-metric-host-services">
+                            {host.services.map((svc, svcIndex) => (
+                              <li
+                                key={`${host.hostId ?? host.hostName ?? 'host'}|${svc.serviceId ?? svc.serviceName ?? `service-${svcIndex}`}`}
+                              >
+                                <span className="run-metric-host-service-name">
+                                  {svc.serviceName ?? svc.serviceId ?? 'Service'}
+                                </span>
+                                <span>
+                                  CPU avg {formatMetric(svc.resource?.cpu?.avg, '%')} | Mem avg{' '}
+                                  {formatMetric(svc.resource?.memory?.avg, '%')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </li>
                     ))}
                   </ul>
