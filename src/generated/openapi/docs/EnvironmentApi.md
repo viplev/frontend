@@ -1,6 +1,6 @@
 # EnvironmentApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://api.viplev.ringhus.dk*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
@@ -31,11 +31,7 @@ import type { CreateEnvironmentRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // EnvironmentDTO
@@ -67,7 +63,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -103,11 +99,7 @@ import type { DeleteEnvironmentRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // string
@@ -139,7 +131,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -176,11 +168,7 @@ import type { GetEnvironmentRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // string
@@ -212,7 +200,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -249,11 +237,7 @@ import type { GetServiceRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // string
@@ -288,7 +272,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -325,11 +309,7 @@ import type { ListEnvironmentsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   try {
     const data = await api.listEnvironments();
@@ -353,7 +333,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -388,11 +368,7 @@ import type { ListServicesRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // string
@@ -424,7 +400,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -461,11 +437,7 @@ import type { UpdateEnvironmentRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new EnvironmentApi(config);
+  const api = new EnvironmentApi();
 
   const body = {
     // string
@@ -500,7 +472,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 

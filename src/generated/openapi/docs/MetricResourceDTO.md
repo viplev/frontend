@@ -7,8 +7,7 @@ Wrapper for resource metrics sent by the agent
 
 Name | Type
 ------------ | -------------
-`host` | [MetricResourceHostDTO](MetricResourceHostDTO.md)
-`services` | [Array&lt;MetricResourceServiceDTO&gt;](MetricResourceServiceDTO.md)
+`hosts` | [Array&lt;MetricResourceNodeDTO&gt;](MetricResourceNodeDTO.md)
 
 ## Example
 
@@ -17,8 +16,7 @@ import type { MetricResourceDTO } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "host": null,
-  "services": null,
+  "hosts": null,
 } satisfies MetricResourceDTO
 
 console.log(example)

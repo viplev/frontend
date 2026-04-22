@@ -1,6 +1,6 @@
 # AuthApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://api.viplev.ringhus.dk*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|

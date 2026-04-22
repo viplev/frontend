@@ -1,4 +1,4 @@
-// @ts-nocheck - Auto-generated file, TypeScript strict checks disabled intentionally
+// @ts-nocheck
 /* tslint:disable */
 /* eslint-disable */
 export * from './BenchmarkDTO';
@@ -26,14 +26,18 @@ export * from './MetricK6HttpDTO';
 export * from './MetricK6VusDTO';
 export * from './MetricPerformanceDTO';
 export * from './MetricResourceDTO';
-export * from './MetricResourceHostDTO';
+export * from './MetricResourceNodeDTO';
 export * from './MetricResourceServiceDTO';
+export * from './MetricResourceServiceReplicaDTO';
 export * from './PaginationDTO';
 export * from './RawHostTimeSeriesDTO';
 export * from './RawK6DataPointDTO';
 export * from './RawK6TimeSeriesDTO';
+export * from './RawReplicaTimeSeriesDTO';
 export * from './RawResourceDataPointDTO';
 export * from './RawServiceTimeSeriesDTO';
 export * from './RawTimeSeriesDTO';
 export * from './ServiceDTO';
 export * from './ServiceRegistrationDTO';
+export * from './ServiceRegistrationServiceDTO';
+export * from './ServiceReplicaDTO';

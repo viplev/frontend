@@ -1,6 +1,6 @@
 # AgentApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://api.viplev.ringhus.dk*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
@@ -31,11 +31,7 @@ import type { ListMessagesRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new AgentApi(config);
+  const api = new AgentApi();
 
   const body = {
     // string
@@ -67,7 +63,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -104,11 +100,7 @@ import type { RegisterServicesRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new AgentApi(config);
+  const api = new AgentApi();
 
   const body = {
     // string
@@ -143,7 +135,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -182,11 +174,7 @@ import type { StorePerformanceMetricsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new AgentApi(config);
+  const api = new AgentApi();
 
   const body = {
     // string
@@ -227,7 +215,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -266,11 +254,7 @@ import type { StoreResourceMetricsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new AgentApi(config);
+  const api = new AgentApi();
 
   const body = {
     // string
@@ -311,7 +295,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -350,11 +334,7 @@ import type { UpdateBenchmarkRunStatusRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new AgentApi(config);
+  const api = new AgentApi();
 
   const body = {
     // string
@@ -395,7 +375,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 

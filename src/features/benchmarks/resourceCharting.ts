@@ -1,3 +1,4 @@
+import type { RawReplicaTimeSeriesDTO } from '../../generated/openapi/models/RawReplicaTimeSeriesDTO'
 import type { RawResourceDataPointDTO } from '../../generated/openapi/models/RawResourceDataPointDTO'
 import { formatReadableTimestamp } from '../dateTime'
 import type { AxisDomain, AxisScaleMode } from './charting'
@@ -85,6 +86,54 @@ function computeDomain(
     return [0, paddedMax]
   }
   return withTightPadding(min, max)
+}
+
+// ---------------------------------------------------------------------------
+// Replica aggregation
+// ---------------------------------------------------------------------------
+
+/**
+ * Aggregates multiple container replica time-series into a single service-level
+ * data-point array by summing each resource metric at each shared timestamp.
+ * If no replica reports a value for a given metric, the result remains undefined
+ * (avoiding artificial zeroes in charts).
+ */
+export function aggregateServiceReplicaDataPoints(
+  replicas: ReadonlyArray<RawReplicaTimeSeriesDTO>,
+): Array<RawResourceDataPointDTO> {
+  if (replicas.length === 0) return []
+  if (replicas.length === 1) return [...(replicas[0].dataPoints ?? [])]
+
+  function sumOptional(a: number | undefined, b: number | undefined): number | undefined {
+    if (a == null && b == null) return undefined
+    return (a ?? 0) + (b ?? 0)
+  }
+
+  const byTimestamp = new Map<string, RawResourceDataPointDTO>()
+  for (const replica of replicas) {
+    for (const point of replica.dataPoints ?? []) {
+      const key = point.timestamp?.toISOString()
+      if (!key) continue
+      const existing = byTimestamp.get(key)
+      if (!existing) {
+        byTimestamp.set(key, { ...point })
+      } else {
+        byTimestamp.set(key, {
+          timestamp: existing.timestamp,
+          cpuPercentage: sumOptional(existing.cpuPercentage, point.cpuPercentage),
+          memoryUsageBytes: sumOptional(existing.memoryUsageBytes, point.memoryUsageBytes),
+          memoryLimitBytes: sumOptional(existing.memoryLimitBytes, point.memoryLimitBytes),
+          networkInBytes: sumOptional(existing.networkInBytes, point.networkInBytes),
+          networkOutBytes: sumOptional(existing.networkOutBytes, point.networkOutBytes),
+          blockInBytes: sumOptional(existing.blockInBytes, point.blockInBytes),
+          blockOutBytes: sumOptional(existing.blockOutBytes, point.blockOutBytes),
+        })
+      }
+    }
+  }
+  return Array.from(byTimestamp.values()).sort(
+    (a, b) => (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
+  )
 }
 
 // ---------------------------------------------------------------------------

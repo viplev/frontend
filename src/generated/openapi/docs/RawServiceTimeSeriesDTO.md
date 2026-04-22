@@ -9,7 +9,7 @@ Name | Type
 ------------ | -------------
 `serviceId` | string
 `serviceName` | string
-`dataPoints` | [Array&lt;RawResourceDataPointDTO&gt;](RawResourceDataPointDTO.md)
+`replicas` | [Array&lt;RawReplicaTimeSeriesDTO&gt;](RawReplicaTimeSeriesDTO.md)
 
 ## Example
 
@@ -20,7 +20,7 @@ import type { RawServiceTimeSeriesDTO } from ''
 const example = {
   "serviceId": null,
   "serviceName": null,
-  "dataPoints": null,
+  "replicas": null,
 } satisfies RawServiceTimeSeriesDTO
 
 console.log(example)

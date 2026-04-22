@@ -14,81 +14,89 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ServiceReplicaDTO } from './ServiceReplicaDTO';
+import {
+    ServiceReplicaDTOFromJSON,
+    ServiceReplicaDTOFromJSONTyped,
+    ServiceReplicaDTOToJSON,
+    ServiceReplicaDTOToJSONTyped,
+} from './ServiceReplicaDTO';
+
 /**
  * 
  * @export
- * @interface ServiceDTO
+ * @interface ServiceRegistrationServiceDTO
  */
-export interface ServiceDTO {
+export interface ServiceRegistrationServiceDTO {
     /**
-     * Unique ID for service
+     * Logical service name (from Docker label or container name)
      * @type {string}
-     * @memberof ServiceDTO
-     */
-    readonly id?: string;
-    /**
-     * Stable service name (e.g. mystack_nginx.1)
-     * @type {string}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     serviceName: string;
     /**
      * SHA hash of the container image
      * @type {string}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     imageSha?: string;
     /**
      * Name of the container image
      * @type {string}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     imageName?: string;
     /**
      * CPU limit allocated to the service
      * @type {number}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     cpuLimit?: number;
     /**
      * CPU reservation for the service
      * @type {number}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     cpuReservation?: number;
     /**
      * Memory limit in bytes
      * @type {number}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     memoryLimitBytes?: number;
     /**
      * Memory reservation in bytes
      * @type {number}
-     * @memberof ServiceDTO
+     * @memberof ServiceRegistrationServiceDTO
      */
     memoryReservationBytes?: number;
+    /**
+     * 
+     * @type {Array<ServiceReplicaDTO>}
+     * @memberof ServiceRegistrationServiceDTO
+     */
+    replicas: Array<ServiceReplicaDTO>;
 }
 
 /**
- * Check if a given object implements the ServiceDTO interface.
+ * Check if a given object implements the ServiceRegistrationServiceDTO interface.
  */
-export function instanceOfServiceDTO(value: object): value is ServiceDTO {
+export function instanceOfServiceRegistrationServiceDTO(value: object): value is ServiceRegistrationServiceDTO {
     if (!('serviceName' in value) || value['serviceName'] === undefined) return false;
+    if (!('replicas' in value) || value['replicas'] === undefined) return false;
     return true;
 }
 
-export function ServiceDTOFromJSON(json: any): ServiceDTO {
-    return ServiceDTOFromJSONTyped(json, false);
+export function ServiceRegistrationServiceDTOFromJSON(json: any): ServiceRegistrationServiceDTO {
+    return ServiceRegistrationServiceDTOFromJSONTyped(json, false);
 }
 
-export function ServiceDTOFromJSONTyped(json: any, ignoreDiscriminator: boolean): ServiceDTO {
+export function ServiceRegistrationServiceDTOFromJSONTyped(json: any, ignoreDiscriminator: boolean): ServiceRegistrationServiceDTO {
     if (json == null) {
         return json;
     }
     return {
         
-        'id': json['id'] == null ? undefined : json['id'],
         'serviceName': json['serviceName'],
         'imageSha': json['imageSha'] == null ? undefined : json['imageSha'],
         'imageName': json['imageName'] == null ? undefined : json['imageName'],
@@ -96,14 +104,15 @@ export function ServiceDTOFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'cpuReservation': json['cpuReservation'] == null ? undefined : json['cpuReservation'],
         'memoryLimitBytes': json['memoryLimitBytes'] == null ? undefined : json['memoryLimitBytes'],
         'memoryReservationBytes': json['memoryReservationBytes'] == null ? undefined : json['memoryReservationBytes'],
+        'replicas': ((json['replicas'] as Array<any>).map(ServiceReplicaDTOFromJSON)),
     };
 }
 
-export function ServiceDTOToJSON(json: any): ServiceDTO {
-    return ServiceDTOToJSONTyped(json, false);
+export function ServiceRegistrationServiceDTOToJSON(json: any): ServiceRegistrationServiceDTO {
+    return ServiceRegistrationServiceDTOToJSONTyped(json, false);
 }
 
-export function ServiceDTOToJSONTyped(value?: Omit<ServiceDTO, 'id'> | null, ignoreDiscriminator: boolean = false): any {
+export function ServiceRegistrationServiceDTOToJSONTyped(value?: ServiceRegistrationServiceDTO | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
@@ -117,6 +126,7 @@ export function ServiceDTOToJSONTyped(value?: Omit<ServiceDTO, 'id'> | null, ign
         'cpuReservation': value['cpuReservation'],
         'memoryLimitBytes': value['memoryLimitBytes'],
         'memoryReservationBytes': value['memoryReservationBytes'],
+        'replicas': ((value['replicas'] as Array<any>).map(ServiceReplicaDTOToJSON)),
     };
 }
 

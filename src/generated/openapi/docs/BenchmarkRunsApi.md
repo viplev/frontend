@@ -1,6 +1,6 @@
 # BenchmarkRunsApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://api.viplev.ringhus.dk*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
@@ -29,11 +29,7 @@ import type { DeleteBenchmarkRunRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkRunsApi(config);
+  const api = new BenchmarkRunsApi();
 
   const body = {
     // string
@@ -71,7 +67,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -110,11 +106,7 @@ import type { GetBenchmarkRunRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkRunsApi(config);
+  const api = new BenchmarkRunsApi();
 
   const body = {
     // string
@@ -155,7 +147,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -194,11 +186,7 @@ import type { GetBenchmarkRunDataRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkRunsApi(config);
+  const api = new BenchmarkRunsApi();
 
   const body = {
     // string
@@ -236,7 +224,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -273,11 +261,7 @@ import type { ListBenchmarkRunsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkRunsApi(config);
+  const api = new BenchmarkRunsApi();
 
   const body = {
     // string
@@ -312,7 +296,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -349,11 +333,7 @@ import type { ListEnvironmentRunsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkRunsApi(config);
+  const api = new BenchmarkRunsApi();
 
   const body = {
     // string
@@ -394,7 +374,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 

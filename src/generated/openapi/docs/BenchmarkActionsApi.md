@@ -1,6 +1,6 @@
 # BenchmarkActionsApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://api.viplev.ringhus.dk*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
@@ -28,11 +28,7 @@ import type { StartBenchmarkRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkActionsApi(config);
+  const api = new BenchmarkActionsApi();
 
   const body = {
     // string
@@ -67,7 +63,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -107,11 +103,7 @@ import type { StopBenchmarkRunRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: bearerAuth
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new BenchmarkActionsApi(config);
+  const api = new BenchmarkActionsApi();
 
   const body = {
     // string
@@ -149,7 +141,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth)
+No authorization required
 
 ### HTTP request headers
 

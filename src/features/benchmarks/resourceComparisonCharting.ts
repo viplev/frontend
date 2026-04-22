@@ -4,7 +4,7 @@ import type { DerivedHostSummaryDTO } from '../../generated/openapi/models/Deriv
 import type { DerivedResourceSummaryDTO } from '../../generated/openapi/models/DerivedResourceSummaryDTO'
 import type { RawResourceDataPointDTO } from '../../generated/openapi/models/RawResourceDataPointDTO'
 import type { AxisDomain, AxisScaleMode } from './charting'
-import { normalizeResourceDataPoints } from './resourceCharting'
+import { aggregateServiceReplicaDataPoints, normalizeResourceDataPoints } from './resourceCharting'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -257,7 +257,10 @@ export function matchHosts(
         (derivedHostB?.services ?? []).find(
           (s) => s.serviceId === serviceKey || s.serviceName === serviceKey,
         ) ?? null
-      const svcPoints = mergeResourceComparisonByElapsed(svcA?.dataPoints, svcB?.dataPoints)
+      const svcPoints = mergeResourceComparisonByElapsed(
+        aggregateServiceReplicaDataPoints(svcA?.replicas ?? []),
+        aggregateServiceReplicaDataPoints(svcB?.replicas ?? []),
+      )
       const svcHasMemLimitA = svcPoints.some(
         (p) => p.memoryLimitBytes_A != null && p.memoryLimitBytes_A > 0,
       )

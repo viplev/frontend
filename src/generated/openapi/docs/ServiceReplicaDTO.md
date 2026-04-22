@@ -1,24 +1,28 @@
 
-# ServiceRegistrationDTO
+# ServiceReplicaDTO
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`services` | [Array&lt;ServiceRegistrationServiceDTO&gt;](ServiceRegistrationServiceDTO.md)
-`hosts` | [Array&lt;HostDTO&gt;](HostDTO.md)
+`containerId` | string
+`containerName` | string
+`machineId` | string
+`startedAt` | Date
 
 ## Example
 
 ```typescript
-import type { ServiceRegistrationDTO } from ''
+import type { ServiceReplicaDTO } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "services": null,
-  "hosts": null,
-} satisfies ServiceRegistrationDTO
+  "containerId": null,
+  "containerName": null,
+  "machineId": null,
+  "startedAt": null,
+} satisfies ServiceReplicaDTO
 
 console.log(example)
 
@@ -27,7 +31,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as ServiceRegistrationDTO
+const exampleParsed = JSON.parse(exampleJSON) as ServiceReplicaDTO
 console.log(exampleParsed)
 ```
 
