@@ -7,6 +7,7 @@ import {
   type EnvironmentRunSummaryDTO,
 } from '../../generated/openapi/models/EnvironmentRunSummaryDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
+import type { HostDTO } from '../../generated/openapi/models/HostDTO'
 import { AsyncStateView } from '../ui/async-state/AsyncState'
 import {
   listActiveEnvironmentRuns,
@@ -17,6 +18,7 @@ import {
 import {
   EnvironmentDetailsError,
   getEnvironmentDetails,
+  getEnvironmentHosts,
   getEnvironmentServices,
 } from './service'
 import { formatTimestamp } from './format'
@@ -91,6 +93,7 @@ export function EnvironmentDetailsPage() {
     Record<string, EnvironmentRunSummaryDTO>
   >({})
   const [services, setServices] = useState<Array<ServiceDTO>>([])
+  const [hosts, setHosts] = useState<Array<HostDTO> | null>(null)
   const [isBenchmarksLoading, setIsBenchmarksLoading] = useState(true)
   const [benchmarksError, setBenchmarksError] = useState<string | null>(null)
   const [isServicesLoading, setIsServicesLoading] = useState(true)
@@ -148,11 +151,12 @@ export function EnvironmentDetailsPage() {
           setIsLoading(false)
         }
 
-        const [benchmarksResult, runsResult, servicesResult] =
+        const [benchmarksResult, runsResult, servicesResult, hostsResult] =
           await Promise.allSettled([
             listBenchmarks(environmentId),
             listActiveEnvironmentRuns(environmentId),
             getEnvironmentServices(environmentId),
+            getEnvironmentHosts(environmentId),
           ])
 
         // Only update state if this request hasn't been aborted
@@ -187,6 +191,11 @@ export function EnvironmentDetailsPage() {
           setServicesError('Unable to load services right now.')
         }
         setIsServicesLoading(false)
+
+        // Handle hosts result (non-blocking; null means endpoint not yet available)
+        if (hostsResult.status === 'fulfilled') {
+          setHosts(hostsResult.value)
+        }
       } catch (nextError: unknown) {
         if (signal.aborted) {
           return
@@ -246,6 +255,14 @@ export function EnvironmentDetailsPage() {
         (a.serviceName ?? '').localeCompare(b.serviceName ?? ''),
       ),
     [services],
+  )
+
+  const sortedHosts = useMemo(
+    () =>
+      hosts
+        ? [...hosts].sort((a, b) => a.name.localeCompare(b.name))
+        : null,
+    [hosts],
   )
 
   const sortedBenchmarks = useMemo(
@@ -550,6 +567,46 @@ export function EnvironmentDetailsPage() {
             </div>
           </AsyncStateView>
         </section>
+
+        {sortedHosts !== null && (
+          <section className="environment-hosts-section">
+            <h2>Registered hosts</h2>
+            {sortedHosts.length === 0 ? (
+              <p className="environment-hosts-empty">No hosts have reported into this environment yet.</p>
+            ) : (
+              <div className="environment-hosts-table-wrap">
+                <table className="environment-hosts-table">
+                  <thead>
+                    <tr>
+                      <th>Host</th>
+                      <th>IP address</th>
+                      <th>OS</th>
+                      <th>CPU</th>
+                      <th>RAM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedHosts.map((host, index) => (
+                      <tr key={host.id ?? host.machineId ?? `host-${index}`}>
+                        <td>{host.name}</td>
+                        <td>{host.ipAddress}</td>
+                        <td>
+                          {host.os}
+                          {host.osVersion ? ` ${host.osVersion}` : ''}
+                        </td>
+                        <td>
+                          {host.cpuModel ?? 'n/a'}
+                          {host.cpuCores != null ? ` (${host.cpuCores} cores)` : ''}
+                        </td>
+                        <td>{formatMemory(host.ramTotalBytes)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
       </AsyncStateView>
     </article>
   )

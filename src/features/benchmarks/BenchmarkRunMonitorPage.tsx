@@ -588,12 +588,17 @@ export function BenchmarkRunMonitorPage() {
               </article>
 
               <article className="run-metric-card">
-                <h3>Host resources</h3>
+                <h3>
+                  Host resources
+                  {hostMetrics.length > 1 && (
+                    <span className="run-metric-card-count"> ({hostMetrics.length} hosts)</span>
+                  )}
+                </h3>
                 {hostMetrics.length === 0 ? (
                   <p>No host metrics available yet.</p>
                 ) : (
                   <ul className="run-metric-list">
-                    {hostMetrics.slice(0, 4).map((host) => (
+                    {hostMetrics.map((host) => (
                       <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
                         <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
                         <span>
@@ -601,6 +606,21 @@ export function BenchmarkRunMonitorPage() {
                           {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
                           {formatBytes(host.resource?.networkInTotalBytes)}
                         </span>
+                        {host.services && host.services.length > 0 && (
+                          <ul className="run-metric-host-services">
+                            {host.services.map((svc) => (
+                              <li key={svc.serviceId ?? svc.serviceName ?? 'service'}>
+                                <span className="run-metric-host-service-name">
+                                  {svc.serviceName ?? svc.serviceId ?? 'Service'}
+                                </span>
+                                <span>
+                                  CPU avg {formatMetric(svc.resource?.cpu?.avg, '%')} | Mem avg{' '}
+                                  {formatMetric(svc.resource?.memory?.avg, '%')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </li>
                     ))}
                   </ul>
