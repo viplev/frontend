@@ -2,9 +2,8 @@ import { ResponseError } from '../../generated/openapi/runtime'
 import type { EnvironmentDTO } from '../../generated/openapi/models/EnvironmentDTO'
 import type { ServiceDTO } from '../../generated/openapi/models/ServiceDTO'
 import { type HostDTO, HostDTOFromJSON } from '../../generated/openapi/models/HostDTO'
-import { createEnvironmentApi } from '../../auth/client'
-import { getApiBaseUrl } from '../../config/api'
-import { loadAuthSession } from '../../auth/storage'
+import { EnvironmentApi } from '../../generated/openapi/apis/EnvironmentApi'
+import { createEnvironmentApi, createApiClient } from '../../auth/client'
 
 export class EnvironmentsLoadError extends Error {
   constructor(message: string) {
@@ -150,6 +149,24 @@ export async function getEnvironmentServices(
   }
 }
 
+class EnvironmentApiWithHosts extends EnvironmentApi {
+  async listHosts(
+    { environmentId }: { environmentId: string },
+    signal?: AbortSignal,
+  ): Promise<Array<HostDTO>> {
+    const response = await this.request(
+      {
+        path: `/v1/environments/${encodeURIComponent(String(environmentId))}/hosts`,
+        method: 'GET',
+        headers: {},
+      },
+      signal ? { signal } : undefined,
+    )
+    const json = await response.json()
+    return (json as Array<unknown>).map(HostDTOFromJSON)
+  }
+}
+
 /**
  * Fetches the list of hosts registered in an environment.
  * Returns `null` when the backend endpoint is not yet available (404).
@@ -157,34 +174,23 @@ export async function getEnvironmentServices(
  */
 export async function getEnvironmentHosts(
   environmentId: string,
+  signal?: AbortSignal,
 ): Promise<Array<HostDTO> | null> {
-  const baseUrl = getApiBaseUrl()
-  const url = `${baseUrl}/v1/environments/${environmentId}/hosts`
+  const api = createApiClient(EnvironmentApiWithHosts)
 
-  const session = loadAuthSession()
-  const headers: Record<string, string> = {}
-  if (session?.token) {
-    headers['Authorization'] = `Bearer ${session.token}`
-  }
-
-  let response: Response
   try {
-    response = await fetch(url, { headers })
-  } catch {
+    return await api.listHosts({ environmentId }, signal)
+  } catch (error: unknown) {
+    if (error instanceof ResponseError) {
+      if (error.response.status === 404) {
+        return null
+      }
+      throw new EnvironmentDetailsError('Unable to load hosts right now.')
+    }
+
     throw new EnvironmentDetailsError(
       'Network error while loading hosts. Please try again.',
     )
   }
-
-  if (response.status === 404) {
-    return null
-  }
-
-  if (!response.ok) {
-    throw new EnvironmentDetailsError('Unable to load hosts right now.')
-  }
-
-  const json: unknown = await response.json()
-  return (json as Array<unknown>).map(HostDTOFromJSON)
 }
 

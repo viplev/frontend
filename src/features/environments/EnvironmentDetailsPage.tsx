@@ -98,6 +98,7 @@ export function EnvironmentDetailsPage() {
   const [benchmarksError, setBenchmarksError] = useState<string | null>(null)
   const [isServicesLoading, setIsServicesLoading] = useState(true)
   const [servicesError, setServicesError] = useState<string | null>(null)
+  const [hostsError, setHostsError] = useState<string | null>(null)
   const [benchmarkActionError, setBenchmarkActionError] = useState<string | null>(null)
   const [startInFlightByBenchmarkId, setStartInFlightByBenchmarkId] = useState<
     Record<string, boolean>
@@ -136,6 +137,7 @@ export function EnvironmentDetailsPage() {
       }
       setBenchmarksError(null)
       setServicesError(null)
+      setHostsError(null)
       setError(null)
       setNotFound(false)
 
@@ -156,7 +158,7 @@ export function EnvironmentDetailsPage() {
             listBenchmarks(environmentId),
             listActiveEnvironmentRuns(environmentId),
             getEnvironmentServices(environmentId),
-            getEnvironmentHosts(environmentId),
+            getEnvironmentHosts(environmentId, signal),
           ])
 
         // Only update state if this request hasn't been aborted
@@ -195,6 +197,9 @@ export function EnvironmentDetailsPage() {
         // Handle hosts result (non-blocking; null means endpoint not yet available)
         if (hostsResult.status === 'fulfilled') {
           setHosts(hostsResult.value)
+        } else {
+          setHosts([])
+          setHostsError('Unable to load hosts right now.')
         }
       } catch (nextError: unknown) {
         if (signal.aborted) {
@@ -571,7 +576,9 @@ export function EnvironmentDetailsPage() {
         {sortedHosts !== null && (
           <section className="environment-hosts-section">
             <h2>Registered hosts</h2>
-            {sortedHosts.length === 0 ? (
+            {hostsError ? (
+              <p className="auth-notice auth-notice-error">{hostsError}</p>
+            ) : sortedHosts.length === 0 ? (
               <p className="environment-hosts-empty">No hosts have reported into this environment yet.</p>
             ) : (
               <div className="environment-hosts-table-wrap">

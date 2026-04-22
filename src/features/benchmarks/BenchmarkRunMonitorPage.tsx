@@ -598,8 +598,14 @@ export function BenchmarkRunMonitorPage() {
                   <p>No host metrics available yet.</p>
                 ) : (
                   <ul className="run-metric-list">
-                    {hostMetrics.map((host) => (
-                      <li key={`${host.hostId ?? ''}|${host.hostName ?? ''}`}>
+                     {hostMetrics.map((host, index) => (
+                      <li
+                        key={
+                          host.hostId || host.hostName
+                            ? `${host.hostId ?? ''}|${host.hostName ?? ''}`
+                            : `host-${index}`
+                        }
+                      >
                         <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
                         <span>
                           CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
@@ -608,8 +614,10 @@ export function BenchmarkRunMonitorPage() {
                         </span>
                         {host.services && host.services.length > 0 && (
                           <ul className="run-metric-host-services">
-                            {host.services.map((svc) => (
-                              <li key={svc.serviceId ?? svc.serviceName ?? 'service'}>
+                            {host.services.map((svc, svcIndex) => (
+                              <li
+                                key={`${host.hostId ?? host.hostName ?? 'host'}|${svc.serviceId ?? svc.serviceName ?? `service-${svcIndex}`}`}
+                              >
                                 <span className="run-metric-host-service-name">
                                   {svc.serviceName ?? svc.serviceId ?? 'Service'}
                                 </span>
