@@ -95,12 +95,19 @@ function computeDomain(
 /**
  * Aggregates multiple container replica time-series into a single service-level
  * data-point array by summing each resource metric at each shared timestamp.
+ * If no replica reports a value for a given metric, the result remains undefined
+ * (avoiding artificial zeroes in charts).
  */
 export function aggregateServiceReplicaDataPoints(
   replicas: ReadonlyArray<RawReplicaTimeSeriesDTO>,
 ): Array<RawResourceDataPointDTO> {
   if (replicas.length === 0) return []
   if (replicas.length === 1) return [...(replicas[0].dataPoints ?? [])]
+
+  function sumOptional(a: number | undefined, b: number | undefined): number | undefined {
+    if (a == null && b == null) return undefined
+    return (a ?? 0) + (b ?? 0)
+  }
 
   const byTimestamp = new Map<string, RawResourceDataPointDTO>()
   for (const replica of replicas) {
@@ -113,13 +120,13 @@ export function aggregateServiceReplicaDataPoints(
       } else {
         byTimestamp.set(key, {
           timestamp: existing.timestamp,
-          cpuPercentage: (existing.cpuPercentage ?? 0) + (point.cpuPercentage ?? 0),
-          memoryUsageBytes: (existing.memoryUsageBytes ?? 0) + (point.memoryUsageBytes ?? 0),
-          memoryLimitBytes: (existing.memoryLimitBytes ?? 0) + (point.memoryLimitBytes ?? 0),
-          networkInBytes: (existing.networkInBytes ?? 0) + (point.networkInBytes ?? 0),
-          networkOutBytes: (existing.networkOutBytes ?? 0) + (point.networkOutBytes ?? 0),
-          blockInBytes: (existing.blockInBytes ?? 0) + (point.blockInBytes ?? 0),
-          blockOutBytes: (existing.blockOutBytes ?? 0) + (point.blockOutBytes ?? 0),
+          cpuPercentage: sumOptional(existing.cpuPercentage, point.cpuPercentage),
+          memoryUsageBytes: sumOptional(existing.memoryUsageBytes, point.memoryUsageBytes),
+          memoryLimitBytes: sumOptional(existing.memoryLimitBytes, point.memoryLimitBytes),
+          networkInBytes: sumOptional(existing.networkInBytes, point.networkInBytes),
+          networkOutBytes: sumOptional(existing.networkOutBytes, point.networkOutBytes),
+          blockInBytes: sumOptional(existing.blockInBytes, point.blockInBytes),
+          blockOutBytes: sumOptional(existing.blockOutBytes, point.blockOutBytes),
         })
       }
     }

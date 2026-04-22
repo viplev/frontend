@@ -2207,3 +2207,8 @@ components:
             $ref: "#/components/schemas/RawHostTimeSeriesDTO"
         k6:
           $ref: "#/components/schemas/RawK6TimeSeriesDTO"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
