@@ -283,13 +283,13 @@ function buildMemorySummary(
       {(memA || statsA.avg != null) && (
         <div className="run-comparison-chart-summary-row">
           <span className="run-comparison-chart-summary-label run-comparison-label-a">A:</span>
-          <span>Avg {formatBytes(statsA.avg ?? undefined)} ({fmtPct(memA?.avg)}) · Max {formatBytes(statsA.max ?? undefined)} ({fmtPct(memA?.max)})</span>
+          <span>Avg {formatBytes(statsA.avg ?? undefined)} ({formatBytes(memA?.avg ?? undefined)}) · Max {formatBytes(statsA.max ?? undefined)} ({formatBytes(memA?.max ?? undefined)})</span>
         </div>
       )}
       {(memB || statsB.avg != null) && (
         <div className="run-comparison-chart-summary-row">
           <span className="run-comparison-chart-summary-label run-comparison-label-b">B:</span>
-          <span>Avg {formatBytes(statsB.avg ?? undefined)} ({fmtPct(memB?.avg)}) · Max {formatBytes(statsB.max ?? undefined)} ({fmtPct(memB?.max)})</span>
+          <span>Avg {formatBytes(statsB.avg ?? undefined)} ({formatBytes(memB?.avg ?? undefined)}) · Max {formatBytes(statsB.max ?? undefined)} ({formatBytes(memB?.max ?? undefined)})</span>
         </div>
       )}
     </div>
@@ -1323,8 +1323,8 @@ export function BenchmarkRunComparisonPage() {
                         CPU avg A: {formatMetric(host.derivedA?.resource?.cpu?.avg, '%')} B:{' '}
                         {formatMetric(host.derivedB?.resource?.cpu?.avg, '%')}
                         {' | '}
-                        Mem avg A: {formatMetric(host.derivedA?.resource?.memory?.avg, '%')} B:{' '}
-                        {formatMetric(host.derivedB?.resource?.memory?.avg, '%')}
+                        Mem avg A: {formatBytes(host.derivedA?.resource?.memory?.avg)} B:{' '}
+                        {formatBytes(host.derivedB?.resource?.memory?.avg)}
                       </span>
                     </summary>
 
