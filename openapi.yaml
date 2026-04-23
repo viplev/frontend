@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: VIPLEV API
   description: REST API for the VIPLEV benchmarking and test platform
-  version: 3.0.0
+  version: 3.0.1
 servers:
 - url: http://api.viplev.ringhus.dk
   description: Generated server url
@@ -1637,28 +1637,28 @@ components:
           format: double
           description: CPU usage percentage
         memoryUsageBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Memory usage in bytes
         memoryLimitBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Memory limit in bytes
         networkInBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Network bytes received
         networkOutBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Network bytes sent
         blockInBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Block I/O bytes read
         blockOutBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
           description: Block I/O bytes written
       required:
       - collectedAt
@@ -2166,23 +2166,23 @@ components:
           type: number
           format: double
         memoryUsageBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
         memoryLimitBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
         networkInBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
         networkOutBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
         blockInBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
         blockOutBytes:
-          type: number
-          format: double
+          type: integer
+          format: int64
     RawServiceTimeSeriesDTO:
       type: object
       description: Time-series resource data for a single service running on a host
@@ -2207,8 +2207,3 @@ components:
             $ref: "#/components/schemas/RawHostTimeSeriesDTO"
         k6:
           $ref: "#/components/schemas/RawK6TimeSeriesDTO"
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
