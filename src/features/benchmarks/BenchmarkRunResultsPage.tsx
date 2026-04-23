@@ -1441,7 +1441,7 @@ export function BenchmarkRunResultsPage() {
                       <span className="run-results-host-card-name">{host.label}</span>
                       <span className="run-results-host-card-stats">
                         CPU avg {formatMetric(derivedCpu?.avg, '%')} | Mem avg{' '}
-                        {formatMetric(derivedMemory?.avg, '%')}
+                        {formatBytes(derivedMemory?.avg)}
                         {' | '}
                         Net in {formatBytes(host.derivedSummary?.resource?.networkInTotalBytes)}{' '}
                         | Net out{' '}

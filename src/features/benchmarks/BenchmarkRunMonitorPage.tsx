@@ -609,7 +609,7 @@ export function BenchmarkRunMonitorPage() {
                         <strong>{host.hostName ?? host.hostId ?? 'Host'}</strong>
                         <span>
                           CPU avg {formatMetric(host.resource?.cpu?.avg, '%')} | Mem avg{' '}
-                          {formatMetric(host.resource?.memory?.avg, '%')} | Net in{' '}
+                          {formatBytes(host.resource?.memory?.avg)} | Net in{' '}
                           {formatBytes(host.resource?.networkInTotalBytes)}
                         </span>
                         {host.services && host.services.length > 0 && (
@@ -623,7 +623,7 @@ export function BenchmarkRunMonitorPage() {
                                 </span>
                                 <span>
                                   CPU avg {formatMetric(svc.resource?.cpu?.avg, '%')} | Mem avg{' '}
-                                  {formatMetric(svc.resource?.memory?.avg, '%')}
+                                  {formatBytes(svc.resource?.memory?.avg)}
                                 </span>
                               </li>
                             ))}
